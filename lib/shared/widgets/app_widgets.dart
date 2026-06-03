@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../core/theme/app_theme.dart';
 
-// ─── Primary green button ────────────────────────────────────────────────────
+// ─── Primary green button ─────────────────────────────────────────────────────
 class GreenButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -21,30 +21,15 @@ class GreenButton extends StatelessWidget {
       height: 50,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.green,
-          foregroundColor: AppColors.bgDark,
-          disabledBackgroundColor: AppColors.greenDark,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          elevation: 0,
-        ),
         child: isLoading
             ? const SizedBox(
-                width: 20,
-                height: 20,
+                width: 20, height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation(AppColors.bgDark),
                 ),
               )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
-                ),
-              ),
+            : Text(label),
       ),
     );
   }
@@ -102,7 +87,9 @@ class _AppTextFieldState extends State<AppTextField> {
             suffixIcon: widget.isPassword
                 ? IconButton(
                     icon: Icon(
-                      _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscure
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: AppColors.textMuted,
                       size: 18,
                     ),
@@ -116,7 +103,45 @@ class _AppTextFieldState extends State<AppTextField> {
   }
 }
 
-// ─── Rooster logo widget ──────────────────────────────────────────────────────
+// ─── Status banner ────────────────────────────────────────────────────────────
+class StatusBanner extends StatelessWidget {
+  final String message;
+  final bool isError;
+
+  const StatusBanner({
+    super.key,
+    required this.message,
+    this.isError = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isError ? AppColors.negative : AppColors.positive;
+    final icon  = isError ? Icons.error_outline : Icons.check_circle_outline;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(message,
+                style: TextStyle(color: color, fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── App logo ─────────────────────────────────────────────────────────────────
 class AppLogo extends StatelessWidget {
   final double size;
   const AppLogo({super.key, this.size = 80});
@@ -124,8 +149,7 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
+      width: size, height: size,
       decoration: BoxDecoration(
         color: AppColors.bgCardLight,
         borderRadius: BorderRadius.circular(size * 0.22),
@@ -139,10 +163,7 @@ class AppLogo extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: Text(
-          '🐓',
-          style: TextStyle(fontSize: size * 0.5),
-        ),
+        child: Text('🐓', style: TextStyle(fontSize: size * 0.5)),
       ),
     );
   }

@@ -1,43 +1,40 @@
 import 'package:flutter/material.dart';
-import '../../core/services/auth_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/app_widgets.dart';
 import 'register_screen.dart';
 import '../home/home_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  final _authService = AuthService();
-  bool _loading = false;
-  String? _error;
 
-  late AnimationController _animCtrl;
-  late Animation<double> _fadeAnim;
-  late Animation<Offset> _slideAnim;
+  late final AnimationController _animCtrl;
+  late final Animation<double> _fadeAnim;
+  late final Animation<Offset> _slideAnim;
 
   @override
   void initState() {
     super.initState();
     _animCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
+      duration: const Duration(milliseconds: 500),
+    )..forward();
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.08),
+      begin: const Offset(0, 0.07),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
-    _animCtrl.forward();
   }
 
   @override
@@ -48,41 +45,21 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final res = await _authService.signIn(
-        email: _emailCtrl.text.trim(),
-        password: _passCtrl.text,
-      );
-      if (res.user != null && mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      }
-    } catch (e) {
-      setState(() => _error = _parseError(e.toString()));
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    final ok = await ref
+        .read(loginProvider.notifier)
+        .signIn(email: _emailCtrl.text.trim(), password: _passCtrl.text);
+    if (ok && mounted) {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     }
-  }
-
-  String _parseError(String raw) {
-    if (raw.contains('Invalid login credentials')) {
-      return 'Correo o contraseña incorrectos.';
-    }
-    if (raw.contains('Email not confirmed')) {
-      return 'Confirma tu correo antes de iniciar sesión.';
-    }
-    return 'Ocurrió un error. Intenta de nuevo.';
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(loginProvider);
     final isWide = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
@@ -95,11 +72,12 @@ class _LoginScreenState extends State<LoginScreen>
             child: SlideTransition(
               position: _slideAnim,
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isWide ? 400 : double.infinity),
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 400 : double.infinity,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const AppLogo(size: 88),
                       const SizedBox(height: 20),
@@ -123,34 +101,8 @@ class _LoginScreenState extends State<LoginScreen>
                       const SizedBox(height: 36),
 
                       // Error banner
-                      if (_error != null) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.negative.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.negative.withOpacity(0.4),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.error_outline,
-                                  color: AppColors.negative, size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _error!,
-                                  style: const TextStyle(
-                                    color: AppColors.negative,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      if (auth.hasError) ...[
+                        StatusBanner(message: auth.errorMessage!),
                         const SizedBox(height: 16),
                       ],
 
@@ -159,8 +111,9 @@ class _LoginScreenState extends State<LoginScreen>
                         label: 'Correo electrónico',
                         hint: 'tu@correo.com',
                         keyboardType: TextInputType.emailAddress,
-                        validator: (v) =>
-                            v == null || !v.contains('@') ? 'Ingresa un correo válido' : null,
+                        validator: (v) => v == null || !v.contains('@')
+                            ? 'Ingresa un correo válido'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
@@ -168,8 +121,9 @@ class _LoginScreenState extends State<LoginScreen>
                         label: 'Contraseña',
                         hint: '••••••••',
                         isPassword: true,
-                        validator: (v) =>
-                            v == null || v.length < 6 ? 'Mínimo 6 caracteres' : null,
+                        validator: (v) => v == null || v.length < 6
+                            ? 'Mínimo 6 caracteres'
+                            : null,
                       ),
                       const SizedBox(height: 10),
                       Align(
@@ -193,8 +147,8 @@ class _LoginScreenState extends State<LoginScreen>
                       const SizedBox(height: 24),
                       GreenButton(
                         label: 'Iniciar sesión',
-                        onPressed: _login,
-                        isLoading: _loading,
+                        onPressed: _submit,
+                        isLoading: auth.isLoading,
                       ),
                       const SizedBox(height: 28),
                       Row(
@@ -208,10 +162,14 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => const RegisterScreen()),
-                            ),
+                            onTap: () {
+                              ref.read(loginProvider.notifier).reset();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const RegisterScreen(),
+                                ),
+                              );
+                            },
                             child: const Text(
                               'Regístrate',
                               style: TextStyle(

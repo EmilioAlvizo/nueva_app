@@ -14,45 +14,36 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animCtrl;
-  late Animation<double> _scaleAnim;
-  late Animation<double> _fadeAnim;
+  late final AnimationController _ctrl;
+  late final Animation<double>   _scale;
+  late final Animation<double>   _fade;
 
   @override
   void initState() {
     super.initState();
-    _animCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _scaleAnim = Tween<double>(begin: 0.7, end: 1.0).animate(
-      CurvedAnimation(parent: _animCtrl, curve: Curves.elasticOut),
-    );
-    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeIn);
-    _animCtrl.forward();
+    _ctrl = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 700),
+    )..forward();
+    _scale = Tween<double>(begin: 0.7, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut));
+    _fade  = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
 
     _redirect();
   }
 
   Future<void> _redirect() async {
-    await Future.delayed(const Duration(milliseconds: 1200));
+    await Future.delayed(const Duration(milliseconds: 1300));
     if (!mounted) return;
-
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
+    final hasSession = Supabase.instance.client.auth.currentSession != null;
+    Navigator.of(context).pushReplacement(MaterialPageRoute(
+      builder: (_) =>
+          hasSession ? const HomeScreen() : const LoginScreen(),
+    ));
   }
 
   @override
   void dispose() {
-    _animCtrl.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
@@ -62,35 +53,26 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: AppColors.bgDark,
       body: Center(
         child: FadeTransition(
-          opacity: _fadeAnim,
+          opacity: _fade,
           child: ScaleTransition(
-            scale: _scaleAnim,
+            scale: _scale,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const AppLogo(size: 96),
                 const SizedBox(height: 20),
-                const Text(
-                  'GallinasApp',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
-                ),
+                const Text('GallinasApp',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5,
+                    )),
                 const SizedBox(height: 6),
-                const Text(
-                  'Gestión inteligente de tu granja',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
+                const Text('Gestión inteligente de tu granja',
+                    style: TextStyle(
+                        color: AppColors.textSecondary, fontSize: 13)),
                 const SizedBox(height: 40),
-                SizedBox(
-                  width: 24,
-                  height: 24,
+                const SizedBox(
+                  width: 22, height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation(AppColors.green),

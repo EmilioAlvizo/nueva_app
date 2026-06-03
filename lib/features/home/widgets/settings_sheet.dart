@@ -1,28 +1,24 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/auth_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/login_screen.dart';
 
-class SettingsSheet extends StatelessWidget {
-  final bool isDark;
-  final ValueChanged<bool> onThemeToggle;
-
-  const SettingsSheet({
-    super.key,
-    required this.isDark,
-    required this.onThemeToggle,
-  });
+class SettingsSheet extends ConsumerWidget {
+  const SettingsSheet({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = AuthService().currentUser;
-    final nombre = user?.userMetadata?['nombre'] as String? ??
-        user?.email?.split('@').first ??
-        'Usuario';
-    final email = user?.email ?? '';
-    final initials = nombre.isNotEmpty
-        ? nombre.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
-        : 'U';
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark  = ref.watch(themeProvider);
+    final service = ref.watch(authServiceProvider);
+    final user    = service.currentUser;
+    final nombre  = user?.userMetadata?['nombre'] as String?
+        ?? user?.email?.split('@').first
+        ?? 'Usuario';
+    final email    = user?.email ?? '';
+    final initials = nombre.trim().split(' ').map((w) => w[0]).take(2)
+        .join().toUpperCase();
 
     return Container(
       decoration: const BoxDecoration(
@@ -37,8 +33,7 @@ class SettingsSheet extends StatelessWidget {
           // Handle
           Center(
             child: Container(
-              width: 36,
-              height: 4,
+              width: 36, height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: AppColors.textMuted,
@@ -47,20 +42,14 @@ class SettingsSheet extends StatelessWidget {
             ),
           ),
 
-          // Header
-          const Text(
-            'Ajustes',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          const Text('Ajustes',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 20, fontWeight: FontWeight.w800,
+              )),
           const SizedBox(height: 2),
-          const Text(
-            'Tu cuenta y preferencias',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-          ),
+          const Text('Tu cuenta y preferencias',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
           const SizedBox(height: 20),
 
           // User card
@@ -73,23 +62,19 @@ class SettingsSheet extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Avatar
                 Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD97706),
-                    borderRadius: BorderRadius.circular(22),
+                  width: 44, height: 44,
+                  decoration: const BoxDecoration(
+                    color: AppColors.amber,
+                    shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: Text(
-                      initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
+                    child: Text(initials,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        )),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -97,39 +82,28 @@ class SettingsSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.person_outline,
-                              color: AppColors.textSecondary, size: 13),
-                          const SizedBox(width: 4),
-                          Text(
-                            nombre,
+                      Row(children: [
+                        const Icon(Icons.person_outline,
+                            color: AppColors.textSecondary, size: 13),
+                        const SizedBox(width: 4),
+                        Text(nombre,
                             style: const TextStyle(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
+                              fontWeight: FontWeight.w700, fontSize: 14,
+                            )),
+                      ]),
                       const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(Icons.mail_outline,
-                              color: AppColors.textMuted, size: 12),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              email,
+                      Row(children: [
+                        const Icon(Icons.mail_outline,
+                            color: AppColors.textMuted, size: 12),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(email,
                               style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                                  color: AppColors.textSecondary, fontSize: 12),
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ]),
                     ],
                   ),
                 ),
@@ -138,18 +112,13 @@ class SettingsSheet extends StatelessWidget {
           ),
 
           const SizedBox(height: 20),
-
-          // Apariencia
-          const Text(
-            'APARIENCIA',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
-          ),
+          const Text('APARIENCIA',
+              style: TextStyle(
+                  color: AppColors.textMuted, fontSize: 11,
+                  fontWeight: FontWeight.w700, letterSpacing: 1)),
           const SizedBox(height: 10),
+
+          // Theme toggle
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -163,31 +132,25 @@ class SettingsSheet extends StatelessWidget {
                   label: 'Oscuro',
                   icon: Icons.dark_mode_outlined,
                   selected: isDark,
-                  onTap: () => onThemeToggle(true),
+                  onTap: () => ref.read(themeProvider.notifier).setDark(),
                 ),
                 _ThemeOption(
                   label: 'Claro',
                   icon: Icons.light_mode_outlined,
                   selected: !isDark,
-                  onTap: () => onThemeToggle(false),
+                  onTap: () => ref.read(themeProvider.notifier).setLight(),
                 ),
               ],
             ),
           ),
 
           const SizedBox(height: 20),
-
-          // Cuenta
-          const Text(
-            'CUENTA',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
-          ),
+          const Text('CUENTA',
+              style: TextStyle(
+                  color: AppColors.textMuted, fontSize: 11,
+                  fontWeight: FontWeight.w700, letterSpacing: 1)),
           const SizedBox(height: 10),
+
           _SettingsItem(
             icon: Icons.person_outline,
             label: 'Editar perfil',
@@ -200,7 +163,7 @@ class SettingsSheet extends StatelessWidget {
             isDestructive: true,
             onTap: () async {
               Navigator.of(context).pop();
-              await AuthService().signOut();
+              await ref.read(authServiceProvider).signOut();
               if (context.mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -222,10 +185,8 @@ class _ThemeOption extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ThemeOption({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
+    required this.label, required this.icon,
+    required this.selected, required this.onTap,
   });
 
   @override
@@ -237,26 +198,21 @@ class _ThemeOption extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFD97706) : Colors.transparent,
+            color: selected ? AppColors.amber : Colors.transparent,
             borderRadius: BorderRadius.circular(7),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: selected ? Colors.white : AppColors.textSecondary,
-                size: 15,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
+              Icon(icon,
                   color: selected ? Colors.white : AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
+                  size: 15),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: TextStyle(
+                    color: selected ? Colors.white : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600, fontSize: 13,
+                  )),
             ],
           ),
         ),
@@ -272,16 +228,13 @@ class _SettingsItem extends StatelessWidget {
   final bool isDestructive;
 
   const _SettingsItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
+    required this.icon, required this.label, required this.onTap,
     this.isDestructive = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = isDestructive ? AppColors.negative : AppColors.textPrimary;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -296,10 +249,10 @@ class _SettingsItem extends StatelessWidget {
             Icon(icon, color: color, size: 18),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                label,
-                style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w500),
-              ),
+              child: Text(label,
+                  style: TextStyle(
+                      color: color, fontSize: 14,
+                      fontWeight: FontWeight.w500)),
             ),
             if (!isDestructive)
               const Icon(Icons.chevron_right_rounded,
