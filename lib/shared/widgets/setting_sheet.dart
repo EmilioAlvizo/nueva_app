@@ -1,23 +1,29 @@
+// lib/shared/widgets/settings_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/theme_provider.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../auth/login_screen.dart';
+import '../../../../core/theme/app_colors.dart';
+import '/features/auth/data/auth_repository.dart';
+import '/features/settings/presentation/providers/theme_provider.dart';
+import '../../../../features/granja/granja_provider.dart';
 
 class SettingsSheet extends ConsumerWidget {
   const SettingsSheet({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark  = ref.watch(themeProvider);
-    final service = ref.watch(authServiceProvider);
-    final user    = service.currentUser;
-    final nombre  = user?.userMetadata?['nombre'] as String?
+    // 1. Adaptación al enum AppThemeMode de tu themeProvider
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
+    
+    // 2. Adaptación a tu repositorio real de Supabase
+    final authRepository = ref.watch(authRepositoryProvider);
+    final user = authRepository.currentUser;
+    
+    final nombre = user?.userMetadata?['nombre'] as String?
         ?? user?.email?.split('@').first
         ?? 'Usuario';
-    final email    = user?.email ?? '';
-    final initials = nombre.trim().split(' ').map((w) => w[0]).take(2)
+    final email = user?.email ?? '';
+    final initials = nombre.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2)
         .join().toUpperCase();
 
     return Container(
@@ -30,7 +36,7 @@ class SettingsSheet extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Handle
+          // Handle superior para deslizar hacia abajo
           Center(
             child: Container(
               width: 36, height: 4,
@@ -52,7 +58,7 @@ class SettingsSheet extends ConsumerWidget {
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
           const SizedBox(height: 20),
 
-          // User card
+          // Tarjeta de usuario
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -114,11 +120,11 @@ class SettingsSheet extends ConsumerWidget {
           const SizedBox(height: 20),
           const Text('APARIENCIA',
               style: TextStyle(
-                  color: AppColors.textMuted, fontSize: 11,
-                  fontWeight: FontWeight.w700, letterSpacing: 1)),
+                color: AppColors.textMuted, fontSize: 11,
+                fontWeight: FontWeight.w700, letterSpacing: 1)),
           const SizedBox(height: 10),
 
-          // Theme toggle
+          // Selector de Tema (Claro / Oscuro) usando tus métodos setDark/setLight
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -147,8 +153,8 @@ class SettingsSheet extends ConsumerWidget {
           const SizedBox(height: 20),
           const Text('CUENTA',
               style: TextStyle(
-                  color: AppColors.textMuted, fontSize: 11,
-                  fontWeight: FontWeight.w700, letterSpacing: 1)),
+                color: AppColors.textMuted, fontSize: 11,
+                fontWeight: FontWeight.w700, letterSpacing: 1)),
           const SizedBox(height: 10),
 
           _SettingsItem(
@@ -162,14 +168,13 @@ class SettingsSheet extends ConsumerWidget {
             label: 'Cerrar sesión',
             isDestructive: true,
             onTap: () async {
+              // Cerramos el BottomSheet primero
               Navigator.of(context).pop();
-              await ref.read(authServiceProvider).signOut();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (_) => false,
-                );
-              }
+              // 2. Limpiamos la granja seleccionada para que el próximo usuario
+              //    no vea datos residuales del anterior.
+              ref.read(selectedFarmProvider.notifier).clear();
+              // Deslogueamos de Supabase; go_router hará el resto mágicamente
+              await ref.read(authRepositoryProvider).signOut();
             },
           ),
         ],

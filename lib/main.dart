@@ -2,9 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'core/providers/theme_provider.dart';
-import 'core/theme/app_theme.dart';
-import 'features/splash/splash_screen.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/app_colors.dart';
  
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,12 +24,60 @@ class GallinasApp extends ConsumerWidget {
  
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = ref.watch(themeProvider);
-    return MaterialApp(
+    final router = ref.watch(appRouterProvider);
+    return MaterialApp.router(
       title: 'GallinasApp',
       debugShowCheckedModeBanner: false,
-      theme: isDark ? AppTheme.dark : AppTheme.light,
-      home: const SplashScreen(),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: AppColors.bgDark,
+        colorScheme: const ColorScheme.dark(
+          primary: AppColors.green,
+          surface: AppColors.bgCard,
+        ),
+      // Configuración para que tu GreenButton luzca perfecto de forma global
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.green,
+            foregroundColor: AppColors.bgDark,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        // Configuración global para el diseño de tu AppTextField
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.bgInput,
+          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.borderFocus, width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.negative),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.negative, width: 1.5),
+          ),
+        ),
+      ),
+      routerConfig: router,
     );
   }
 }

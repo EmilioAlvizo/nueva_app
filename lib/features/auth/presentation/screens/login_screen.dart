@@ -1,10 +1,14 @@
+// lib/features/auth/presentation/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/providers/auth_provider.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/app_widgets.dart';
-import 'register_screen.dart';
-import '../home/home_screen.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/app_logo.dart';
+import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/green_button.dart';
+import '../../../../shared/widgets/status_banner.dart';
+import '../providers/login_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -15,31 +19,28 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey   = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
+  final _passCtrl  = TextEditingController();
 
-  late final AnimationController _animCtrl;
-  late final Animation<double> _fadeAnim;
-  late final Animation<Offset> _slideAnim;
+  late final AnimationController _anim;
+  late final Animation<double>   _fade;
+  late final Animation<Offset>   _slide;
 
   @override
   void initState() {
     super.initState();
-    _animCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    )..forward();
-    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.07),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
+    _anim = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 450))
+      ..forward();
+    _fade  = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
+    _slide = Tween(begin: const Offset(0, 0.06), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _anim, curve: Curves.easeOut));
   }
 
   @override
   void dispose() {
-    _animCtrl.dispose();
+    _anim.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
@@ -47,37 +48,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final ok = await ref
-        .read(loginProvider.notifier)
-        .signIn(email: _emailCtrl.text.trim(), password: _passCtrl.text);
-    if (ok && mounted) {
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
-    }
+    await ref.read(loginProvider.notifier).signIn(
+          email: _emailCtrl.text.trim(),
+          password: _passCtrl.text,
+        );
+    // Navigation handled by GoRouter redirect reacting to authSessionProvider
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(loginProvider);
-    final isWide = MediaQuery.of(context).size.width > 600;
+    // Listen for errors — we don't navigate here, the router handles that.
+    final loginState = ref.watch(loginProvider);
+    final isLoading  = loginState is LoginLoading;
+    final error      = loginState is LoginError ? loginState.message : null;
+    final isWide     = MediaQuery.sizeOf(context).width > 600;
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
           child: FadeTransition(
-            opacity: _fadeAnim,
+            opacity: _fade,
             child: SlideTransition(
-              position: _slideAnim,
+              position: _slide,
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isWide ? 400 : double.infinity,
-                ),
+                constraints:
+                    BoxConstraints(maxWidth: isWide ? 400 : double.infinity),
                 child: Form(
                   key: _formKey,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const AppLogo(size: 88),
                       const SizedBox(height: 20),
@@ -94,18 +95,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       const Text(
                         'Gestión inteligente de tu granja',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
+                            color: AppColors.textSecondary, fontSize: 13),
                       ),
                       const SizedBox(height: 36),
-
-                      // Error banner
-                      if (auth.hasError) ...[
-                        StatusBanner(message: auth.errorMessage!),
+                      if (error != null) ...[
+                        StatusBanner(message: error),
                         const SizedBox(height: 16),
                       ],
-
                       AppTextField(
                         controller: _emailCtrl,
                         label: 'Correo electrónico',
@@ -121,6 +117,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         label: 'Contraseña',
                         hint: '••••••••',
                         isPassword: true,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: _submit,
                         validator: (v) => v == null || v.length < 6
                             ? 'Mínimo 6 caracteres'
                             : null,
@@ -130,25 +128,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {},
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
                           child: const Text(
                             '¿Olvidaste tu contraseña?',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
+                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 22),
                       GreenButton(
                         label: 'Iniciar sesión',
                         onPressed: _submit,
-                        isLoading: auth.isLoading,
+                        isLoading: isLoading,
                       ),
                       const SizedBox(height: 28),
                       Row(
@@ -157,18 +147,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           const Text(
                             '¿No tienes cuenta? ',
                             style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                            ),
+                                color: AppColors.textSecondary, fontSize: 13),
                           ),
                           GestureDetector(
                             onTap: () {
                               ref.read(loginProvider.notifier).reset();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const RegisterScreen(),
-                                ),
-                              );
+                              context.push(AppRoutes.register);
                             },
                             child: const Text(
                               'Regístrate',
