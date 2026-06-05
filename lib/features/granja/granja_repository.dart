@@ -5,7 +5,6 @@ import '../auth/presentation/providers/auth_session_provider.dart';
 import 'granja.dart';
 
 class FarmRepository {
-  
   /// Obtiene las granjas asociadas al usuario actual autenticado
   Future<List<Granja>> getMyFarms(String userId) async {
     final response = await supabase
@@ -13,7 +12,7 @@ class FarmRepository {
         .select('*, perfiles!granja_owner_id_fkey(id, nombre, email)')
         .eq('owner_id', userId)
         .order('created_at');
- 
+
     return (response as List).map((json) => Granja.fromMap(json)).toList();
   }
 
@@ -24,18 +23,24 @@ class FarmRepository {
     String? notes,
   }) async {
     final userId = supabase.auth.currentUser?.id;
-    
+
     if (userId == null) throw Exception('Usuario no autenticado');
 
-    await supabase.from('granjas').insert({
-      'nombre': name,
-      'ubicacion': location?.isEmpty ?? true
-          ? null
-          : location, // Guarda null si está vacío
-      'notas': notes?.isEmpty ?? true ? null : notes,
-      'owner_id': userId,
-      'created_by': userId,
-    });
+    try {
+      await supabase.from('granjas').insert({
+        'nombre': name,
+        'ubicacion': location?.isEmpty ?? true
+            ? null
+            : location, // Guarda null si está vacío
+        'descripcion': notes?.isEmpty ?? true ? null : notes,
+        'owner_id': userId,
+        'created_by': userId,
+      });
+    } catch (e) {
+      print(e);
+    }
+
+    print('dfdf');
   }
 }
 
@@ -53,10 +58,10 @@ final farmRepositoryProvider = Provider<FarmRepository>((ref) {
 /// con el userId correcto — esto resuelve el bug de granjas cacheadas.
 final farmsProvider = FutureProvider.autoDispose<List<Granja>>((ref) async {
   final session = await ref.watch(authSessionProvider.future);
- 
+
   final userId = session?.user.id;
   if (userId == null) return [];
- 
+
   return ref.read(farmRepositoryProvider).getMyFarms(userId);
 });
 
