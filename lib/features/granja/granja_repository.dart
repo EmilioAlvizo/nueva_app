@@ -16,7 +16,9 @@ class FarmRepository {
     return (response as List).map((json) => Granja.fromMap(json)).toList();
   }
 
-  // Añade este método dentro de tu clase FarmRepository
+  /// Añadir una nueva granja a la bd
+  ///
+  /// Se requiere el campo [name], mientras que [location] y [notes] son opcionales.
   Future<void> createFarm({
     required String name,
     String? location,
@@ -41,6 +43,22 @@ class FarmRepository {
     }
 
     print('dfdf');
+  }
+
+  /// Eliminar una granja por su Id
+  /// se requiere el Id de la granja [farmId]
+  Future<void> deleteFarm({required String farmId}) async {
+    final userId = supabase.auth.currentUser?.id;
+
+    if (userId == null) throw Exception('Usuario no autenticado');
+
+    try {
+      await supabase.from('granjas').delete()
+        .eq('id',farmId)
+        .eq('owner_id', userId);
+    } catch (e) {
+      print(e);
+    }
   }
 }
 

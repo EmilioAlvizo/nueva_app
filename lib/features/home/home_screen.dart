@@ -1,14 +1,17 @@
 // lib/features/home/presentation/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/router/app_router.dart';
 import '../auth/data/auth_repository.dart';
 import '../settings/presentation/providers/theme_provider.dart'; // Tu provider de tema real
 import '../../shared/widgets/setting_sheet.dart';
 import '../granja/granja.dart';
 import '../granja/granja_repository.dart';
 import '../granja/granja_provider.dart';
-import 'nueva_granja.dart';
+import '../../shared/widgets/confirmation_dialog.dart';
+import '../granja/nueva_granja.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -42,9 +45,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           children: [
             _AppBar(isDark: isDark, onSettings: _openSettings),
-            Expanded(
-              child: _Body(isDark: isDark, ref: ref),
-            ),
+            Expanded(child: _Body(isDark: isDark /* , ref: ref */)),
           ],
         ),
       ),
@@ -123,13 +124,13 @@ class _AppBar extends ConsumerWidget {
 }
 
 // ─── Body ─────────────────────────────────────────────────────────────────────
-class _Body extends StatelessWidget {
+class _Body extends ConsumerWidget {
   final bool isDark;
-  final WidgetRef ref;
-  const _Body({required this.isDark, required this.ref});
+  //final WidgetRef ref;
+  const _Body({required this.isDark /* , required this.ref */});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Escuchamos el estado asíncrono de las granjas provenientes de Supabase
     final farmsAsync = ref.watch(farmsProvider);
     // Escuchamos cuál es la granja seleccionada actualmente
@@ -185,6 +186,32 @@ class _Body extends StatelessWidget {
                 ref.read(selectedFarmProvider.notifier).updateFarm(farm);
                 print('granja: ${ref.watch(selectedFarmProvider)?.nombre}');
               },
+              onLongPress: () {
+                // Invocamos el modal reutilizable
+                ConfirmationDialog.show(
+                  context: context,
+                  isDark: isDark,
+                  title: 'Eliminar Granja',
+                  content:
+                      '¿Estás seguro de que deseas eliminar la granja "${farm.nombre}"? Esta acción no se puede deshacer.',
+                  onConfirm: () async {
+                    try {
+                      // Ejecutamos la lógica de borrado e invalidación
+                      await ref
+                          .read(farmRepositoryProvider)
+                          .deleteFarm(farmId: farm.id);
+
+                      if (isSelected) {
+                        ref.read(selectedFarmProvider.notifier).clear();
+                      }
+
+                      ref.invalidate(farmsProvider);
+                    } catch (e) {
+                      print('Error al eliminar granja: $e');
+                    }
+                  },
+                );
+              },
             );
           },
         );
@@ -202,12 +229,12 @@ class _NewFarmButton extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         // ABRIR EL MODAL MODERNO AQUÍ
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.transparent,
-            isScrollControlled: true, // Permite ajustar el tamaño con el teclado
-            builder: (_) => NuevaGranja(isDark: isDark),
-          );
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          isScrollControlled: true, // Permite ajustar el tamaño con el teclado
+          builder: (_) => NuevaGranja(isDark: isDark),
+        );
       },
       child: Container(
         width: double.infinity,
@@ -309,7 +336,7 @@ class _BottomBar extends StatelessWidget {
 class _FarmCard extends StatelessWidget {
   final Granja farm;
   final bool isDark, isSelected, hasImage;
-  final VoidCallback onTap;
+  final VoidCallback onTap, onLongPress;
 
   const _FarmCard({
     required this.farm,
@@ -317,6 +344,7 @@ class _FarmCard extends StatelessWidget {
     required this.isSelected,
     required this.hasImage,
     required this.onTap,
+    required this.onLongPress,
   });
 
   @override
@@ -328,6 +356,7 @@ class _FarmCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(0),
@@ -426,7 +455,7 @@ class _FarmCard extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              _InviteChip(isDark: isDark),
+                              _InviteChip(farmId: farm.id, farmName: farm.nombre, isDark: isDark),
                             ],
                           ),
                         ),
@@ -464,7 +493,7 @@ class _FarmCard extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            _InviteChip(isDark: isDark),
+                            _InviteChip(farmId: farm.id, farmName: farm.nombre, isDark: isDark),
                           ],
                         ),
                         const SizedBox(height: 2),
@@ -704,11 +733,18 @@ class _FarmCard extends StatelessWidget {
 
 class _InviteChip extends StatelessWidget {
   final bool isDark;
-  const _InviteChip({required this.isDark});
+  final String farmId, farmName;
+  const _InviteChip({
+    required this.farmId,
+    required this.farmName,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-    onTap: () {},
+    onTap: () {
+      context.push('/collaborators/$farmId', extra: farmName);
+    },
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -733,30 +769,6 @@ class _InviteChip extends StatelessWidget {
       ),
     ),
   );
-
-  /* Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(
-      color: Colors.black.withOpacity(0.35),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.white24),
-    ),
-    child: const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.person_add_outlined, color: Colors.white, size: 12),
-        SizedBox(width: 4),
-        Text(
-          'Invitar',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    ),
-  ); */
 }
 
 class _Stat extends StatelessWidget {

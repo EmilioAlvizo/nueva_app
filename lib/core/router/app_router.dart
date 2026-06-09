@@ -5,13 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_session_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/model/miembro_granja/collaborators_screen.dart';
 import '../../features/home/home_screen.dart';
 
 // ─── Route names (constants → no magic strings) ───────────────────────────────
 abstract final class AppRoutes {
-  static const login    = '/login';
+  static const login = '/login';
   static const register = '/register';
-  static const home     = '/';
+  static const home = '/';
+  static const collaborators = '/collaborators/:id';
 }
 
 // ─── Router provider ──────────────────────────────────────────────────────────
@@ -32,25 +34,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (sessionAsync.isLoading) return null;
 
       final hasSession = sessionAsync.value != null;
-      final onAuthRoute = state.matchedLocation == AppRoutes.login ||
+      final onAuthRoute =
+          state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.register;
 
       if (!hasSession && !onAuthRoute) return AppRoutes.login;
-      if (hasSession  && onAuthRoute)  return AppRoutes.home;
+      if (hasSession && onAuthRoute) return AppRoutes.home;
       return null; // no redirect needed
     },
     routes: [
       GoRoute(
-        path: AppRoutes.home,
-        builder: (_, __) => const HomeScreen(),
-      ),
+        path: AppRoutes.home, 
+        builder: (_, __) => const HomeScreen()),
       GoRoute(
-        path: AppRoutes.login,
-        builder: (_, __) => const LoginScreen(),
-      ),
+        path: AppRoutes.login, 
+        builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: AppRoutes.register,
         builder: (_, __) => const RegisterScreen(),
+      ),
+      // 2. Modifica la configuración de GoRoute
+      GoRoute(
+        path: '/collaborators/:id', // Recibe el ID dinámico
+        builder: (context, state) {
+          final farmId = state.pathParameters['id']!;
+          final farmName =
+              state.extra as String? ??
+              'Granja'; // Pasamos el nombre por extra para no ensuciar la URL
+
+          return CollaboratorsScreen(farmId: farmId, farmName: farmName);
+        },
       ),
     ],
     // Clean error page instead of a crash

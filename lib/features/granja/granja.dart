@@ -1,5 +1,5 @@
 // lib/features/granja/granja.dart
-import 'package:nueva_app/features/perfil/perfil.dart';
+import 'package:nueva_app/features/model/perfil/perfil.dart';
 
 class Granja {
   final String id;

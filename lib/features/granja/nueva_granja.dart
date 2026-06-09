@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 //import '/features/auth/data/auth_repository.dart';
 //import '/features/settings/presentation/providers/theme_provider.dart';
-import '../granja/granja_repository.dart';
+import 'granja_repository.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/green_button.dart';
 
