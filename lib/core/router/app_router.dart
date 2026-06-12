@@ -6,6 +6,7 @@ import '../../features/auth/presentation/providers/auth_session_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/model/miembro_granja/collaborators_screen.dart';
+import '../../features/animales/animales_screen.dart';
 import '../../features/home/home_screen.dart';
 
 // ─── Route names (constants → no magic strings) ───────────────────────────────
@@ -14,6 +15,10 @@ abstract final class AppRoutes {
   static const register = '/register';
   static const home = '/';
   static const collaborators = '/collaborators/:id';
+  static const animales = '/animales';
+  static const huevos = '/huevos';
+  static const comida = '/comida';
+  static const grafica = '/grafica';
 }
 
 // ─── Router provider ──────────────────────────────────────────────────────────
@@ -64,6 +69,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
           return CollaboratorsScreen(farmId: farmId, farmName: farmName);
         },
+      ),
+      GoRoute(
+        path: '/animales/:id',
+        builder: (context, state) {
+          final farmId = state.pathParameters['id']!;
+
+          return AnimalesScreen(granjaId: farmId);
+        }
       ),
     ],
     // Clean error page instead of a crash

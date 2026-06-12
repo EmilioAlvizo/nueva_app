@@ -49,11 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _BottomBar(
-        isDark: isDark,
-        selected: _selectedTab,
-        onTap: (index) => setState(() => _selectedTab = index),
-      ),
+      bottomNavigationBar: _BottomBar(isDark: isDark),
     );
   }
 }
@@ -270,27 +266,32 @@ class _NewFarmButton extends StatelessWidget {
 }
 
 // ─── Bottom bar ───────────────────────────────────────────────────────────────
-class _BottomBar extends StatelessWidget {
+class _BottomBar extends ConsumerWidget {
   final bool isDark;
-  final int selected;
-  final ValueChanged<int> onTap;
 
-  const _BottomBar({
-    required this.isDark,
-    required this.selected,
-    required this.onTap,
-  });
+  const _BottomBar({required this.isDark});
 
   static const _icons = [
     Icons.home_rounded,
-    Icons.egg_outlined,
     Icons.circle_outlined,
+    Icons.egg_outlined,
     Icons.grass_outlined,
     Icons.show_chart_rounded,
   ];
 
+  static const _routes = [
+    AppRoutes.home,
+    AppRoutes.animales,
+    AppRoutes.huevos,
+    AppRoutes.comida,
+    AppRoutes.grafica,
+  ];
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Detecta la ruta activa directamente desde go_router
+    final location = GoRouterState.of(context).matchedLocation;
+
     return Container(
       height: 70,
       decoration: BoxDecoration(
@@ -304,9 +305,9 @@ class _BottomBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(_icons.length, (i) {
-          final sel = i == selected;
+          final sel = location == _routes[i];
           return GestureDetector(
-            onTap: () => onTap(i),
+            onTap: () => context.go(_routes[i] + '/${ref.watch(selectedFarmProvider)?.id ?? ''}'), // ← go_router navega
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: sel
@@ -455,7 +456,11 @@ class _FarmCard extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              _InviteChip(farmId: farm.id, farmName: farm.nombre, isDark: isDark),
+                              _InviteChip(
+                                farmId: farm.id,
+                                farmName: farm.nombre,
+                                isDark: isDark,
+                              ),
                             ],
                           ),
                         ),
@@ -493,7 +498,11 @@ class _FarmCard extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            _InviteChip(farmId: farm.id, farmName: farm.nombre, isDark: isDark),
+                            _InviteChip(
+                              farmId: farm.id,
+                              farmName: farm.nombre,
+                              isDark: isDark,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 2),
