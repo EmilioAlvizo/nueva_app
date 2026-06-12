@@ -1,24 +1,27 @@
-// lib/features/home/presentation/widgets/settings_sheet.dart
+// lib/features/model/tipoAnimal/nuevo_tipoAnimal.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nueva_app/features/auth/presentation/providers/auth_session_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 //import '/features/auth/data/auth_repository.dart';
 //import '/features/settings/presentation/providers/theme_provider.dart';
-import 'granja_repository.dart';
-import '../../shared/widgets/app_text_field.dart';
-import '../../shared/widgets/green_button.dart';
+import '../../animales/animales_repository.dart';
+import '../../granja/granja_repository.dart';
+import '../../granja/granja_provider.dart';
+import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/green_button.dart';
 
-
-class NuevaGranja extends ConsumerStatefulWidget {
+class NuevoAnimal extends ConsumerStatefulWidget {
   final bool isDark;
 
-  const NuevaGranja({super.key, required this.isDark});
+  const NuevoAnimal({super.key, required this.isDark});
 
   @override
-  ConsumerState<NuevaGranja> createState() => _NuevaGranjaState();
+  ConsumerState<NuevoAnimal> createState() => _NuevoAnimalState();
 }
 
-class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
+class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
@@ -44,10 +47,10 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
 
     try {
       // Llamamos al repositorio para guardar en Supabase
-      await ref.read(farmRepositoryProvider).createFarm(
-        name: _nameCtrl.text.trim(),
-        location: _locationCtrl.text.trim(),
-        notes: _notesCtrl.text.trim(),
+      await ref.read(animalesRepositoryProvider).addTipoAnimal(
+        granjaId: ref.read(selectedFarmProvider)?.id ?? '',
+        nombre: _nameCtrl.text.trim(),
+        descripcion: _notesCtrl.text.trim(),
       );
       
       // Invalidamos el stream provider para que la lista del Home se refresque automáticamente
@@ -121,7 +124,7 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      'Nueva Granja',
+                      'Nuevo tipo de animal',
                       style: TextStyle(
                         color: titleColor,
                         fontSize: 20,
@@ -133,7 +136,7 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Registra un nuevo entorno de producción para empezar a gestionar tus gallinas y recolecciones.',
+                  'Registra un nuevo tipo de animal.',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
@@ -151,7 +154,7 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
                 // Campo de Texto Reutilizado
                 AppTextField(
                   controller: _nameCtrl,
-                  label: 'NOMBRE DE LA GRANJA',
+                  label: 'NOMBRE DEL TIPO DE ANIMAL',
                   hint: 'Ej. Granja El Avícola, Sección Poniente...',
                   textInputAction: TextInputAction.done,
                   validator: (val) {
@@ -167,21 +170,12 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
                 ),
                 const SizedBox(height: 20),
 
-                // Campo 2: Ubicación (Opcional)
-                AppTextField(
-                  controller: _locationCtrl,
-                  label: 'UBICACIÓN',
-                  hint: 'Ej. Kilómetro 4.5 Carretera Central...',
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 20),
-
                 // Campo 3: Notas Adicionales (Opcional)
                 // Usamos AppTextField; si en tu diseño requiere múltiples líneas, 
                 // tu TextFormField interno se expandirá naturalmente o puedes asignarle el TextInputAction correspondiente.
                 AppTextField(
                   controller: _notesCtrl,
-                  label: 'NOTAS ADICIONALES',
+                  label: 'DESCRIPCION',
                   hint: 'Ej. Capacidad para 500 aves, clima templado...',
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: _isLoading ? null : _submit,

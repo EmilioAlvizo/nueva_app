@@ -1,5 +1,7 @@
+// lib/features/animales/animales_repository.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/supabase/supabase_client.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/loteEntrada/loteEntrada.dart';
@@ -16,9 +18,28 @@ class AnimalesRepository {
         .select()
         .eq('granja_id', granjaId)
         .order('nombre');
+    print(data);
     return (data as List).map((e) => TipoAnimal.fromJson(e)).toList();
   }
- 
+
+  /// agregar nuevo tipo de animal a la granja se requiere el Id de la granja [granjaId]
+  /// el nombre del nuevo tipo de animal [nombre] 
+  Future<void> addTipoAnimal({
+    required String granjaId,
+    required String nombre,
+    String? descripcion,
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+
+    await _client.from('tipo_animal').insert({
+      'granja_id': granjaId,
+      'nombre': nombre,
+      'created_by': userId,
+      'descripcion': descripcion,
+    });
+  }
+  
+
   // ── Grupos de la granja ───────────────────────────────────────────────────
   Future<List<Grupo>> getGrupos(String granjaId) async {
     final data = await _client

@@ -1,4 +1,4 @@
-// ─── lib/features/animales/presentation/screens/animales_screen.dart ──────────
+// ─── lib/features/animales/animales_screen.dart ──────────
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,20 +9,12 @@ import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/loteEntrada/loteEntrada.dart';
 import 'animales_provider.dart';
+import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
 
 // ─── Colores de acento por índice de tipo ─────────────────────────────────────
-const _kStripColors = [
-  Color(0xFF06B6D4), // cyan
-  Color(0xFFF59E0B), // amber
-  Color(0xFF8B5CF6), // violet
-  Color(0xFFEC4899), // pink
-  Color(0xFF10B981), // emerald
-  Color(0xFFF97316), // orange
-];
-
 Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
   final idx = tipos.indexWhere((t) => t.id == tipoId);
-  return _kStripColors[(idx < 0 ? 0 : idx) % _kStripColors.length];
+  return AppColors.tipoColor[(idx < 0 ? 0 : idx) % AppColors.tipoColor.length];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,17 +86,6 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
       child: CustomScrollView(
         slivers: [
           // ── AppBar ──────────────────────────────────────────────────────
-          SliverAppBar(
-            backgroundColor: AppColors.bgDark,
-            pinned: true,
-            title: const Text('Aves', style: TextStyle(fontWeight: FontWeight.bold)),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () => context.push('/settings'),
-              ),
-            ],
-          ),
 
           SliverToBoxAdapter(
             child: Column(
@@ -192,7 +173,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                     final color = _colorParaTipo(grupo.tipoAnimalId, tipos);
                     final tipo = tipos.firstWhere(
                       (t) => t.id == grupo.tipoAnimalId,
-                      orElse: () => TipoAnimal(id: '', granjaId: '', nombre: ''),
+                      orElse: () => TipoAnimal(id: '', granjaId: '', nombre: '', createdBy: ''),
                     );
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -220,10 +201,10 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
 
   Widget _buildFab(BuildContext context) {
     final actions = [
-      (Icons.add, 'Nuevo ejemplar', 'Un animal con su brazalete', '/aves/nuevo'),
-      (Icons.inventory_2_outlined, 'Nuevo lote de entrada', 'Varios ejemplares juntos', '/lotes-entrada/nuevo'),
-      (Icons.create_new_folder_outlined, 'Nuevo grupo', 'Corral o agrupación', '/grupos/nuevo'),
-      (Icons.label_outline, 'Nuevo tipo de animal', 'Categoría base (Gallina…)', '/tipos/nuevo'),
+      (Icons.add, 'Nuevo ejemplar', 'Un animal con su brazalete', NuevoAnimal(isDark: true)),
+      (Icons.inventory_2_outlined, 'Nuevo lote de entrada', 'Varios ejemplares juntos', NuevoAnimal(isDark: true)),
+      (Icons.create_new_folder_outlined, 'Nuevo grupo', 'Corral o agrupación', NuevoAnimal(isDark: true)),
+      (Icons.label_outline, 'Nuevo tipo de animal', 'Categoría base (Gallina…)', NuevoAnimal(isDark: true)),
     ];
 
     return Column(
@@ -239,7 +220,14 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
               desc: a.$3,
               onTap: () {
                 setState(() => _fabOpen = false);
-                context.push(a.$4);
+                /* context.push(a.$4); */
+
+                showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          isScrollControlled: true, // Permite ajustar el tamaño con el teclado
+          builder: (_) => a.$4,
+        );
               },
             ),
           )),
@@ -247,7 +235,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
         ],
         FloatingActionButton(
           backgroundColor: AppColors.green,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.bgDark,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           onPressed: () => setState(() => _fabOpen = !_fabOpen),
           child: AnimatedRotation(
@@ -543,7 +531,7 @@ class _LotesSection extends ConsumerWidget {
           child: Container(
             height: 36,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: AppColors.bgCard2,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
@@ -934,7 +922,7 @@ class _MiniStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: AppColors.bgCard2,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

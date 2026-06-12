@@ -14,28 +14,27 @@ import '../../shared/widgets/confirmation_dialog.dart';
 import '../granja/nueva_granja.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  // Recibimos obligatoriamente el contenedor de navegación inyectado por GoRouter
+  final StatefulNavigationShell navigationShell;
+
+  const HomeScreen({super.key, required this.navigationShell});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedTab = 0;
-
   void _openSettings() {
-    // Aquí puedes abrir tu SettingsSheet real cuando lo tengas implementado
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => SettingsSheet(),
+      builder: (_) => const SettingsSheet(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // 1. Leemos el estado real de tu themeProvider (AppThemeMode)
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == AppThemeMode.dark;
 
@@ -45,11 +44,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           children: [
             _AppBar(isDark: isDark, onSettings: _openSettings),
-            Expanded(child: _Body(isDark: isDark /* , ref: ref */)),
+            // EL BODY AHORA ES EL CONTENEDOR DE LAS SUB-PANTALLAS DINÁMICAS
+            Expanded(child: widget.navigationShell),
           ],
         ),
       ),
-      bottomNavigationBar: _BottomBar(isDark: isDark),
+      // Le pasamos el shell a la barra inferior para que sepa qué índice está activo
+      bottomNavigationBar: _BottomBar(
+        isDark: isDark,
+        navigationShell: widget.navigationShell,
+      ),
     );
   }
 }
@@ -120,20 +124,18 @@ class _AppBar extends ConsumerWidget {
 }
 
 // ─── Body ─────────────────────────────────────────────────────────────────────
-class _Body extends ConsumerWidget {
-  final bool isDark;
-  //final WidgetRef ref;
-  const _Body({required this.isDark /* , required this.ref */});
+class GranjasTab extends ConsumerWidget {
+  const GranjasTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Escuchamos el estado asíncrono de las granjas provenientes de Supabase
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
+
     final farmsAsync = ref.watch(farmsProvider);
-    // Escuchamos cuál es la granja seleccionada actualmente
     final selectedFarm = ref.watch(selectedFarmProvider);
 
-    return // Sección Dinámica de Granjas de la BD
-    farmsAsync.when(
+    return farmsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(
@@ -160,8 +162,7 @@ class _Body extends ConsumerWidget {
 
         return ListView.separated(
           padding: const EdgeInsets.all(16),
-          itemCount:
-              farms.length + 1, // +1 para incluir el botón de agregar al final
+          itemCount: farms.length + 1,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             if (index == farms.length) {
@@ -169,7 +170,6 @@ class _Body extends ConsumerWidget {
             }
 
             final farm = farms[index];
-            // Condición clave: ¿Es esta tarjeta la seleccionada actualmente?
             final isSelected = selectedFarm?.id == farm.id;
 
             return _FarmCard(
@@ -178,12 +178,15 @@ class _Body extends ConsumerWidget {
               isSelected: isSelected,
               hasImage: true,
               onTap: () {
-                // Al hacer tap, guardamos/actualizamos el estado de la granja elegida
                 ref.read(selectedFarmProvider.notifier).updateFarm(farm);
-                print('granja: ${ref.watch(selectedFarmProvider)?.nombre}');
+                print('granja seleccionada: ${farm.nombre}');
+
+                // OPCIONAL: Podrías hacer que al seleccionar una granja
+                // salte automáticamente a la pestaña de animales (índice 1):
+                // GoRouterState.of(context).... o simplemente:
+                // (widget.navigationShell).goBranch(1);
               },
               onLongPress: () {
-                // Invocamos el modal reutilizable
                 ConfirmationDialog.show(
                   context: context,
                   isDark: isDark,
@@ -192,15 +195,12 @@ class _Body extends ConsumerWidget {
                       '¿Estás seguro de que deseas eliminar la granja "${farm.nombre}"? Esta acción no se puede deshacer.',
                   onConfirm: () async {
                     try {
-                      // Ejecutamos la lógica de borrado e invalidación
                       await ref
                           .read(farmRepositoryProvider)
                           .deleteFarm(farmId: farm.id);
-
                       if (isSelected) {
                         ref.read(selectedFarmProvider.notifier).clear();
                       }
-
                       ref.invalidate(farmsProvider);
                     } catch (e) {
                       print('Error al eliminar granja: $e');
@@ -266,10 +266,11 @@ class _NewFarmButton extends StatelessWidget {
 }
 
 // ─── Bottom bar ───────────────────────────────────────────────────────────────
-class _BottomBar extends ConsumerWidget {
+class _BottomBar extends StatelessWidget {
   final bool isDark;
+  final StatefulNavigationShell navigationShell;
 
-  const _BottomBar({required this.isDark});
+  const _BottomBar({required this.isDark, required this.navigationShell});
 
   static const _icons = [
     Icons.home_rounded,
@@ -279,23 +280,12 @@ class _BottomBar extends ConsumerWidget {
     Icons.show_chart_rounded,
   ];
 
-  static const _routes = [
-    AppRoutes.home,
-    AppRoutes.animales,
-    AppRoutes.huevos,
-    AppRoutes.comida,
-    AppRoutes.grafica,
-  ];
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Detecta la ruta activa directamente desde go_router
-    final location = GoRouterState.of(context).matchedLocation;
-
+  Widget build(BuildContext context) {
     return Container(
       height: 70,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : Colors.white,
+        color: isDark ? AppColors.bgDark : Colors.white,
         border: Border(
           top: BorderSide(
             color: isDark ? AppColors.border : const Color(0xFFE5E7EB),
@@ -305,9 +295,18 @@ class _BottomBar extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(_icons.length, (i) {
-          final sel = location == _routes[i];
+          // El índice activo se lee directamente del Shell de GoRouter de manera reactiva
+          final sel = navigationShell.currentIndex == i;
+
           return GestureDetector(
-            onTap: () => context.go(_routes[i] + '/${ref.watch(selectedFarmProvider)?.id ?? ''}'), // ← go_router navega
+            onTap: () {
+              // Navega a la rama (branch) correspondiente usando la API del shell.
+              // El parámetro `initialLocation: true` asegura que si presionas una pestaña ya activa, te regrese a la raíz de esa pestaña.
+              navigationShell.goBranch(
+                i,
+                initialLocation: i == navigationShell.currentIndex,
+              );
+            },
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: sel

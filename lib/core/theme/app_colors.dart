@@ -4,9 +4,15 @@ import 'package:flutter/material.dart';
 abstract final class AppColors {
   // Backgrounds
   static const bgDark = Color(0xFF0D1117);
-  static const bgCard = Color(0xFF161B22);
+  static const bgCard = Color(0xFF2a2d25);
+  static const bgCard2 = Color(0xFF1f221e);
   static const bgCardLight = Color(0xFF1C2333);
   static const bgInput = Color(0xFF1A2030);
+
+  /* static const bgDark = Color(0xFF0D1117);
+  static const bgCard = Color(0xFF161B22);
+  static const bgCardLight = Color(0xFF1C2333);
+  static const bgInput = Color(0xFF1A2030); */
 
   // Accent
   static const green = Color(0xFF39D353);
@@ -27,4 +33,15 @@ abstract final class AppColors {
   // Border
   static const border = Color(0xFF30363D);
   static const borderFocus = Color(0xFF39D353);
+
+  // array de tipos de animales
+
+  static const tipoColor = [
+    Color(0xFF06B6D4), // cyan
+    Color(0xFFF59E0B), // amber
+    Color(0xFF8B5CF6), // violet
+    Color(0xFFEC4899), // pink
+    Color(0xFF10B981), // emerald
+    Color(0xFFF97316), // orange
+  ];
 }
