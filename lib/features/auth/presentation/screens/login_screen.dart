@@ -64,7 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final isWide     = MediaQuery.sizeOf(context).width > 600;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.bg,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),

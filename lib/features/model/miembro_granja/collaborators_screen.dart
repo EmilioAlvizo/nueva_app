@@ -24,10 +24,10 @@ class CollaboratorsScreen extends ConsumerWidget {
     final membersAsync = ref.watch(membersProvider(farmId));
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.bg,
       // ── AppBar ──────────────────────────────────────────────────────────────
       appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
+        backgroundColor: AppColors.bg,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
@@ -77,7 +77,7 @@ class CollaboratorsScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showInviteSheet(context, ref),
         backgroundColor: AppColors.green,
-        foregroundColor: AppColors.bgDark,
+        foregroundColor: AppColors.bg,
         elevation: 4,
         child: const Icon(Icons.add_rounded, size: 28),
       ),
@@ -226,7 +226,7 @@ class CollaboratorsScreen extends ConsumerWidget {
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: AppColors.bgCardLight,
+                          color: AppColors.bgCard3,
                           shape: BoxShape.circle,
                           border: Border.all(color: AppColors.border),
                         ),
@@ -326,7 +326,7 @@ class CollaboratorsScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppColors.amber.withOpacity(0.15)
-                                : AppColors.bgCardLight,
+                                : AppColors.bgCard3,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected
@@ -706,7 +706,7 @@ class _MemberCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.bgCardLight,
+                color: AppColors.bgCard3,
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.border),
               ),
@@ -866,7 +866,7 @@ class _RoleOptionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.amber.withOpacity(0.12)
-              : AppColors.bgCardLight,
+              : AppColors.bgCard3,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.amber : AppColors.border,

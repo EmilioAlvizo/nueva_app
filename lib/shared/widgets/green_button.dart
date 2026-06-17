@@ -27,7 +27,7 @@ class GreenButton extends StatelessWidget {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor:
-                      AlwaysStoppedAnimation(AppColors.bgDark),
+                      AlwaysStoppedAnimation(AppColors.bg),
                 ),
               )
             : Text(label),

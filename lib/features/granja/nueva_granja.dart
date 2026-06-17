@@ -67,7 +67,7 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
   @override
   Widget build(BuildContext context) {
     // Colores adaptativos según el tema actual
-    final bgColor = widget.isDark ? AppColors.bgDark : Colors.white;
+    final bgColor = widget.isDark ? AppColors.bg : Colors.white;
     final titleColor = widget.isDark ? AppColors.textPrimary : const Color(0xFF1A1A2E);
     final inputLabelColor = widget.isDark ? AppColors.bgInput : const Color(0xFFF0F4F8);
 

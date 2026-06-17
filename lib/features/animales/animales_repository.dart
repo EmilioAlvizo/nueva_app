@@ -38,6 +38,22 @@ class AnimalesRepository {
       'descripcion': descripcion,
     });
   }
+
+  /// eliminar tipo de animal 
+  Future<void> deleteTipoAnimal({
+    required String granjaId,
+    required String nombre,
+    String? descripcion,
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+
+    await _client.from('tipo_animal').insert({
+      'granja_id': granjaId,
+      'nombre': nombre,
+      'created_by': userId,
+      'descripcion': descripcion,
+    });
+  }
   
 
   // ── Grupos de la granja ───────────────────────────────────────────────────

@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:nueva_app/features/model/grupo/nuevo_grupo.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/loteEntrada/loteEntrada.dart';
+import '../model/loteEntrada/nuevo_loteEntrada.dart';
 import 'animales_provider.dart';
 import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
+import '/features/settings/presentation/providers/theme_provider.dart';
 
 // ─── Colores de acento por índice de tipo ─────────────────────────────────────
 Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
@@ -28,26 +31,28 @@ class AnimalesScreen extends ConsumerStatefulWidget {
 
 class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
   String _tipoFiltro = 'all';
-  final Set<String> _expandidos = {};   // grupos con lotes visibles
-  final Set<String> _colapsados = {};   // grupos minimizados
+  final Set<String> _expandidos = {}; // grupos con lotes visibles
+  final Set<String> _colapsados = {}; // grupos minimizados
   bool _fabOpen = false;
 
   void _toggleExpand(String id) => setState(() {
-        _expandidos.contains(id) ? _expandidos.remove(id) : _expandidos.add(id);
-      });
+    _expandidos.contains(id) ? _expandidos.remove(id) : _expandidos.add(id);
+  });
 
   void _toggleColapso(String id) => setState(() {
-        _colapsados.contains(id) ? _colapsados.remove(id) : _colapsados.add(id);
-      });
+    _colapsados.contains(id) ? _colapsados.remove(id) : _colapsados.add(id);
+  });
 
   @override
   Widget build(BuildContext context) {
     final tiposAsync = ref.watch(tiposAnimalProvider(widget.granjaId));
     final gruposAsync = ref.watch(gruposProvider(widget.granjaId));
     final conteosAsync = ref.watch(conteosGruposProvider(widget.granjaId));
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: isDark ? AppColors.bg : AppColors.bgCard3Lg,
       body: SafeArea(
         child: tiposAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -72,21 +77,28 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
     List<Grupo> grupos,
     Map<String, GrupoConteo> conteos,
   ) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
     final gruposFiltrados = _tipoFiltro == 'all'
         ? grupos
         : grupos.where((g) => g.tipoAnimalId == _tipoFiltro).toList();
 
     final totalVivos = grupos.fold<int>(
-      0, (s, g) => s + (conteos[g.id]?.vivos ?? 0));
+      0,
+      (s, g) => s + (conteos[g.id]?.vivos ?? 0),
+    );
     final totalMuertes = grupos.fold<int>(
-      0, (s, g) => s + (conteos[g.id]?.muertes ?? 0));
+      0,
+      (s, g) => s + (conteos[g.id]?.muertes ?? 0),
+    );
 
     return GestureDetector(
-      onTap: () { if (_fabOpen) setState(() => _fabOpen = false); },
+      onTap: () {
+        if (_fabOpen) setState(() => _fabOpen = false);
+      },
       child: CustomScrollView(
         slivers: [
           // ── AppBar ──────────────────────────────────────────────────────
-
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,12 +112,14 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                         icon: Icons.layers_outlined,
                         label: 'Tipos',
                         onTap: () => context.push('/tipos'),
+                        isDark: isDark,
                       ),
                       const SizedBox(width: 8),
                       _NavButton(
-                        icon: Icons.one_x_mobiledata_rounded,  
+                        icon: Icons.one_x_mobiledata_rounded,
                         label: 'Bajas',
                         onTap: () => context.push('/bajas'),
+                        isDark: isDark,
                       ),
                     ],
                   ),
@@ -117,6 +131,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                   grupos: grupos,
                   value: _tipoFiltro,
                   onChanged: (v) => setState(() => _tipoFiltro = v),
+                  isDark: isDark,
                 ),
 
                 // ── Editar / Eliminar tipo activo ──────────────────────
@@ -129,7 +144,8 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                         _SmallButton(
                           icon: Icons.edit_outlined,
                           label: 'Editar tipo',
-                          onTap: () => context.push('/tipos/$_tipoFiltro/editar'),
+                          onTap: () =>
+                              context.push('/tipos/$_tipoFiltro/editar'),
                         ),
                         const SizedBox(width: 8),
                         _SmallButton(
@@ -147,11 +163,23 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Row(
                     children: [
-                      _StatTile(value: '$totalVivos', label: 'Aves vivas', color: AppColors.green),
+                      _StatTile(
+                        value: '$totalVivos',
+                        label: 'Aves vivas',
+                        color: AppColors.green,
+                      ),
                       const SizedBox(width: 10),
-                      _StatTile(value: '${gruposFiltrados.length}', label: 'Grupos', color: const Color(0xFF4B5563)),
+                      _StatTile(
+                        value: '${gruposFiltrados.length}',
+                        label: 'Grupos',
+                        color: const Color(0xFF4B5563),
+                      ),
                       const SizedBox(width: 10),
-                      _StatTile(value: '$totalMuertes', label: 'Muertes', color: const Color(0xFF7C3F2B)),
+                      _StatTile(
+                        value: '$totalMuertes',
+                        label: 'Muertes',
+                        color: const Color(0xFF7C3F2B),
+                      ),
                     ],
                   ),
                 ),
@@ -166,32 +194,36 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) {
-                    final grupo = gruposFiltrados[i];
-                    final conteo = conteos[grupo.id] ?? const GrupoConteo(vivos: 0, muertes: 0, total: 0);
-                    final color = _colorParaTipo(grupo.tipoAnimalId, tipos);
-                    final tipo = tipos.firstWhere(
-                      (t) => t.id == grupo.tipoAnimalId,
-                      orElse: () => TipoAnimal(id: '', granjaId: '', nombre: '', createdBy: ''),
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _GrupoCard(
-                        grupo: grupo,
-                        tipo: tipo,
-                        conteo: conteo,
-                        stripColor: color,
-                        expandido: _expandidos.contains(grupo.id),
-                        colapsado: _colapsados.contains(grupo.id),
-                        onToggleExpand: () => _toggleExpand(grupo.id),
-                        onToggleColapso: () => _toggleColapso(grupo.id),
-                        granjaId: widget.granjaId,
-                      ),
-                    );
-                  },
-                  childCount: gruposFiltrados.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, i) {
+                  final grupo = gruposFiltrados[i];
+                  final conteo =
+                      conteos[grupo.id] ??
+                      const GrupoConteo(vivos: 0, muertes: 0, total: 0);
+                  final color = _colorParaTipo(grupo.tipoAnimalId, tipos);
+                  final tipo = tipos.firstWhere(
+                    (t) => t.id == grupo.tipoAnimalId,
+                    orElse: () => TipoAnimal(
+                      id: '',
+                      granjaId: '',
+                      nombre: '',
+                      createdBy: '',
+                    ),
+                  );
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _GrupoCard(
+                      grupo: grupo,
+                      tipo: tipo,
+                      conteo: conteo,
+                      stripColor: color,
+                      expandido: _expandidos.contains(grupo.id),
+                      colapsado: _colapsados.contains(grupo.id),
+                      onToggleExpand: () => _toggleExpand(grupo.id),
+                      onToggleColapso: () => _toggleColapso(grupo.id),
+                      granjaId: widget.granjaId,
+                    ),
+                  );
+                }, childCount: gruposFiltrados.length),
               ),
             ),
         ],
@@ -200,11 +232,33 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
   }
 
   Widget _buildFab(BuildContext context) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
     final actions = [
-      (Icons.add, 'Nuevo ejemplar', 'Un animal con su brazalete', NuevoAnimal(isDark: true)),
-      (Icons.inventory_2_outlined, 'Nuevo lote de entrada', 'Varios ejemplares juntos', NuevoAnimal(isDark: true)),
-      (Icons.create_new_folder_outlined, 'Nuevo grupo', 'Corral o agrupación', NuevoAnimal(isDark: true)),
-      (Icons.label_outline, 'Nuevo tipo de animal', 'Categoría base (Gallina…)', NuevoAnimal(isDark: true)),
+      (
+        Icons.add,
+        'Nuevo ejemplar',
+        'Un animal con su brazalete',
+        NuevoAnimal(isDark: true),
+      ),
+      (
+        Icons.inventory_2_outlined,
+        'Nuevo lote de entrada',
+        'Varios ejemplares juntos',
+        NuevoLoteEntrada(isDark: true),
+      ),
+      (
+        Icons.create_new_folder_outlined,
+        'Nuevo grupo',
+        'Corral o agrupación',
+        NuevoGrupo(isDark: true),
+      ),
+      (
+        Icons.label_outline,
+        'Nuevo tipo de animal',
+        'Categoría base (Gallina…)',
+        NuevoAnimal(isDark: true),
+      ),
     ];
 
     return Column(
@@ -212,31 +266,36 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (_fabOpen) ...[
-          ...actions.map((a) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _FabMenuItem(
-              icon: a.$1,
-              label: a.$2,
-              desc: a.$3,
-              onTap: () {
-                setState(() => _fabOpen = false);
-                /* context.push(a.$4); */
+          ...actions.map(
+            (a) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _FabMenuItem(
+                icon: a.$1,
+                label: a.$2,
+                desc: a.$3,
+                onTap: () {
+                  setState(() => _fabOpen = false);
+                  /* context.push(a.$4); */
 
-                showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.transparent,
-          isScrollControlled: true, // Permite ajustar el tamaño con el teclado
-          builder: (_) => a.$4,
-        );
-              },
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled:
+                        true, // Permite ajustar el tamaño con el teclado
+                    builder: (_) => a.$4,
+                  );
+                },
+              ),
             ),
-          )),
+          ),
           const SizedBox(height: 4),
         ],
         FloatingActionButton(
           backgroundColor: AppColors.green,
-          foregroundColor: AppColors.bgDark,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          foregroundColor: isDark ? AppColors.bg : AppColors.bgInputLg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           onPressed: () => setState(() => _fabOpen = !_fabOpen),
           child: AnimatedRotation(
             turns: _fabOpen ? 0.125 : 0,
@@ -253,9 +312,14 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Eliminar tipo'),
-        content: const Text('¿Eliminar este tipo de animal? Se quitarán sus grupos y ejemplares.'),
+        content: const Text(
+          '¿Eliminar este tipo de animal? Se quitarán sus grupos y ejemplares.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
@@ -298,6 +362,9 @@ class _GrupoCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Stack(
@@ -305,10 +372,15 @@ class _GrupoCard extends ConsumerWidget {
           // Fondo de la card
           Container(
             decoration: BoxDecoration(
-              color: AppColors.bgCard,
+              color: isDark ? AppColors.bgCard : AppColors.bgLight,
               borderRadius: BorderRadius.circular(16),
             ),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(
+              top: 16.0,
+              left: 16,
+              right: 16 * 3,
+              bottom: 16,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -324,10 +396,12 @@ class _GrupoCard extends ConsumerWidget {
                           children: [
                             Text(
                               grupo.nombre,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: isDark
+                                    ? AppColors.textPrimary
+                                    : AppColors.textPrimaryLg,
                               ),
                             ),
                             if (grupo.descripcion != null && !colapsado)
@@ -335,7 +409,9 @@ class _GrupoCard extends ConsumerWidget {
                                 grupo.descripcion!,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: isDark
+                                      ? AppColors.textSecondary
+                                      : AppColors.textSecondaryLg,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -347,28 +423,40 @@ class _GrupoCard extends ConsumerWidget {
                     // Contador de vivos
                     Row(
                       children: [
-                        const Icon(Icons.egg_outlined, size: 22, color: Colors.white70),
+                        Icon(
+                          Icons.egg_outlined,
+                          size: 22,
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : AppColors.textPrimaryLg,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${conteo.vivos}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: isDark
+                                ? AppColors.textPrimary
+                                : AppColors.textPrimaryLg,
                           ),
                         ),
                         // Botón colapsar
                         IconButton(
                           icon: Icon(
                             colapsado ? Icons.expand_more : Icons.expand_less,
-                            color: Colors.white70,
+                            color: isDark
+                                ? AppColors.textPrimary
+                                : AppColors.textPrimaryLg,
                           ),
                           onPressed: onToggleColapso,
                         ),
                         // Menú
                         _CardMenu(
-                          onEdit: () => context.push('/grupos/${grupo.id}/editar'),
+                          onEdit: () =>
+                              context.push('/grupos/${grupo.id}/editar'),
                           onDelete: () => _confirmarEliminar(context),
+                          isDark: isDark,
                         ),
                       ],
                     ),
@@ -381,11 +469,33 @@ class _GrupoCard extends ConsumerWidget {
                   // ── Mini stats ─────────────────────────────────────
                   Row(
                     children: [
-                      Expanded(child: _MiniStat(icon: Icons.egg_outlined, value: '${conteo.vivos}', label: 'Vivos')),
+                      Expanded(
+                        child: _MiniStat(
+                          icon: Icons.egg_outlined,
+                          value: '${conteo.vivos}',
+                          label: 'Vivos',
+                          isDark: isDark,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Expanded(child: _MiniStat(icon: Icons.tag, value: '${conteo.total}', label: 'Brazaletes')),
+                      Expanded(
+                        child: _MiniStat(
+                          icon: Icons.tag,
+                          value: '${conteo.total}',
+                          label: 'Brazaletes',
+                          isDark: isDark,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Expanded(child: _MiniStat(icon: Icons.one_x_mobiledata_rounded, value: '${conteo.muertes}', label: 'Muertes', danger: true)),
+                      Expanded(
+                        child: _MiniStat(
+                          icon: Icons.one_x_mobiledata_rounded,
+                          value: '${conteo.muertes}',
+                          label: 'Muertes',
+                          danger: true,
+                          isDark: isDark,
+                        ),
+                      ),
                     ],
                   ),
 
@@ -410,6 +520,7 @@ class _GrupoCard extends ConsumerWidget {
                           onTap: () => context.push(
                             '/aves/nuevo?tipo=${grupo.tipoAnimalId}&grupo=${grupo.id}',
                           ),
+                          isDark: isDark,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -420,6 +531,7 @@ class _GrupoCard extends ConsumerWidget {
                           onTap: () => context.push(
                             '/lotes-entrada/nuevo?tipo=${grupo.tipoAnimalId}&grupo=${grupo.id}',
                           ),
+                          isDark: isDark,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -429,6 +541,7 @@ class _GrupoCard extends ConsumerWidget {
                           label: 'Baja',
                           danger: true,
                           onTap: () => _mostrarBaja(context),
+                          isDark: isDark,
                         ),
                       ),
                     ],
@@ -474,7 +587,8 @@ class _GrupoCard extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _DetalleGrupoSheet(grupo: grupo, tipo: tipo, conteo: conteo),
+      builder: (_) =>
+          _DetalleGrupoSheet(grupo: grupo, tipo: tipo, conteo: conteo),
     );
   }
 
@@ -488,9 +602,14 @@ class _GrupoCard extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Eliminar grupo'),
-        content: const Text('¿Eliminar este grupo? Se quitarán también sus ejemplares.'),
+        content: const Text(
+          '¿Eliminar este grupo? Se quitarán también sus ejemplares.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
@@ -521,7 +640,11 @@ class _LotesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Solo carga si está expandido
-    final lotesAsync = expandido ? ref.watch(lotesDeGrupoProvider(grupoId)) : null;
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
+    final lotesAsync = expandido
+        ? ref.watch(lotesDeGrupoProvider(grupoId))
+        : null;
 
     return Column(
       children: [
@@ -531,9 +654,11 @@ class _LotesSection extends ConsumerWidget {
           child: Container(
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.bgCard2,
+              color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(
+                color: isDark ? AppColors.border1lg : AppColors.border1,
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -541,12 +666,15 @@ class _LotesSection extends ConsumerWidget {
                 Icon(
                   expandido ? Icons.expand_less : Icons.chevron_right,
                   size: 16,
-                  color: Colors.white70,
+                  color: isDark ? AppColors.bgInputLg : AppColors.bg,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   expandido ? 'Ocultar lotes' : 'Ver lotes de entrada',
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? AppColors.bgInputLg : AppColors.bg,
+                  ),
                 ),
               ],
             ),
@@ -562,7 +690,8 @@ class _LotesSection extends ConsumerWidget {
                 padding: EdgeInsets.all(12),
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
-              error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
+              error: (e, _) =>
+                  Text('Error: $e', style: const TextStyle(color: Colors.red)),
               data: (lotes) => lotes.isEmpty
                   ? const Padding(
                       padding: EdgeInsets.symmetric(vertical: 8),
@@ -592,7 +721,9 @@ class _LoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy", 'es_MX');
-    final vivos = lote.brazaletes.length; // simplificación: todos los brazaletes son activos en vista
+    final vivos = lote
+        .brazaletes
+        .length; // simplificación: todos los brazaletes son activos en vista
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -607,7 +738,11 @@ class _LoteCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.inventory_2_outlined, size: 16, color: Colors.white54),
+              const Icon(
+                Icons.inventory_2_outlined,
+                size: 16,
+                color: Colors.white54,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -657,7 +792,9 @@ class _LoteCard extends StatelessWidget {
             Wrap(
               spacing: 4,
               runSpacing: 4,
-              children: lote.brazaletes.map((b) => _BrazaleteBadge(numero: b)).toList(),
+              children: lote.brazaletes
+                  .map((b) => _BrazaleteBadge(numero: b))
+                  .toList(),
             ),
           ],
         ],
@@ -734,11 +871,18 @@ class _DetalleGrupoSheet extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             grupo.nombre,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           Text(
             '${tipo.nombre} · ${conteo.vivos} aves vivas',
-            style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.5)),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.5),
+            ),
           ),
           const SizedBox(height: 16),
           ...rows.map(
@@ -749,10 +893,19 @@ class _DetalleGrupoSheet extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: 110,
-                    child: Text(r.$1, style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.45))),
+                    child: Text(
+                      r.$1,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.45),
+                      ),
+                    ),
                   ),
                   Expanded(
-                    child: Text(r.$2, style: const TextStyle(fontSize: 13, color: Colors.white)),
+                    child: Text(
+                      r.$2,
+                      style: const TextStyle(fontSize: 13, color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -765,7 +918,9 @@ class _DetalleGrupoSheet extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.green,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               icon: const Icon(Icons.edit_outlined, size: 16),
@@ -791,22 +946,33 @@ class _TipoSelector extends StatelessWidget {
   final List<Grupo> grupos;
   final String value;
   final ValueChanged<String> onChanged;
+  final bool isDark;
 
   const _TipoSelector({
     required this.tipos,
     required this.grupos,
     required this.value,
     required this.onChanged,
+    this.isDark = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final options = [
       ('all', 'Todos', grupos.length),
-      ...tipos.map((t) => (t.id, t.nombre, grupos.where((g) => g.tipoAnimalId == t.id).length)),
+      ...tipos.map(
+        (t) => (
+          t.id,
+          t.nombre,
+          grupos.where((g) => g.tipoAnimalId == t.id).length,
+        ),
+      ),
     ];
 
-    final selected = options.firstWhere((o) => o.$1 == value, orElse: () => options.first);
+    final selected = options.firstWhere(
+      (o) => o.$1 == value,
+      orElse: () => options.first,
+    );
 
     return GestureDetector(
       onTap: () => _showPicker(context, options),
@@ -814,18 +980,30 @@ class _TipoSelector extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
+          color: isDark ? AppColors.bgCard : AppColors.bgLight,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(
+            color: isDark ? AppColors.border1lg : AppColors.border1,
+          ),
         ),
         child: Row(
           children: [
             const Icon(Icons.label_outline, size: 16, color: Colors.white54),
             const SizedBox(width: 8),
-            Text('Tipo: ', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.5))),
+            Text(
+              'Tipo: ',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withOpacity(0.5),
+              ),
+            ),
             Text(
               selected.$2,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.bgLight : AppColors.bg,
+              ),
             ),
             const SizedBox(width: 6),
             Container(
@@ -834,7 +1012,10 @@ class _TipoSelector extends StatelessWidget {
                 color: Colors.white.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text('${selected.$3}', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+              child: Text(
+                '${selected.$3}',
+                style: const TextStyle(fontSize: 11, color: Colors.white70),
+              ),
             ),
             const Spacer(),
             const Icon(Icons.expand_more, size: 18, color: Colors.white54),
@@ -858,7 +1039,10 @@ class _TipoSelector extends StatelessWidget {
           ...options.map(
             (o) => ListTile(
               title: Text(o.$2, style: const TextStyle(color: Colors.white)),
-              trailing: Text('${o.$3}', style: const TextStyle(color: Colors.white54)),
+              trailing: Text(
+                '${o.$3}',
+                style: const TextStyle(color: Colors.white54),
+              ),
               selected: o.$1 == value,
               selectedTileColor: Colors.white.withOpacity(0.05),
               onTap: () {
@@ -879,7 +1063,11 @@ class _StatTile extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatTile({required this.value, required this.label, required this.color});
+  const _StatTile({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -892,11 +1080,21 @@ class _StatTile extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(value,
-                style: const TextStyle(
-                    fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-            Text(label,
-                style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.8))),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withOpacity(0.8),
+              ),
+            ),
           ],
         ),
       ),
@@ -908,13 +1106,14 @@ class _MiniStat extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
-  final bool danger;
+  final bool danger, isDark;
 
   const _MiniStat({
     required this.icon,
     required this.value,
     required this.label,
     this.danger = false,
+    this.isDark = false,
   });
 
   @override
@@ -922,18 +1121,36 @@ class _MiniStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.bgCard2,
+        color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 16, color: danger ? Colors.redAccent : Colors.white60),
+          Icon(
+            icon,
+            size: 16,
+            color: danger
+                ? Colors.redAccent
+                : isDark
+                ? AppColors.bgLight
+                : AppColors.bg,
+          ),
           const SizedBox(height: 2),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-          Text(label,
-              style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.45))),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.bgLight : AppColors.bg,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: isDark ? AppColors.bgLight : AppColors.bg,
+            ),
+          ),
         ],
       ),
     );
@@ -944,13 +1161,14 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final bool danger;
+  final bool danger, isDark;
 
   const _ActionButton({
     required this.icon,
     required this.label,
     required this.onTap,
     this.danger = false,
+    this.isDark = true,
   });
 
   @override
@@ -962,23 +1180,33 @@ class _ActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: danger
-                ? Colors.red.withOpacity(0.3)
-                : Colors.white.withOpacity(0.15),
+            color: danger ? Colors.red.withOpacity(0.3) : AppColors.border1,
             style: BorderStyle.solid,
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 14,
-                color: danger ? Colors.redAccent : Colors.white70),
+            Icon(
+              icon,
+              size: 14,
+              color: danger
+                  ? Colors.redAccent
+                  : isDark
+                  ? AppColors.bgCardLg
+                  : AppColors.bgCard,
+            ),
             const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
-                  fontSize: 11,
-                  color: danger ? Colors.redAccent : Colors.white70),
+                fontSize: 11,
+                color: danger
+                    ? Colors.redAccent
+                    : isDark
+                    ? AppColors.bgCardLg
+                    : AppColors.bgCard,
+              ),
             ),
           ],
         ),
@@ -991,8 +1219,14 @@ class _NavButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool isDark;
 
-  const _NavButton({required this.icon, required this.label, required this.onTap});
+  const _NavButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDark = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1002,16 +1236,28 @@ class _NavButton extends StatelessWidget {
         child: Container(
           height: 36,
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
+            color: isDark ? AppColors.bgCard : AppColors.bgLight,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(
+              color: isDark ? AppColors.border1lg : AppColors.border1,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 14, color: Colors.white70),
+              Icon(
+                icon,
+                size: 14,
+                color: isDark ? AppColors.textMutedLg : AppColors.textMuted,
+              ),
               const SizedBox(width: 6),
-              Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? AppColors.textMutedLg : AppColors.textMuted,
+                ),
+              ),
             ],
           ),
         ),
@@ -1044,16 +1290,25 @@ class _SmallButton extends StatelessWidget {
           color: AppColors.bgCard,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: danger ? Colors.red.withOpacity(0.35) : Colors.white.withOpacity(0.12),
+            color: danger
+                ? Colors.red.withOpacity(0.35)
+                : Colors.white.withOpacity(0.12),
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 13, color: danger ? Colors.redAccent : Colors.white70),
+            Icon(
+              icon,
+              size: 13,
+              color: danger ? Colors.redAccent : Colors.white70,
+            ),
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: danger ? Colors.redAccent : Colors.white70),
+              style: TextStyle(
+                fontSize: 11,
+                color: danger ? Colors.redAccent : Colors.white70,
+              ),
             ),
           ],
         ),
@@ -1066,18 +1321,27 @@ class _CardMenu extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final double size;
+  final bool isDark;
 
-  const _CardMenu({required this.onEdit, required this.onDelete, this.size = 20});
+  const _CardMenu({
+    required this.onEdit,
+    required this.onDelete,
+    this.size = 20,
+    this.isDark = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert, size: size, color: Colors.white54),
+      icon: Icon(Icons.more_vert, size: size, color: isDark ? AppColors.textPrimary:AppColors.textPrimaryLg),
       color: AppColors.bgCard,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
       itemBuilder: (_) => [
-        const PopupMenuItem(value: 'edit', child: Text('Editar', style: TextStyle(color: Colors.white))),
+        const PopupMenuItem(
+          value: 'edit',
+          child: Text('Editar', style: TextStyle(color: Colors.white)),
+        ),
         const PopupMenuItem(
           value: 'delete',
           child: Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
@@ -1111,7 +1375,11 @@ class _FabMenuItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.white.withOpacity(0.1)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
@@ -1130,10 +1398,21 @@ class _FabMenuItem extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-                Text(desc,
-                    style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.45))),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white.withOpacity(0.45),
+                  ),
+                ),
               ],
             ),
           ],
@@ -1160,14 +1439,20 @@ class _EmptyState extends StatelessWidget {
         children: [
           Text(
             'No hay grupos todavía',
-            style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             tipos.isEmpty
                 ? 'Empieza creando un tipo de animal.'
                 : 'Crea un grupo para empezar a registrar ejemplares.',
-            style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.5)),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.5),
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -1175,11 +1460,14 @@ class _EmptyState extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.green,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             icon: const Icon(Icons.add, size: 16),
             label: Text(tipos.isEmpty ? 'Crear tipo de animal' : 'Crear grupo'),
-            onPressed: () => context.push(tipos.isEmpty ? '/tipos/nuevo' : '/grupos/nuevo'),
+            onPressed: () =>
+                context.push(tipos.isEmpty ? '/tipos/nuevo' : '/grupos/nuevo'),
           ),
         ],
       ),

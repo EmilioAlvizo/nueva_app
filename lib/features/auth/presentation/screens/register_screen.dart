@@ -65,7 +65,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     final isWide        = MediaQuery.sizeOf(context).width > 600;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

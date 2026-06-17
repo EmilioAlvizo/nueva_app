@@ -11,6 +11,7 @@ Future<void> main() async {
     url: 'https://xagnnkqqtdtvadaseubc.supabase.co',
     anonKey: 'sb_publishable_ItraVK0Eb5JHGX17QNfZIA_2A7VLfnj',
   );
+  
   runApp(
     // ProviderScope wraps the whole app — required by Riverpod
     const ProviderScope(
@@ -29,7 +30,7 @@ class GallinasApp extends ConsumerWidget {
       title: 'GallinasApp',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: AppColors.bgDark,
+        scaffoldBackgroundColor: AppColors.bg,
         colorScheme: const ColorScheme.dark(
           primary: AppColors.green,
           surface: AppColors.bgCard,
@@ -38,7 +39,7 @@ class GallinasApp extends ConsumerWidget {
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.green,
-            foregroundColor: AppColors.bgDark,
+            foregroundColor: AppColors.bg,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),

@@ -1,4 +1,4 @@
-// lib/features/home/presentation/screens/home_screen.dart
+// lib/features/home/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,7 +39,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isDark = themeMode == AppThemeMode.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.bgDark : const Color(0xFFF0F4F8),
+      backgroundColor: isDark ? AppColors.bg : const Color(0xFFF0F4F8),
       body: SafeArea(
         child: Column(
           children: [
@@ -78,7 +78,7 @@ class _AppBar extends ConsumerWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: AppColors.bgCardLight,
+              color: AppColors.bgCard3,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Center(
@@ -285,7 +285,7 @@ class _BottomBar extends StatelessWidget {
     return Container(
       height: 70,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.bgDark : Colors.white,
+        color: isDark ? AppColors.bg : Colors.white,
         border: Border(
           top: BorderSide(
             color: isDark ? AppColors.border : const Color(0xFFE5E7EB),
@@ -311,7 +311,7 @@ class _BottomBar extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: sel
                   ? const BoxDecoration(
-                      color: AppColors.bgCardLight,
+                      color: AppColors.bgCard3,
                       shape: BoxShape.circle,
                     )
                   : null,
@@ -361,7 +361,7 @@ class _FarmCard extends StatelessWidget {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(0),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.bgCard : Colors.white,
+          color: isDark ? AppColors.bg : Colors.white,
           borderRadius: BorderRadius.circular(16),
           // Cambiamos el borde dinámicamente si está seleccionado para dar el feedback visual
           border: Border.all(
@@ -540,7 +540,7 @@ class _FarmCard extends StatelessWidget {
                             height: 32,
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? AppColors.bgCardLight
+                                  ? AppColors.bgCard3
                                   : const Color(0xFFF3F4F6),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: AppColors.border),

@@ -12,7 +12,7 @@ class AppLogo extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.bgCardLight,
+        color: AppColors.bgCard3,
         borderRadius: BorderRadius.circular(size * 0.22),
         border: Border.all(color: AppColors.border),
         boxShadow: const [
