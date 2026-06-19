@@ -14,14 +14,14 @@ import '../../features/home/home_screen.dart';
 abstract final class AppRoutes {
   static const login = '/login';
   static const register = '/register';
-  
+
   // Rutas base dentro del Shell de Navegación
   static const home = '/granjas';
   static const animales = '/animales';
   static const huevos = '/huevos';
   static const comida = '/comida';
   static const grafica = '/grafica';
-  
+
   static const collaborators = '/collaborators/:id';
 }
 
@@ -29,7 +29,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final authNotifier = _AuthStateListenable(ref);
 
   return GoRouter(
-    initialLocation: AppRoutes.home, // Cambiado para iniciar en la sección de granjas
+    initialLocation:
+        AppRoutes.home, // Cambiado para iniciar en la sección de granjas
     refreshListenable: authNotifier,
     redirect: (context, state) {
       final sessionAsync = ref.read(authSessionProvider);
@@ -45,15 +46,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: AppRoutes.login, 
-        builder: (_, __) => const LoginScreen(),
-      ),
+      GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: AppRoutes.register,
         builder: (_, __) => const RegisterScreen(),
       ),
-      
+
       // ─── SHELL DE NAVEGACIÓN (Mantiene HomeScreen como contenedor) ───
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -66,7 +64,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.home,
-                builder: (context, state) => const GranjasTab(), // Extraído el antiguo _Body aquí
+                builder: (context, state) =>
+                    const GranjasTab(), // Extraído el antiguo _Body aquí
               ),
             ],
           ),
@@ -75,7 +74,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.animales,
-                builder: (context, state) => const AnimalesTabContainer(), // Contenedor inteligente
+                builder: (context, state) =>
+                    const AnimalesTabContainer(), // Contenedor inteligente
               ),
             ],
           ),
@@ -84,7 +84,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.huevos,
-                builder: (context, state) => const Center(child: Text('Pantalla de Huevos')),
+                builder: (context, state) =>
+                    const Center(child: Text('Pantalla de Huevos')),
               ),
             ],
           ),
@@ -93,7 +94,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.comida,
-                builder: (context, state) => const Center(child: Text('Pantalla de Comida')),
+                builder: (context, state) =>
+                    const Center(child: Text('Pantalla de Comida')),
               ),
             ],
           ),
@@ -102,7 +104,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.grafica,
-                builder: (context, state) => const Center(child: Text('Pantalla de Gráficas')),
+                builder: (context, state) =>
+                    const Center(child: Text('Pantalla de Gráficas')),
               ),
             ],
           ),
@@ -140,7 +143,7 @@ class AnimalesTabContainer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedFarm = ref.watch(selectedFarmProvider);
-    
+
     if (selectedFarm == null) {
       return const Center(
         child: Text(
@@ -150,7 +153,7 @@ class AnimalesTabContainer extends ConsumerWidget {
         ),
       );
     }
-    
+
     return AnimalesScreen(granjaId: selectedFarm.id);
   }
 }

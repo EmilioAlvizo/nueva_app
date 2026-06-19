@@ -50,6 +50,9 @@ abstract final class AppColors {
 
   // array de tipos de animales
 
+  static const naranjal = Color(0xFFee862b);
+  static const naranjao = Color(0xFFF3a968);
+
   static const tipoColor = [
     Color(0xFF06B6D4), // cyan
     Color(0xFFF59E0B), // amber

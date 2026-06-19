@@ -1,24 +1,44 @@
-// ─── lib/features/animales/animales_screen.dart ──────────
+// ─── lib/features/animales/animales_screen.dart ──────────────────────────────
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:nueva_app/features/model/grupo/nuevo_grupo.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/loteEntrada/loteEntrada.dart';
 import '../model/loteEntrada/nuevo_loteEntrada.dart';
-import 'animales_provider.dart';
+import '../model/grupo/nuevo_grupo.dart';
 import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
+import 'animales_provider.dart';
+import 'tipo_filtro.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
 
-// ─── Colores de acento por índice de tipo ─────────────────────────────────────
+// ─── Helpers de color ────────────────────────────────────────────────────────
 Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
   final idx = tipos.indexWhere((t) => t.id == tipoId);
   return AppColors.tipoColor[(idx < 0 ? 0 : idx) % AppColors.tipoColor.length];
 }
+
+// ─── Definición de tabs ──────────────────────────────────────────────────────
+enum _Tab { grupos, ejemplares, lotes, tipos, bajas }
+
+const _tabLabel = {
+  _Tab.grupos: 'Grupos',
+  _Tab.ejemplares: 'Ejemplares',
+  _Tab.lotes: 'Lotes',
+  _Tab.tipos: 'Tipos',
+  _Tab.bajas: 'Bajas',
+};
+
+const _tabIcon = {
+  _Tab.grupos: Icons.create_new_folder_outlined,
+  _Tab.ejemplares: Icons.tag,
+  _Tab.lotes: Icons.inventory_2_outlined,
+  _Tab.tipos: Icons.layers_outlined,
+  _Tab.bajas: Icons.remove_circle_outline,
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 class AnimalesScreen extends ConsumerStatefulWidget {
@@ -29,235 +49,161 @@ class AnimalesScreen extends ConsumerStatefulWidget {
   ConsumerState<AnimalesScreen> createState() => _AnimalesScreenState();
 }
 
-class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
-  String _tipoFiltro = 'all';
-  final Set<String> _expandidos = {}; // grupos con lotes visibles
-  final Set<String> _colapsados = {}; // grupos minimizados
+class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
+    with SingleTickerProviderStateMixin {
+  // ── Tab / Page ──────────────────────────────────────────────────────────────
+  late final PageController _pageCtrl;
+  _Tab _activeTab = _Tab.grupos;
+
+  // ── Estado de grupos ────────────────────────────────────────────────────────
+  final Set<String> _expandidos = {};
+  final Set<String> _colapsados = {};
+
+  // ── FAB ─────────────────────────────────────────────────────────────────────
   bool _fabOpen = false;
 
-  void _toggleExpand(String id) => setState(() {
-    _expandidos.contains(id) ? _expandidos.remove(id) : _expandidos.add(id);
-  });
+  @override
+  void initState() {
+    super.initState();
+    _pageCtrl = PageController(initialPage: _Tab.values.indexOf(_Tab.grupos));
+  }
 
-  void _toggleColapso(String id) => setState(() {
-    _colapsados.contains(id) ? _colapsados.remove(id) : _colapsados.add(id);
-  });
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  void _goToTab(_Tab tab) {
+    setState(() => _activeTab = tab);
+    _pageCtrl.animateToPage(
+      _Tab.values.indexOf(tab),
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _toggleExpand(String id) => setState(
+    () =>
+        _expandidos.contains(id) ? _expandidos.remove(id) : _expandidos.add(id),
+  );
+
+  void _toggleColapso(String id) => setState(
+    () =>
+        _colapsados.contains(id) ? _colapsados.remove(id) : _colapsados.add(id),
+  );
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
+
     final tiposAsync = ref.watch(tiposAnimalProvider(widget.granjaId));
     final gruposAsync = ref.watch(gruposProvider(widget.granjaId));
     final conteosAsync = ref.watch(conteosGruposProvider(widget.granjaId));
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == AppThemeMode.dark;
+
+    final tipos = tiposAsync.value ?? [];
+    final grupos = gruposAsync.value ?? [];
+    final tipoFiltro = ref.watch(tipoFiltroProvider);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.bg : AppColors.bgCard3Lg,
       body: SafeArea(
-        child: tiposAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (tipos) => gruposAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
-            data: (grupos) => conteosAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (conteos) => _buildContent(tipos, grupos, conteos),
+        child: Column(
+          children: [
+            // ── AppBar personalizado ───────────────────────────────────
+            _AppBarSection(
+              isDark: isDark,
+              activeTab: _activeTab,
+              onTabSelected: _goToTab,
             ),
-          ),
-        ),
-      ),
-      floatingActionButton: _buildFab(context),
-    );
-  }
 
-  Widget _buildContent(
-    List<TipoAnimal> tipos,
-    List<Grupo> grupos,
-    Map<String, GrupoConteo> conteos,
-  ) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == AppThemeMode.dark;
-    final gruposFiltrados = _tipoFiltro == 'all'
-        ? grupos
-        : grupos.where((g) => g.tipoAnimalId == _tipoFiltro).toList();
-
-    final totalVivos = grupos.fold<int>(
-      0,
-      (s, g) => s + (conteos[g.id]?.vivos ?? 0),
-    );
-    final totalMuertes = grupos.fold<int>(
-      0,
-      (s, g) => s + (conteos[g.id]?.muertes ?? 0),
-    );
-
-    return GestureDetector(
-      onTap: () {
-        if (_fabOpen) setState(() => _fabOpen = false);
-      },
-      child: CustomScrollView(
-        slivers: [
-          // ── AppBar ──────────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Botones Tipos / Bajas ──────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  child: Row(
-                    children: [
-                      _NavButton(
-                        icon: Icons.layers_outlined,
-                        label: 'Tipos',
-                        onTap: () => context.push('/tipos'),
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: 8),
-                      _NavButton(
-                        icon: Icons.one_x_mobiledata_rounded,
-                        label: 'Bajas',
-                        onTap: () => context.push('/bajas'),
-                        isDark: isDark,
-                      ),
-                    ],
+            // ── PageView de secciones ──────────────────────────────────
+            Expanded(
+              child: PageView(
+                controller: _pageCtrl,
+                onPageChanged: (i) =>
+                    setState(() => _activeTab = _Tab.values[i]),
+                // Mantiene el estado de cada página al deslizar
+                children: [
+                  // ── Grupos ──────────────────────────────────────────
+                  _GruposTab(
+                    granjaId: widget.granjaId,
+                    tipoFiltro: tipoFiltro,
+                    tiposAsync: tiposAsync,
+                    gruposAsync: gruposAsync,
+                    conteosAsync: conteosAsync,
+                    expandidos: _expandidos,
+                    colapsados: _colapsados,
+                    onToggleExpand: _toggleExpand,
+                    onToggleColapso: _toggleColapso,
+                    isDark: isDark,
                   ),
-                ),
-
-                // ── Filtro por tipo ────────────────────────────────────
-                _TipoSelector(
-                  tipos: tipos,
-                  grupos: grupos,
-                  value: _tipoFiltro,
-                  onChanged: (v) => setState(() => _tipoFiltro = v),
-                  isDark: isDark,
-                ),
-
-                // ── Editar / Eliminar tipo activo ──────────────────────
-                if (_tipoFiltro != 'all')
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        _SmallButton(
-                          icon: Icons.edit_outlined,
-                          label: 'Editar tipo',
-                          onTap: () =>
-                              context.push('/tipos/$_tipoFiltro/editar'),
-                        ),
-                        const SizedBox(width: 8),
-                        _SmallButton(
-                          icon: Icons.delete_outline,
-                          label: 'Eliminar tipo',
-                          danger: true,
-                          onTap: () => _confirmarEliminarTipo(context),
-                        ),
-                      ],
-                    ),
+                  // ── Ejemplares ──────────────────────────────────────
+                  _EjemplaresTab(
+                    granjaId: widget.granjaId,
+                    tipoFiltro: tipoFiltro,
+                    tipos: tipos,
+                    isDark: isDark,
                   ),
-
-                // ── Stat tiles ─────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Row(
-                    children: [
-                      _StatTile(
-                        value: '$totalVivos',
-                        label: 'Aves vivas',
-                        color: AppColors.green,
-                      ),
-                      const SizedBox(width: 10),
-                      _StatTile(
-                        value: '${gruposFiltrados.length}',
-                        label: 'Grupos',
-                        color: const Color(0xFF4B5563),
-                      ),
-                      const SizedBox(width: 10),
-                      _StatTile(
-                        value: '$totalMuertes',
-                        label: 'Muertes',
-                        color: const Color(0xFF7C3F2B),
-                      ),
-                    ],
+                  // ── Lotes ───────────────────────────────────────────
+                  _LotesTab(
+                    granjaId: widget.granjaId,
+                    tipoFiltro: tipoFiltro,
+                    tipos: tipos,
+                    grupos: grupos,
+                    isDark: isDark,
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Lista de grupos ──────────────────────────────────────────
-          if (gruposFiltrados.isEmpty)
-            SliverToBoxAdapter(child: _EmptyState(tipos: tipos))
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, i) {
-                  final grupo = gruposFiltrados[i];
-                  final conteo =
-                      conteos[grupo.id] ??
-                      const GrupoConteo(vivos: 0, muertes: 0, total: 0);
-                  final color = _colorParaTipo(grupo.tipoAnimalId, tipos);
-                  final tipo = tipos.firstWhere(
-                    (t) => t.id == grupo.tipoAnimalId,
-                    orElse: () => TipoAnimal(
-                      id: '',
-                      granjaId: '',
-                      nombre: '',
-                      createdBy: '',
-                    ),
-                  );
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _GrupoCard(
-                      grupo: grupo,
-                      tipo: tipo,
-                      conteo: conteo,
-                      stripColor: color,
-                      expandido: _expandidos.contains(grupo.id),
-                      colapsado: _colapsados.contains(grupo.id),
-                      onToggleExpand: () => _toggleExpand(grupo.id),
-                      onToggleColapso: () => _toggleColapso(grupo.id),
-                      granjaId: widget.granjaId,
-                    ),
-                  );
-                }, childCount: gruposFiltrados.length),
+                  // ── Tipos ───────────────────────────────────────────
+                  _TiposTab(
+                    granjaId: widget.granjaId,
+                    tipos: tipos,
+                    grupos: grupos,
+                    conteos: conteosAsync.value ?? {},
+                    isDark: isDark,
+                  ),
+                  // ── Bajas ────────────────────────────────────────────
+                  _BajasTab(
+                    granjaId: widget.granjaId,
+                    tipoFiltro: tipoFiltro,
+                    tipos: tipos,
+                    isDark: isDark,
+                  ),
+                ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
+      floatingActionButton: _buildFab(context, isDark),
     );
   }
 
-  Widget _buildFab(BuildContext context) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == AppThemeMode.dark;
+  Widget _buildFab(BuildContext context, bool isDark) {
     final actions = [
       (
         Icons.add,
         'Nuevo ejemplar',
         'Un animal con su brazalete',
-        NuevoAnimal(isDark: true),
+        NuevoAnimal(isDark: isDark),
       ),
       (
         Icons.inventory_2_outlined,
         'Nuevo lote de entrada',
         'Varios ejemplares juntos',
-        NuevoLoteEntrada(isDark: true),
+        NuevoLoteEntrada(isDark: isDark),
       ),
       (
         Icons.create_new_folder_outlined,
         'Nuevo grupo',
         'Corral o agrupación',
-        NuevoGrupo(isDark: true),
+        NuevoGrupo(isDark: isDark),
       ),
       (
         Icons.label_outline,
         'Nuevo tipo de animal',
         'Categoría base (Gallina…)',
-        NuevoAnimal(isDark: true),
+        NuevoAnimal(isDark: isDark),
       ),
     ];
 
@@ -275,13 +221,10 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                 desc: a.$3,
                 onTap: () {
                   setState(() => _fabOpen = false);
-                  /* context.push(a.$4); */
-
                   showModalBottomSheet(
                     context: context,
                     backgroundColor: Colors.transparent,
-                    isScrollControlled:
-                        true, // Permite ajustar el tamaño con el teclado
+                    isScrollControlled: true,
                     builder: (_) => a.$4,
                   );
                 },
@@ -306,14 +249,675 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
       ],
     );
   }
+}
 
-  void _confirmarEliminarTipo(BuildContext context) {
+// Extensión para iterar enum en orden
+extension _TabValues on _Tab {
+  static List<_Tab> get valores => _Tab.values;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APP BAR: título + botón filtro + ajustes + choice chips de tabs
+// ─────────────────────────────────────────────────────────────────────────────
+class _AppBarSection extends StatelessWidget {
+  final bool isDark;
+  final _Tab activeTab;
+  final ValueChanged<_Tab> onTabSelected;
+
+  const _AppBarSection({
+    required this.isDark,
+    required this.activeTab,
+    required this.onTabSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Fila título ──────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
+          child: Row(
+            children: [
+              // Logo placeholder (igual al HomeScreen)
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.green.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.egg_alt_outlined,
+                  size: 20,
+                  color: AppColors.green,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Aves',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: isDark
+                      ? AppColors.textPrimary
+                      : AppColors.textPrimaryLg,
+                ),
+              ),
+              // El botón de filtro por tipo y el de ajustes viven ahora en la
+              // barra superior del HomeScreen (junto al título "Granjas"),
+              // para no duplicar controles entre las dos barras.
+            ],
+          ),
+        ),
+
+        // ── Choice chips de tabs ─────────────────────────────────────
+        SizedBox(
+          height: 38,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: _Tab.values.map((tab) {
+              final sel = tab == activeTab;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => onTabSelected(tab),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: sel
+                          ? (isDark ? AppColors.naranjao : AppColors.naranjal)
+                          : (isDark ? AppColors.bgCard : AppColors.bgLight),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _tabIcon[tab]!,
+                          size: 14,
+                          color: sel
+                              ? (isDark
+                                    ? AppColors.textPrimaryLg
+                                    : AppColors.textPrimary)
+                              : (isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textSecondaryLg),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          _tabLabel[tab]!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                            color: sel
+                                ? (isDark
+                                      ? AppColors.textPrimaryLg
+                                      : AppColors.textPrimary)
+                                : (isDark
+                                      ? AppColors.textSecondary
+                                      : AppColors.textSecondaryLg),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB 1: GRUPOS
+// ─────────────────────────────────────────────────────────────────────────────
+class _GruposTab extends StatelessWidget {
+  final String granjaId;
+  final String tipoFiltro;
+  final AsyncValue<List<TipoAnimal>> tiposAsync;
+  final AsyncValue<List<Grupo>> gruposAsync;
+  final AsyncValue<Map<String, GrupoConteo>> conteosAsync;
+  final Set<String> expandidos;
+  final Set<String> colapsados;
+  final ValueChanged<String> onToggleExpand;
+  final ValueChanged<String> onToggleColapso;
+  final bool isDark;
+
+  const _GruposTab({
+    required this.granjaId,
+    required this.tipoFiltro,
+    required this.tiposAsync,
+    required this.gruposAsync,
+    required this.conteosAsync,
+    required this.expandidos,
+    required this.colapsados,
+    required this.onToggleExpand,
+    required this.onToggleColapso,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return tiposAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (tipos) => gruposAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (grupos) => conteosAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (conteos) {
+            final gruposFiltrados = tipoFiltro == 'all'
+                ? grupos
+                : grupos.where((g) => g.tipoAnimalId == tipoFiltro).toList();
+            final totalVivos = grupos.fold<int>(
+              0,
+              (s, g) => s + (conteos[g.id]?.vivos ?? 0),
+            );
+            final totalMuertes = grupos.fold<int>(
+              0,
+              (s, g) => s + (conteos[g.id]?.muertes ?? 0),
+            );
+
+            return CustomScrollView(
+              slivers: [
+                // Stats
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Row(
+                      children: [
+                        _StatTile(
+                          value: '$totalVivos',
+                          label: 'Aves vivas',
+                          color: AppColors.green,
+                        ),
+                        const SizedBox(width: 10),
+                        _StatTile(
+                          value: '${gruposFiltrados.length}',
+                          label: 'Grupos',
+                          color: const Color(0xFF4B5563),
+                        ),
+                        const SizedBox(width: 10),
+                        _StatTile(
+                          value: '$totalMuertes',
+                          label: 'Muertes',
+                          color: const Color(0xFF7C3F2B),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                if (gruposFiltrados.isEmpty)
+                  SliverToBoxAdapter(child: _EmptyState(tipos: tipos))
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, i) {
+                        final grupo = gruposFiltrados[i];
+                        final conteo =
+                            conteos[grupo.id] ??
+                            const GrupoConteo(vivos: 0, muertes: 0, total: 0);
+                        final color = _colorParaTipo(grupo.tipoAnimalId, tipos);
+                        final tipo = tipos.firstWhere(
+                          (t) => t.id == grupo.tipoAnimalId,
+                          orElse: () => TipoAnimal(
+                            id: '',
+                            granjaId: '',
+                            nombre: '',
+                            createdBy: '',
+                          ),
+                        );
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _GrupoCard(
+                            grupo: grupo,
+                            tipo: tipo,
+                            conteo: conteo,
+                            stripColor: color,
+                            expandido: expandidos.contains(grupo.id),
+                            colapsado: colapsados.contains(grupo.id),
+                            onToggleExpand: () => onToggleExpand(grupo.id),
+                            onToggleColapso: () => onToggleColapso(grupo.id),
+                            granjaId: granjaId,
+                            isDark: isDark,
+                          ),
+                        );
+                      }, childCount: gruposFiltrados.length),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB 2: EJEMPLARES (placeholder — completa con tu lógica)
+// ─────────────────────────────────────────────────────────────────────────────
+class _EjemplaresTab extends ConsumerWidget {
+  final String granjaId;
+  final String tipoFiltro;
+  final List<TipoAnimal> tipos;
+  final bool isDark;
+
+  const _EjemplaresTab({
+    required this.granjaId,
+    required this.tipoFiltro,
+    required this.tipos,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // TODO: reemplaza con tu provider de ejemplares cuando lo tengas
+    return _TabPlaceholder(
+      icon: Icons.tag,
+      titulo: 'Ejemplares',
+      subtitulo: 'Lista de ejemplares próximamente',
+      isDark: isDark,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB 3: LOTES
+// ─────────────────────────────────────────────────────────────────────────────
+class _LotesTab extends ConsumerWidget {
+  final String granjaId;
+  final String tipoFiltro;
+  final List<TipoAnimal> tipos;
+  final List<Grupo> grupos;
+  final bool isDark;
+
+  const _LotesTab({
+    required this.granjaId,
+    required this.tipoFiltro,
+    required this.tipos,
+    required this.grupos,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Filtra grupos por tipo activo
+    final gruposFiltrados = tipoFiltro == 'all'
+        ? grupos
+        : grupos.where((g) => g.tipoAnimalId == tipoFiltro).toList();
+
+    if (grupos.isEmpty) {
+      return _TabPlaceholder(
+        icon: Icons.inventory_2_outlined,
+        titulo: 'Sin lotes',
+        subtitulo: 'Crea un grupo primero',
+        isDark: isDark,
+      );
+    }
+
+    return CustomScrollView(
+      slivers: [
+        // Barra de búsqueda (visual — implementa lógica si la necesitas)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Container(
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.bgCard : AppColors.bgLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? AppColors.border1lg : AppColors.border1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.search,
+                    size: 18,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLg,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Buscar por tipo, grupo o proveedor…',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLg,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Un bloque de lotes por grupo
+        ...gruposFiltrados.map((grupo) {
+          final tipo = tipos.firstWhere(
+            (t) => t.id == grupo.tipoAnimalId,
+            orElse: () =>
+                TipoAnimal(id: '', granjaId: '', nombre: '', createdBy: ''),
+          );
+          return _LotesDeGrupoSliver(grupo: grupo, tipo: tipo, isDark: isDark);
+        }),
+
+        const SliverToBoxAdapter(child: SizedBox(height: 120)),
+      ],
+    );
+  }
+}
+
+/// Sliver que carga lazy los lotes de un grupo
+class _LotesDeGrupoSliver extends ConsumerWidget {
+  final Grupo grupo;
+  final TipoAnimal tipo;
+  final bool isDark;
+
+  const _LotesDeGrupoSliver({
+    required this.grupo,
+    required this.tipo,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lotesAsync = ref.watch(lotesDeGrupoProvider(grupo.id));
+
+    return SliverToBoxAdapter(
+      child: lotesAsync.when(
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+        data: (lotes) {
+          if (lotes.isEmpty) return const SizedBox.shrink();
+          return Column(
+            children: lotes
+                .map(
+                  (l) => _LoteTabCard(
+                    lote: l,
+                    tipoNombre: tipo.nombre,
+                    grupoNombre: grupo.nombre,
+                    isDark: isDark,
+                  ),
+                )
+                .toList(),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Card de lote en la tab de Lotes (diseño compacto de lista)
+class _LoteTabCard extends StatelessWidget {
+  final LoteEntrada lote;
+  final String tipoNombre;
+  final String grupoNombre;
+  final bool isDark;
+
+  const _LoteTabCard({
+    required this.lote,
+    required this.tipoNombre,
+    required this.grupoNombre,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = DateFormat("d 'de' MMMM yyyy");
+    final vivos = lote.brazaletes.length;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.border1lg : AppColors.border1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.green.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              size: 18,
+              color: AppColors.green,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$tipoNombre · $grupoNombre',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimaryLg,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  fmt.format(lote.fechaAdquisicion),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLg,
+                  ),
+                ),
+                if (lote.proveedor != null || lote.costoTotal != null)
+                  Text(
+                    [
+                      lote.tipoAdquisicionNombre,
+                      if (lote.proveedor != null) lote.proveedor!,
+                    ].join(' · '),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.green,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$vivos/${lote.totalEjemplares}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? AppColors.textPrimary
+                      : AppColors.textPrimaryLg,
+                ),
+              ),
+              Text(
+                'vivos',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLg,
+                ),
+              ),
+            ],
+          ),
+          _CardMenu(
+            size: 16,
+            isDark: isDark,
+            onEdit: () => context.push('/lotes-entrada/${lote.id}/editar'),
+            onDelete: () {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB 4: TIPOS
+// ─────────────────────────────────────────────────────────────────────────────
+class _TiposTab extends StatelessWidget {
+  final String granjaId;
+  final List<TipoAnimal> tipos;
+  final List<Grupo> grupos;
+  final Map<String, GrupoConteo> conteos;
+  final bool isDark;
+
+  const _TiposTab({
+    required this.granjaId,
+    required this.tipos,
+    required this.grupos,
+    required this.conteos,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (tipos.isEmpty) {
+      return _TabPlaceholder(
+        icon: Icons.layers_outlined,
+        titulo: 'Sin tipos',
+        subtitulo: 'Crea el primer tipo de animal con el botón +',
+        isDark: isDark,
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+      itemCount: tipos.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final tipo = tipos[i];
+        final gruposDeTipo = grupos
+            .where((g) => g.tipoAnimalId == tipo.id)
+            .toList();
+        final vivos = gruposDeTipo.fold<int>(
+          0,
+          (s, g) => s + (conteos[g.id]?.vivos ?? 0),
+        );
+        final color = _colorParaTipo(tipo.id, tipos);
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.bgCard : AppColors.bgLight,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? AppColors.border1lg : AppColors.border1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tipo.nombre,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : AppColors.textPrimaryLg,
+                      ),
+                    ),
+                    Text(
+                      '${gruposDeTipo.length} grupos · $vivos vivos',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                    ),
+                    if (tipo.descripcion != null)
+                      Text(
+                        tipo.descripcion!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLg,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              _CardMenu(
+                isDark: isDark,
+                onEdit: () => context.push('/tipos/${tipo.id}/editar'),
+                onDelete: () => _confirmarEliminar(context, tipo),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmarEliminar(BuildContext context, TipoAnimal tipo) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Eliminar tipo'),
-        content: const Text(
-          '¿Eliminar este tipo de animal? Se quitarán sus grupos y ejemplares.',
+        content: Text(
+          '¿Eliminar "${tipo.nombre}"? Se quitarán sus grupos y ejemplares.',
         ),
         actions: [
           TextButton(
@@ -321,11 +925,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _tipoFiltro = 'all');
-              // TODO: llamar repo.deleteTipo(...)
-            },
+            onPressed: () => Navigator.pop(context), // TODO: repo.deleteTipo
             child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -335,17 +935,98 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CARD DE GRUPO
+// TAB 5: BAJAS (placeholder)
+// ─────────────────────────────────────────────────────────────────────────────
+class _BajasTab extends StatelessWidget {
+  final String granjaId;
+  final String tipoFiltro;
+  final List<TipoAnimal> tipos;
+  final bool isDark;
+
+  const _BajasTab({
+    required this.granjaId,
+    required this.tipoFiltro,
+    required this.tipos,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _TabPlaceholder(
+      icon: Icons.remove_circle_outline,
+      titulo: 'Bajas',
+      subtitulo: 'Historial de bajas próximamente',
+      isDark: isDark,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLACEHOLDER GENÉRICO DE TAB VACÍA
+// ─────────────────────────────────────────────────────────────────────────────
+class _TabPlaceholder extends StatelessWidget {
+  final IconData icon;
+  final String titulo;
+  final String subtitulo;
+  final bool isDark;
+
+  const _TabPlaceholder({
+    required this.icon,
+    required this.titulo,
+    required this.subtitulo,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.green.withOpacity(0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 28, color: AppColors.green),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            titulo,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitulo,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CARD DE GRUPO (igual a antes, se mantiene en tab Grupos)
 // ─────────────────────────────────────────────────────────────────────────────
 class _GrupoCard extends ConsumerWidget {
   final Grupo grupo;
   final TipoAnimal tipo;
   final GrupoConteo conteo;
   final Color stripColor;
-  final bool expandido;
-  final bool colapsado;
-  final VoidCallback onToggleExpand;
-  final VoidCallback onToggleColapso;
+  final bool expandido, colapsado, isDark;
+  final VoidCallback onToggleExpand, onToggleColapso;
   final String granjaId;
 
   const _GrupoCard({
@@ -358,33 +1039,29 @@ class _GrupoCard extends ConsumerWidget {
     required this.onToggleExpand,
     required this.onToggleColapso,
     required this.granjaId,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == AppThemeMode.dark;
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
-          // Fondo de la card
           Container(
             decoration: BoxDecoration(
               color: isDark ? AppColors.bgCard : AppColors.bgLight,
               borderRadius: BorderRadius.circular(16),
             ),
             padding: const EdgeInsets.only(
-              top: 16.0,
+              top: 16,
               left: 16,
-              right: 16 * 3,
+              right: 48,
               bottom: 16,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header ──────────────────────────────────────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -420,7 +1097,6 @@ class _GrupoCard extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    // Contador de vivos
                     Row(
                       children: [
                         Icon(
@@ -441,7 +1117,6 @@ class _GrupoCard extends ConsumerWidget {
                                 : AppColors.textPrimaryLg,
                           ),
                         ),
-                        // Botón colapsar
                         IconButton(
                           icon: Icon(
                             colapsado ? Icons.expand_more : Icons.expand_less,
@@ -451,7 +1126,6 @@ class _GrupoCard extends ConsumerWidget {
                           ),
                           onPressed: onToggleColapso,
                         ),
-                        // Menú
                         _CardMenu(
                           onEdit: () =>
                               context.push('/grupos/${grupo.id}/editar'),
@@ -462,11 +1136,8 @@ class _GrupoCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-
                 if (!colapsado) ...[
                   const SizedBox(height: 12),
-
-                  // ── Mini stats ─────────────────────────────────────
                   Row(
                     children: [
                       Expanded(
@@ -498,29 +1169,24 @@ class _GrupoCard extends ConsumerWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 10),
-
-                  // ── Toggle lotes ───────────────────────────────────
                   _LotesSection(
                     grupoId: grupo.id,
                     expandido: expandido,
                     onToggle: onToggleExpand,
+                    isDark: isDark,
                   ),
-
                   const SizedBox(height: 10),
-
-                  // ── Acciones rápidas ───────────────────────────────
                   Row(
                     children: [
                       Expanded(
                         child: _ActionButton(
                           icon: Icons.add,
                           label: 'Ejemplar',
+                          isDark: isDark,
                           onTap: () => context.push(
                             '/aves/nuevo?tipo=${grupo.tipoAnimalId}&grupo=${grupo.id}',
                           ),
-                          isDark: isDark,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -528,10 +1194,17 @@ class _GrupoCard extends ConsumerWidget {
                         child: _ActionButton(
                           icon: Icons.inventory_2_outlined,
                           label: 'Lote',
-                          onTap: () => context.push(
-                            '/lotes-entrada/nuevo?tipo=${grupo.tipoAnimalId}&grupo=${grupo.id}',
-                          ),
                           isDark: isDark,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => NuevoLoteEntrada(
+                                  isDark: isDark,
+                                ), // Ya no pasa isDark
+                              ),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -540,8 +1213,9 @@ class _GrupoCard extends ConsumerWidget {
                           icon: Icons.one_x_mobiledata_rounded,
                           label: 'Baja',
                           danger: true,
-                          onTap: () => _mostrarBaja(context),
                           isDark: isDark,
+                          onTap: () =>
+                              context.push('/bajas/nueva?grupo=${grupo.id}'),
                         ),
                       ),
                     ],
@@ -550,8 +1224,7 @@ class _GrupoCard extends ConsumerWidget {
               ],
             ),
           ),
-
-          // ── Franja lateral de color (tipo) ─────────────────────────
+          // Franja de color lateral
           Positioned(
             right: 0,
             top: 0,
@@ -592,11 +1265,6 @@ class _GrupoCard extends ConsumerWidget {
     );
   }
 
-  void _mostrarBaja(BuildContext context) {
-    // TODO: mostrar BajaSheet pasando grupoId
-    context.push('/bajas/nueva?grupo=${grupo.id}');
-  }
-
   void _confirmarEliminar(BuildContext context) {
     showDialog(
       context: context,
@@ -611,10 +1279,7 @@ class _GrupoCard extends ConsumerWidget {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: repo.deleteGrupo(grupo.id)
-            },
+            onPressed: () => Navigator.pop(context),
             child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -624,31 +1289,28 @@ class _GrupoCard extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECCIÓN DE LOTES (carga lazy)
+// SECCIÓN DE LOTES dentro de la card de grupo
 // ─────────────────────────────────────────────────────────────────────────────
 class _LotesSection extends ConsumerWidget {
   final String grupoId;
-  final bool expandido;
+  final bool expandido, isDark;
   final VoidCallback onToggle;
 
   const _LotesSection({
     required this.grupoId,
     required this.expandido,
     required this.onToggle,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Solo carga si está expandido
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == AppThemeMode.dark;
     final lotesAsync = expandido
         ? ref.watch(lotesDeGrupoProvider(grupoId))
         : null;
 
     return Column(
       children: [
-        // Botón toggle
         GestureDetector(
           onTap: onToggle,
           child: Container(
@@ -680,15 +1342,12 @@ class _LotesSection extends ConsumerWidget {
             ),
           ),
         ),
-
-        // Lista de lotes
         if (expandido && lotesAsync != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: lotesAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(12),
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              loading: () => const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
               error: (e, _) =>
                   Text('Error: $e', style: const TextStyle(color: Colors.red)),
@@ -702,7 +1361,9 @@ class _LotesSection extends ConsumerWidget {
                       ),
                     )
                   : Column(
-                      children: lotes.map((l) => _LoteCard(lote: l)).toList(),
+                      children: lotes
+                          .map((l) => _LoteCard(lote: l, isDark: isDark))
+                          .toList(),
                     ),
             ),
           ),
@@ -712,24 +1373,23 @@ class _LotesSection extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CARD DE LOTE
+// CARD DE LOTE (dentro de grupo expandido)
 // ─────────────────────────────────────────────────────────────────────────────
 class _LoteCard extends StatelessWidget {
   final LoteEntrada lote;
-  const _LoteCard({required this.lote});
+  final bool isDark;
+  const _LoteCard({required this.lote, this.isDark = true});
 
   @override
   Widget build(BuildContext context) {
-    final fmt = DateFormat("d 'de' MMMM yyyy", 'es_MX');
-    final vivos = lote
-        .brazaletes
-        .length; // simplificación: todos los brazaletes son activos en vista
+    final fmt = DateFormat("d 'de' MMMM yyyy");
+    final vivos = lote.brazaletes.length;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
@@ -750,10 +1410,10 @@ class _LoteCard extends StatelessWidget {
                   children: [
                     Text(
                       fmt.format(lote.fechaAdquisicion),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: isDark ? AppColors.bgLight : AppColors.bg,
                       ),
                     ),
                     Text(
@@ -765,7 +1425,9 @@ class _LoteCard extends StatelessWidget {
                       ].join(' · '),
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withOpacity(0.45),
+                        color: isDark
+                            ? AppColors.textMutedLg
+                            : AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -773,17 +1435,18 @@ class _LoteCard extends StatelessWidget {
               ),
               Text(
                 '$vivos/${lote.totalEjemplares}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white70,
+                  color: isDark ? AppColors.textPrimary : AppColors.textMuted,
                 ),
               ),
               const SizedBox(width: 4),
               _CardMenu(
                 size: 16,
                 onEdit: () => context.push('/lotes-entrada/${lote.id}/editar'),
-                onDelete: () {}, // TODO
+                onDelete: () {},
+                isDark: isDark,
               ),
             ],
           ),
@@ -793,7 +1456,7 @@ class _LoteCard extends StatelessWidget {
               spacing: 4,
               runSpacing: 4,
               children: lote.brazaletes
-                  .map((b) => _BrazaleteBadge(numero: b))
+                  .map((b) => _BrazaleteBadge(numero: b, isDark: isDark))
                   .toList(),
             ),
           ],
@@ -805,23 +1468,26 @@ class _LoteCard extends StatelessWidget {
 
 class _BrazaleteBadge extends StatelessWidget {
   final int numero;
-  const _BrazaleteBadge({required this.numero});
+  final bool isDark;
+  const _BrazaleteBadge({required this.numero, this.isDark = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: isDark ? AppColors.bgCard : AppColors.bgLight,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(
+          color: isDark ? AppColors.border : AppColors.border1,
+        ),
       ),
       child: Text(
         '#$numero',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: Colors.white70,
+          fontWeight: FontWeight.w500,
+          color: isDark ? AppColors.textPrimary : AppColors.textMuted,
         ),
       ),
     );
@@ -938,131 +1604,12 @@ class _DetalleGrupoSheet extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WIDGETS AUXILIARES
+// WIDGETS PEQUEÑOS REUTILIZABLES
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TipoSelector extends StatelessWidget {
-  final List<TipoAnimal> tipos;
-  final List<Grupo> grupos;
-  final String value;
-  final ValueChanged<String> onChanged;
-  final bool isDark;
-
-  const _TipoSelector({
-    required this.tipos,
-    required this.grupos,
-    required this.value,
-    required this.onChanged,
-    this.isDark = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final options = [
-      ('all', 'Todos', grupos.length),
-      ...tipos.map(
-        (t) => (
-          t.id,
-          t.nombre,
-          grupos.where((g) => g.tipoAnimalId == t.id).length,
-        ),
-      ),
-    ];
-
-    final selected = options.firstWhere(
-      (o) => o.$1 == value,
-      orElse: () => options.first,
-    );
-
-    return GestureDetector(
-      onTap: () => _showPicker(context, options),
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.bgCard : AppColors.bgLight,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? AppColors.border1lg : AppColors.border1,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.label_outline, size: 16, color: Colors.white54),
-            const SizedBox(width: 8),
-            Text(
-              'Tipo: ',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.white.withOpacity(0.5),
-              ),
-            ),
-            Text(
-              selected.$2,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.bgLight : AppColors.bg,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '${selected.$3}',
-                style: const TextStyle(fontSize: 11, color: Colors.white70),
-              ),
-            ),
-            const Spacer(),
-            const Icon(Icons.expand_more, size: 18, color: Colors.white54),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPicker(BuildContext context, List<(String, String, int)> options) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.bgCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          ...options.map(
-            (o) => ListTile(
-              title: Text(o.$2, style: const TextStyle(color: Colors.white)),
-              trailing: Text(
-                '${o.$3}',
-                style: const TextStyle(color: Colors.white54),
-              ),
-              selected: o.$1 == value,
-              selectedTileColor: Colors.white.withOpacity(0.05),
-              onTap: () {
-                onChanged(o.$1);
-                Navigator.pop(context);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-}
-
 class _StatTile extends StatelessWidget {
-  final String value;
-  final String label;
+  final String value, label;
   final Color color;
-
   const _StatTile({
     required this.value,
     required this.label,
@@ -1070,44 +1617,40 @@ class _StatTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.white.withOpacity(0.8),
-              ),
-            ),
-          ],
-        ),
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
       ),
-    );
-  }
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _MiniStat extends StatelessWidget {
   final IconData icon;
-  final String value;
-  final String label;
+  final String value, label;
   final bool danger, isDark;
-
   const _MiniStat({
     required this.icon,
     required this.value,
@@ -1117,44 +1660,42 @@ class _MiniStat extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: danger
-                ? Colors.redAccent
-                : isDark
-                ? AppColors.bgLight
-                : AppColors.bg,
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    decoration: BoxDecoration(
+      color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: danger
+              ? Colors.redAccent
+              : isDark
+              ? AppColors.bgLight
+              : AppColors.bg,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.bgLight : AppColors.bg,
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.bgLight : AppColors.bg,
-            ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: isDark ? AppColors.bgLight : AppColors.bg,
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: isDark ? AppColors.bgLight : AppColors.bg,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 }
 
 class _ActionButton extends StatelessWidget {
@@ -1162,7 +1703,6 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool danger, isDark;
-
   const _ActionButton({
     required this.icon,
     required this.label,
@@ -1172,157 +1712,50 @@ class _ActionButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 40,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: danger ? Colors.red.withOpacity(0.3) : AppColors.border1,
-            style: BorderStyle.solid,
-          ),
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: danger ? Colors.red.withOpacity(0.3) : AppColors.border1,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 14,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: danger
+                ? Colors.redAccent
+                : isDark
+                ? AppColors.bgCardLg
+                : AppColors.bgCard,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
               color: danger
                   ? Colors.redAccent
                   : isDark
-                  ? AppColors.bgCardLg
-                  : AppColors.bgCard,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: danger
-                    ? Colors.redAccent
-                    : isDark
-                    ? AppColors.bgCardLg
-                    : AppColors.bgCard,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _NavButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.isDark = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 36,
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.bgCard : AppColors.bgLight,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark ? AppColors.border1lg : AppColors.border1,
+                  ? AppColors.textMutedLg
+                  : AppColors.textMuted,
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: isDark ? AppColors.textMutedLg : AppColors.textMuted,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? AppColors.textMutedLg : AppColors.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
-    );
-  }
-}
-
-class _SmallButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool danger;
-
-  const _SmallButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.danger = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: danger
-                ? Colors.red.withOpacity(0.35)
-                : Colors.white.withOpacity(0.12),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 13,
-              color: danger ? Colors.redAccent : Colors.white70,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: danger ? Colors.redAccent : Colors.white70,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  );
 }
 
 class _CardMenu extends StatelessWidget {
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback onEdit, onDelete;
   final double size;
   final bool isDark;
-
   const _CardMenu({
     required this.onEdit,
     required this.onDelete,
@@ -1331,32 +1764,32 @@ class _CardMenu extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert, size: size, color: isDark ? AppColors.textPrimary:AppColors.textPrimaryLg),
-      color: AppColors.bgCard,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
-      itemBuilder: (_) => [
-        const PopupMenuItem(
-          value: 'edit',
-          child: Text('Editar', style: TextStyle(color: Colors.white)),
-        ),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => PopupMenuButton<String>(
+    icon: Icon(
+      Icons.more_vert,
+      size: size,
+      color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+    ),
+    color: AppColors.bgCard,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
+    itemBuilder: (_) => [
+      const PopupMenuItem(
+        value: 'edit',
+        child: Text('Editar', style: TextStyle(color: Colors.white)),
+      ),
+      const PopupMenuItem(
+        value: 'delete',
+        child: Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+      ),
+    ],
+  );
 }
 
 class _FabMenuItem extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final String desc;
+  final String label, desc;
   final VoidCallback onTap;
-
   const _FabMenuItem({
     required this.icon,
     required this.label,
@@ -1365,61 +1798,59 @@ class _FabMenuItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.green.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 16, color: AppColors.green),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  desc,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white.withOpacity(0.45),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-    );
-  }
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppColors.green.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 16, color: AppColors.green),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                desc,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.white.withOpacity(0.45),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _EmptyState extends StatelessWidget {
@@ -1427,50 +1858,42 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.tipos});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Text(
-            'No hay grupos todavía',
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16),
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: AppColors.bgCard,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+      children: [
+        const Text(
+          'No hay grupos todavía',
+          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          tipos.isEmpty
+              ? 'Empieza creando un tipo de animal.'
+              : 'Crea un grupo para empezar a registrar ejemplares.',
+          style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.5)),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.green,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            tipos.isEmpty
-                ? 'Empieza creando un tipo de animal.'
-                : 'Crea un grupo para empezar a registrar ejemplares.',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.white.withOpacity(0.5),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.green,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.add, size: 16),
-            label: Text(tipos.isEmpty ? 'Crear tipo de animal' : 'Crear grupo'),
-            onPressed: () =>
-                context.push(tipos.isEmpty ? '/tipos/nuevo' : '/grupos/nuevo'),
-          ),
-        ],
-      ),
-    );
-  }
+          icon: const Icon(Icons.add, size: 16),
+          label: Text(tipos.isEmpty ? 'Crear tipo de animal' : 'Crear grupo'),
+          onPressed: () =>
+              context.push(tipos.isEmpty ? '/tipos/nuevo' : '/grupos/nuevo'),
+        ),
+      ],
+    ),
+  );
 }

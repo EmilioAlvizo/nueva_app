@@ -12,6 +12,11 @@ import '../granja/granja_repository.dart';
 import '../granja/granja_provider.dart';
 import '../../shared/widgets/confirmation_dialog.dart';
 import '../granja/nueva_granja.dart';
+// ⚠️ Ajusta esta ruta si la carpeta "animales" no es hermana directa de "home"
+// en tu árbol de carpetas (debe apuntar a donde están animales_provider.dart
+// y tipo_filtro.dart).
+import '../animales/animales_provider.dart';
+import '../animales/tipo_filtro.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   // Recibimos obligatoriamente el contenedor de navegación inyectado por GoRouter
@@ -43,7 +48,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _AppBar(isDark: isDark, onSettings: _openSettings),
+            _AppBar(
+              isDark: isDark,
+              onSettings: _openSettings,
+              navigationShell: widget.navigationShell,
+            ),
             // EL BODY AHORA ES EL CONTENEDOR DE LAS SUB-PANTALLAS DINÁMICAS
             Expanded(child: widget.navigationShell),
           ],
@@ -61,14 +70,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 class _AppBar extends ConsumerWidget {
   final bool isDark;
   final VoidCallback onSettings;
+  final StatefulNavigationShell navigationShell;
 
-  const _AppBar({required this.isDark, required this.onSettings});
+  const _AppBar({
+    required this.isDark,
+    required this.onSettings,
+    required this.navigationShell,
+  });
+
+  // Índice de la pestaña "Animales" en el bottom nav (ver _BottomBar._icons).
+  // Si reordenas las pestañas, actualiza este valor.
+  static const int _animalesTabIndex = 1;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 2. Extraemos dinámicamente el nombre del usuario desde Supabase authRepositoryProvider
     final user = ref.watch(authRepositoryProvider).currentUser;
     final userNombre = user?.userMetadata?['nombre'] ?? 'Granjero';
+
+    // ── Filtro de tipo de animal: solo tiene sentido en la pestaña Animales
+    //    y cuando hay una granja seleccionada con tipos registrados.
+    final selectedFarm = ref.watch(selectedFarmProvider);
+    final isAnimalesTab = navigationShell.currentIndex == _animalesTabIndex;
+    final puedeFiltrar = isAnimalesTab && selectedFarm != null;
+
+    final tiposAsync = puedeFiltrar
+        ? ref.watch(tiposAnimalProvider(selectedFarm!.id))
+        : null;
+    final gruposAsync = puedeFiltrar
+        ? ref.watch(gruposProvider(selectedFarm!.id))
+        : null;
+    final tipos = tiposAsync?.value ?? const [];
+    final grupos = gruposAsync?.value ?? const [];
+    final tipoFiltro = ref.watch(tipoFiltroProvider);
+    final mostrarFiltro = puedeFiltrar && tipos.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -96,6 +131,17 @@ class _AppBar extends ConsumerWidget {
             ),
           ),
           const Spacer(),
+          // ── Botón de filtro de tipo (badge con el color del tipo elegido) ──
+          if (mostrarFiltro) ...[
+            TipoFiltroBadgeButton(
+              isDark: isDark,
+              tipos: tipos,
+              grupos: grupos,
+              tipoFiltro: tipoFiltro,
+              onChanged: (v) => ref.read(tipoFiltroProvider.notifier).set(v),
+            ),
+            const SizedBox(width: 8),
+          ],
           GestureDetector(
             onTap: onSettings,
             child: Container(
