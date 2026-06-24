@@ -5,6 +5,8 @@ import 'animales_repository.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/loteEntrada/loteEntrada.dart';
+import '../model/ejemplar/ejemplar.dart';
+import '../model/bajaEjemplar/baja_ejemplar.dart';
 
 part 'animales_provider.g.dart';
 
@@ -47,3 +49,13 @@ class GrupoConteo {
 @riverpod
 Future<List<LoteEntrada>> lotesDeGrupo(Ref ref, String grupoId) =>
     ref.watch(animalesRepositoryProvider).getLotesDeGrupo(grupoId);
+
+// ── Ejemplares individuales (tab "Ejemplares") ────────────────────────────────
+@riverpod
+Future<List<Ejemplar>> ejemplares(Ref ref, String granjaId) =>
+    ref.watch(animalesRepositoryProvider).getEjemplares(granjaId);
+
+// ── Bajas de ejemplares (tab "Bajas") ─────────────────────────────────────────
+@riverpod
+Future<List<BajaEjemplar>> bajasEjemplares(Ref ref, String granjaId) =>
+    ref.watch(animalesRepositoryProvider).getBajasEjemplares(granjaId);

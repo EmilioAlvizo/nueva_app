@@ -1,0 +1,59 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: Flutter 3.44.1 / Dart SDK ^3.12.1
+  Architecture: Feature-first with layered folders (feature > presentation/providers, data, domain)
+  State: Riverpod 3.3.1 with code generation (riverpod_annotation, riverpod_generator, riverpod_lint)
+  Routing: GoRouter 17.3.0 with StatefulShellRoute (bottom navigation, 5 tabs)
+  Backend: Supabase Flutter 2.12.4 (Auth, PostgreSQL database)
+  Code gen: build_runner 2.15.0
+  L10n: intl 0.20.2 (scaffolded)
+  Linting: flutter_lints ^6.0.0 + riverpod_lint plugin
+  Testing: flutter_test (SDK), coverage 1.15.0, mockito 5.6.4 (transitive)
+  Theme: Dark mode with custom AppColors (green accent, dark cards)
+  Project lang: Spanish (UI strings, features naming)
+  Git: ~10 commits, initial app skeleton with auth, granja, animales, settings features
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing feature-layer patterns (presentation/providers, data, domain when separated)
+    tdd: true
+    test_command: "flutter test"
+  verify:
+    test_command: "flutter test"
+    build_command: "flutter build apk --debug"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: true
+  detected: "2026-06-24"
+  runner:
+    command: "flutter test"
+    framework: "flutter_test (SDK)"
+  layers:
+    unit: { available: true, tool: "flutter_test" }
+    widget: { available: true, tool: "flutter_test" }
+    integration: { available: false, tool: null }
+    e2e: { available: false, tool: null }
+  coverage:
+    available: true
+    command: "flutter test --coverage"
+  quality:
+    linter: { available: true, command: "flutter analyze" }
+    type_checker: { available: true, command: "dart analyze" }
+    formatter: { available: true, command: "dart format ." }
+  mock_framework: "mockito 5.6.4 (transitive)"

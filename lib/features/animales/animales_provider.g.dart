@@ -360,3 +360,155 @@ final class LotesDeGrupoFamily extends $Family
   @override
   String toString() => r'lotesDeGrupoProvider';
 }
+
+@ProviderFor(ejemplares)
+final ejemplaresProvider = EjemplaresFamily._();
+
+final class EjemplaresProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Ejemplar>>,
+          List<Ejemplar>,
+          FutureOr<List<Ejemplar>>
+        >
+    with $FutureModifier<List<Ejemplar>>, $FutureProvider<List<Ejemplar>> {
+  EjemplaresProvider._({
+    required EjemplaresFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'ejemplaresProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$ejemplaresHash();
+
+  @override
+  String toString() {
+    return r'ejemplaresProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Ejemplar>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Ejemplar>> create(Ref ref) {
+    final argument = this.argument as String;
+    return ejemplares(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EjemplaresProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$ejemplaresHash() => r'43caf40e5458674b9aa5bf979bcc51f02de0d14a';
+
+final class EjemplaresFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<Ejemplar>>, String> {
+  EjemplaresFamily._()
+    : super(
+        retry: null,
+        name: r'ejemplaresProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EjemplaresProvider call(String granjaId) =>
+      EjemplaresProvider._(argument: granjaId, from: this);
+
+  @override
+  String toString() => r'ejemplaresProvider';
+}
+
+@ProviderFor(bajasEjemplares)
+final bajasEjemplaresProvider = BajasEjemplaresFamily._();
+
+final class BajasEjemplaresProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<BajaEjemplar>>,
+          List<BajaEjemplar>,
+          FutureOr<List<BajaEjemplar>>
+        >
+    with
+        $FutureModifier<List<BajaEjemplar>>,
+        $FutureProvider<List<BajaEjemplar>> {
+  BajasEjemplaresProvider._({
+    required BajasEjemplaresFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'bajasEjemplaresProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$bajasEjemplaresHash();
+
+  @override
+  String toString() {
+    return r'bajasEjemplaresProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<BajaEjemplar>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<BajaEjemplar>> create(Ref ref) {
+    final argument = this.argument as String;
+    return bajasEjemplares(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BajasEjemplaresProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$bajasEjemplaresHash() => r'8becd152083252bb2c653f4a9b72cb1c222536ae';
+
+final class BajasEjemplaresFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<BajaEjemplar>>, String> {
+  BajasEjemplaresFamily._()
+    : super(
+        retry: null,
+        name: r'bajasEjemplaresProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  BajasEjemplaresProvider call(String granjaId) =>
+      BajasEjemplaresProvider._(argument: granjaId, from: this);
+
+  @override
+  String toString() => r'bajasEjemplaresProvider';
+}

@@ -11,6 +11,8 @@ import '../model/loteEntrada/loteEntrada.dart';
 import '../model/loteEntrada/nuevo_loteEntrada.dart';
 import '../model/grupo/nuevo_grupo.dart';
 import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
+import '../model/ejemplar/ejemplar.dart';
+import '../model/bajaEjemplar/baja_ejemplar.dart';
 import 'animales_provider.dart';
 import 'tipo_filtro.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
@@ -510,9 +512,9 @@ class _GruposTab extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAB 2: EJEMPLARES (placeholder — completa con tu lógica)
+// TAB 2: EJEMPLARES
 // ─────────────────────────────────────────────────────────────────────────────
-class _EjemplaresTab extends ConsumerWidget {
+class _EjemplaresTab extends ConsumerStatefulWidget {
   final String granjaId;
   final String tipoFiltro;
   final List<TipoAnimal> tipos;
@@ -526,13 +528,192 @@ class _EjemplaresTab extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: reemplaza con tu provider de ejemplares cuando lo tengas
-    return _TabPlaceholder(
-      icon: Icons.tag,
-      titulo: 'Ejemplares',
-      subtitulo: 'Lista de ejemplares próximamente',
-      isDark: isDark,
+  ConsumerState<_EjemplaresTab> createState() => _EjemplaresTabState();
+}
+
+class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+  bool _soloActivos = false;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ejemplaresAsync = ref.watch(ejemplaresProvider(widget.granjaId));
+
+    return ejemplaresAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (ejemplares) {
+        var lista = widget.tipoFiltro == 'all'
+            ? ejemplares
+            : ejemplares
+                  .where((e) => e.tipoAnimalId == widget.tipoFiltro)
+                  .toList();
+
+        if (_soloActivos) {
+          lista = lista.where((e) => e.activo).toList();
+        }
+
+        if (_query.trim().isNotEmpty) {
+          final q = _query.trim().toLowerCase();
+          lista = lista.where((e) {
+            return e.brazalete.toString().contains(q) ||
+                e.tipoNombre.toLowerCase().contains(q) ||
+                e.grupoNombre.toLowerCase().contains(q);
+          }).toList();
+        }
+
+        return CustomScrollView(
+          slivers: [
+            // Buscador
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: _SearchField(
+                  controller: _searchCtrl,
+                  hint: 'Buscar brazalete, tipo o grupo…',
+                  isDark: widget.isDark,
+                  onChanged: (v) => setState(() => _query = v),
+                ),
+              ),
+            ),
+
+            // Toggle Activos / Todos
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: _SegmentedToggle(
+                  isDark: widget.isDark,
+                  options: const ['Activos', 'Todos'],
+                  selectedIndex: _soloActivos ? 0 : 1,
+                  onSelected: (i) =>
+                      setState(() => _soloActivos = i == 0),
+                ),
+              ),
+            ),
+
+            if (lista.isEmpty)
+              SliverToBoxAdapter(
+                child: _TabPlaceholder(
+                  icon: Icons.tag,
+                  titulo: 'Sin ejemplares',
+                  subtitulo: ejemplares.isEmpty
+                      ? 'Registra un ejemplar o lote de entrada para verlos aquí'
+                      : 'Ningún ejemplar coincide con la búsqueda',
+                  isDark: widget.isDark,
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, i) {
+                    final ej = lista[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _EjemplarCard(ejemplar: ej, isDark: widget.isDark),
+                    );
+                  }, childCount: lista.length),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Card individual de un ejemplar (brazalete + tipo + grupo + fecha + estado)
+class _EjemplarCard extends StatelessWidget {
+  final Ejemplar ejemplar;
+  final bool isDark;
+  const _EjemplarCard({required this.ejemplar, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = DateFormat("d 'de' MMMM yyyy");
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.border1lg : AppColors.border1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.green.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.tag, size: 16, color: AppColors.green),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '#${ejemplar.brazalete} · ${ejemplar.tipoNombre}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimaryLg,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${ejemplar.grupoNombre} · ${fmt.format(ejemplar.fechaAdquisicion)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLg,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _EstadoBadge(activo: ejemplar.activo),
+        ],
+      ),
+    );
+  }
+}
+
+class _EstadoBadge extends StatelessWidget {
+  final bool activo;
+  const _EstadoBadge({required this.activo});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = activo ? AppColors.green : Colors.redAccent;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        activo ? 'Activo' : 'Baja',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -935,9 +1116,9 @@ class _TiposTab extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAB 5: BAJAS (placeholder)
+// TAB 5: BAJAS
 // ─────────────────────────────────────────────────────────────────────────────
-class _BajasTab extends StatelessWidget {
+class _BajasTab extends ConsumerStatefulWidget {
   final String granjaId;
   final String tipoFiltro;
   final List<TipoAnimal> tipos;
@@ -951,12 +1132,629 @@ class _BajasTab extends StatelessWidget {
   });
 
   @override
+  ConsumerState<_BajasTab> createState() => _BajasTabState();
+}
+
+class _BajasTabState extends ConsumerState<_BajasTab> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+  bool _porLote = true; // true = "Por lote", false = "Por ejemplar"
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return _TabPlaceholder(
-      icon: Icons.remove_circle_outline,
-      titulo: 'Bajas',
-      subtitulo: 'Historial de bajas próximamente',
-      isDark: isDark,
+    final bajasAsync = ref.watch(bajasEjemplaresProvider(widget.granjaId));
+
+    return bajasAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (todasLasBajas) {
+        final bajasFiltradasPorTipo = widget.tipoFiltro == 'all'
+            ? todasLasBajas
+            : todasLasBajas
+                  .where((b) => b.tipoAnimalId == widget.tipoFiltro)
+                  .toList();
+
+        final totalAves = bajasFiltradasPorTipo.length;
+        final lotesUnicos = bajasFiltradasPorTipo
+            .map((b) => b.lotesBajaId)
+            .whereType<String>()
+            .toSet()
+            .length;
+
+        final q = _query.trim().toLowerCase();
+
+        return CustomScrollView(
+          slivers: [
+            // ── Stat card de resumen ──────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: _BajasResumenCard(
+                  totalAves: totalAves,
+                  lotes: lotesUnicos,
+                  isDark: widget.isDark,
+                ),
+              ),
+            ),
+
+            // ── Toggle Por lote / Por ejemplar ────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: _SegmentedToggle(
+                  isDark: widget.isDark,
+                  options: const ['Por lote', 'Por ejemplar'],
+                  selectedIndex: _porLote ? 0 : 1,
+                  onSelected: (i) => setState(() => _porLote = i == 0),
+                ),
+              ),
+            ),
+
+            // ── Buscador ───────────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: _SearchField(
+                  controller: _searchCtrl,
+                  hint: 'Buscar por tipo, grupo o razón…',
+                  isDark: widget.isDark,
+                  onChanged: (v) => setState(() => _query = v),
+                ),
+              ),
+            ),
+
+            if (_porLote)
+              ..._buildPorLote(bajasFiltradasPorTipo, q)
+            else
+              ..._buildPorEjemplar(bajasFiltradasPorTipo, q),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildPorLote(List<BajaEjemplar> bajas, String q) {
+    var lotes = BajaLote.agruparDesde(bajas);
+
+    if (q.isNotEmpty) {
+      lotes = lotes.where((l) {
+        return l.tipoNombre.toLowerCase().contains(q) ||
+            l.grupoNombre.toLowerCase().contains(q) ||
+            l.razonNombre.toLowerCase().contains(q);
+      }).toList();
+    }
+
+    if (lotes.isEmpty) {
+      return [
+        SliverToBoxAdapter(
+          child: _TabPlaceholder(
+            icon: Icons.remove_circle_outline,
+            titulo: 'Sin bajas por lote',
+            subtitulo: 'Las bajas registradas en conjunto aparecerán aquí',
+            isDark: widget.isDark,
+          ),
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, i) =>
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _BajaLoteCard(lote: lotes[i], isDark: widget.isDark),
+                ),
+            childCount: lotes.length,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildPorEjemplar(List<BajaEjemplar> bajas, String q) {
+    var lista = bajas;
+    if (q.isNotEmpty) {
+      lista = lista.where((b) {
+        return b.brazalete.toString().contains(q) ||
+            b.tipoNombre.toLowerCase().contains(q) ||
+            b.grupoNombre.toLowerCase().contains(q) ||
+            b.razonNombre.toLowerCase().contains(q);
+      }).toList();
+    }
+
+    if (lista.isEmpty) {
+      return [
+        SliverToBoxAdapter(
+          child: _TabPlaceholder(
+            icon: Icons.remove_circle_outline,
+            titulo: 'Sin bajas',
+            subtitulo: 'El historial de bajas aparecerá aquí',
+            isDark: widget.isDark,
+          ),
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, i) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _BajaEjemplarRow(baja: lista[i], isDark: widget.isDark),
+            ),
+            childCount: lista.length,
+          ),
+        ),
+      ),
+    ];
+  }
+}
+
+/// Card de resumen con el total de aves dadas de baja y el número de lotes.
+class _BajasResumenCard extends StatelessWidget {
+  final int totalAves;
+  final int lotes;
+  final bool isDark;
+  const _BajasResumenCard({
+    required this.totalAves,
+    required this.lotes,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withOpacity(0.18),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.heart_broken_outlined,
+              size: 20,
+              color: Colors.redAccent,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  '$totalAves',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimaryLg,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'aves dadas de baja',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLg,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$lotes',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: isDark
+                      ? AppColors.textPrimary
+                      : AppColors.textPrimaryLg,
+                ),
+              ),
+              Text(
+                'lotes',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLg,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Card de una baja agrupada por lote ("Por lote")
+class _BajaLoteCard extends StatelessWidget {
+  final BajaLote lote;
+  final bool isDark;
+  const _BajaLoteCard({required this.lote, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = DateFormat("d 'de' MMMM yyyy");
+    final color = lote.esMuerte ? Colors.redAccent : Colors.orangeAccent;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.border1lg : AppColors.border1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _RazonTag(label: lote.razonNombre, color: color),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 11,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLg,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      fmt.format(lote.fechaBaja),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark ? AppColors.bgCard2 : AppColors.border1)
+                            .withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'LOTE',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLg,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${lote.tipoNombre} · ${lote.grupoNombre}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimaryLg,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  lote.brazaletes.map((b) => '#$b').join(', '),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLg,
+                  ),
+                ),
+                if (lote.notas != null && lote.notas!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    lote.notas!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLg,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${lote.cantidad}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: isDark
+                      ? AppColors.textPrimary
+                      : AppColors.textPrimaryLg,
+                ),
+              ),
+              Text(
+                'aves',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLg,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Fila de una baja individual ("Por ejemplar")
+class _BajaEjemplarRow extends StatelessWidget {
+  final BajaEjemplar baja;
+  final bool isDark;
+  const _BajaEjemplarRow({required this.baja, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = DateFormat("d 'de' MMMM yyyy");
+    final color = baja.esMuerte ? Colors.redAccent : Colors.orangeAccent;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.border1lg : AppColors.border1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _RazonTag(label: baja.razonNombre, color: color),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 11,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLg,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      fmt.format(baja.fechaBaja),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '#${baja.brazalete} · ${baja.tipoNombre} · ${baja.grupoNombre}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimaryLg,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '-1 ave',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pequeña etiqueta de razón de baja (Muerte / Sacrificio / etc.)
+class _RazonTag extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _RazonTag({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label.isEmpty ? 'Baja' : label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENTES COMPARTIDOS: buscador y toggle segmentado
+// ─────────────────────────────────────────────────────────────────────────────
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final bool isDark;
+  final ValueChanged<String> onChanged;
+
+  const _SearchField({
+    required this.controller,
+    required this.hint,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.border1lg : AppColors.border1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.search,
+            size: 18,
+            color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLg,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLg,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SegmentedToggle extends StatelessWidget {
+  final List<String> options;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final bool isDark;
+
+  const _SegmentedToggle({
+    required this.options,
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard2 : AppColors.bgLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: List.generate(options.length, (i) {
+          final sel = i == selectedIndex;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onSelected(i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: sel ? AppColors.green : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  options[i],
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                    color: sel
+                        ? Colors.white
+                        : (isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLg),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 }
