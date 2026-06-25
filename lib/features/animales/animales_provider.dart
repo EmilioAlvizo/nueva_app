@@ -7,6 +7,7 @@ import '../model/grupo/grupo.dart';
 import '../model/loteEntrada/loteEntrada.dart';
 import '../model/ejemplar/ejemplar.dart';
 import '../model/bajaEjemplar/baja_ejemplar.dart';
+import '../model/catalogoItem/catalogo_item.dart';
 
 part 'animales_provider.g.dart';
 
@@ -59,3 +60,12 @@ Future<List<Ejemplar>> ejemplares(Ref ref, String granjaId) =>
 @riverpod
 Future<List<BajaEjemplar>> bajasEjemplares(Ref ref, String granjaId) =>
     ref.watch(animalesRepositoryProvider).getBajasEjemplares(granjaId);
+
+// ── Catálogos para el formulario de ejemplar ──────────────────────────────────
+@riverpod
+Future<List<CatalogoItem>> propositos(Ref ref, String granjaId) =>
+    ref.watch(animalesRepositoryProvider).getPropositos(granjaId);
+
+@riverpod
+Future<List<CatalogoItem>> tiposAdquisicion(Ref ref, String granjaId) =>
+    ref.watch(animalesRepositoryProvider).getTiposAdquisicion(granjaId);

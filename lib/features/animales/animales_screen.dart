@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:nueva_app/shared/widgets/confirmation_dialog.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
@@ -13,10 +12,12 @@ import '../model/loteEntrada/nuevo_loteEntrada.dart';
 import '../model/grupo/nuevo_grupo.dart';
 import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
 import '../model/ejemplar/ejemplar.dart';
+import '../model/ejemplar/nuevo_ejemplar.dart';
 import '../model/bajaEjemplar/baja_ejemplar.dart';
 import 'animales_provider.dart';
 import 'tipo_filtro.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 
 // ─── Helpers de color ────────────────────────────────────────────────────────
 Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
@@ -188,7 +189,13 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
         Icons.add,
         'Nuevo ejemplar',
         'Un animal con su brazalete',
-        NuevoAnimal(isDark: isDark),
+        NuevoEjemplar(
+          granjaId: widget.granjaId,
+          isDark: isDark,
+          tipoAnimalIdInicial: ref.read(tipoFiltroProvider) == 'all'
+              ? null
+              : ref.read(tipoFiltroProvider),
+        ),
       ),
       (
         Icons.inventory_2_outlined,
@@ -572,6 +579,48 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
     super.dispose();
   }
 
+  Future<void> _abrirFormulario({Ejemplar? ejemplar}) {
+    return showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => NuevoEjemplar(
+        granjaId: widget.granjaId,
+        isDark: widget.isDark,
+        ejemplar: ejemplar,
+        tipoAnimalIdInicial: widget.tipoFiltro == 'all'
+            ? null
+            : widget.tipoFiltro,
+      ),
+    );
+  }
+
+  void _confirmarEliminar(Ejemplar ejemplar) {
+    ConfirmationDialog.show(
+      context: context,
+      isDark: widget.isDark,
+      title: 'Eliminar ejemplar',
+      content:
+          '¿Seguro que deseas eliminar el ejemplar #${ejemplar.brazalete} '
+          '(${ejemplar.tipoNombre})? Esta acción no se puede deshacer.',
+      onConfirm: () async {
+        try {
+          await ref
+              .read(animalesRepositoryProvider)
+              .deleteEjemplar(ejemplar.id);
+          ref.invalidate(ejemplaresProvider(widget.granjaId));
+          ref.invalidate(conteosGruposProvider(widget.granjaId));
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('No se pudo eliminar: $e')),
+            );
+          }
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ejemplaresAsync = ref.watch(ejemplaresProvider(widget.granjaId));
@@ -622,7 +671,8 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
                   isDark: widget.isDark,
                   options: const ['Activos', 'Todos'],
                   selectedIndex: _soloActivos ? 0 : 1,
-                  onSelected: (i) => setState(() => _soloActivos = i == 0),
+                  onSelected: (i) =>
+                      setState(() => _soloActivos = i == 0),
                 ),
               ),
             ),
@@ -646,7 +696,12 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
                     final ej = lista[i];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: _EjemplarCard(ejemplar: ej, isDark: widget.isDark),
+                      child: _EjemplarCard(
+                        ejemplar: ej,
+                        isDark: widget.isDark,
+                        onTap: () => _abrirFormulario(ejemplar: ej),
+                        onLongPress: () => _confirmarEliminar(ej),
+                      ),
                     );
                   }, childCount: lista.length),
                 ),
@@ -662,61 +717,78 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
 class _EjemplarCard extends StatelessWidget {
   final Ejemplar ejemplar;
   final bool isDark;
-  const _EjemplarCard({required this.ejemplar, required this.isDark});
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  const _EjemplarCard({
+    required this.ejemplar,
+    required this.isDark,
+    this.onTap,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy");
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : AppColors.bgLight,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? AppColors.border1lg : AppColors.border1,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.bgCard : AppColors.bgLight,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? AppColors.border1lg : AppColors.border1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.green.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.tag, size: 16, color: AppColors.green),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '#${ejemplar.brazalete} · ${ejemplar.tipoNombre}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : AppColors.textPrimaryLg,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${ejemplar.grupoNombre} · ${fmt.format(ejemplar.fechaAdquisicion)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _EstadoBadge(activo: ejemplar.activo),
+            ],
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.tag, size: 16, color: AppColors.green),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '#${ejemplar.brazalete} · ${ejemplar.tipoNombre}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.textPrimary
-                        : AppColors.textPrimaryLg,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${ejemplar.grupoNombre} · ${fmt.format(ejemplar.fechaAdquisicion)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondaryLg,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _EstadoBadge(activo: ejemplar.activo),
-        ],
       ),
     );
   }
@@ -820,8 +892,8 @@ class _LotesTab extends ConsumerWidget {
               ),
             ),
           ),
-        ),
- */
+        ), */
+
         // Un bloque de lotes por grupo
         ...gruposFiltrados.map((grupo) {
           final tipo = tipos.firstWhere(
@@ -1303,10 +1375,11 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, i) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _BajaLoteCard(lote: lotes[i], isDark: widget.isDark),
-            ),
+            (context, i) =>
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _BajaLoteCard(lote: lotes[i], isDark: widget.isDark),
+                ),
             childCount: lotes.length,
           ),
         ),

@@ -512,3 +512,157 @@ final class BajasEjemplaresFamily extends $Family
   @override
   String toString() => r'bajasEjemplaresProvider';
 }
+
+@ProviderFor(propositos)
+final propositosProvider = PropositosFamily._();
+
+final class PropositosProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<CatalogoItem>>,
+          List<CatalogoItem>,
+          FutureOr<List<CatalogoItem>>
+        >
+    with
+        $FutureModifier<List<CatalogoItem>>,
+        $FutureProvider<List<CatalogoItem>> {
+  PropositosProvider._({
+    required PropositosFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'propositosProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$propositosHash();
+
+  @override
+  String toString() {
+    return r'propositosProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<CatalogoItem>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<CatalogoItem>> create(Ref ref) {
+    final argument = this.argument as String;
+    return propositos(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PropositosProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$propositosHash() => r'723624cb905c56f8c1e53722578ebe98fd1d549c';
+
+final class PropositosFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<CatalogoItem>>, String> {
+  PropositosFamily._()
+    : super(
+        retry: null,
+        name: r'propositosProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  PropositosProvider call(String granjaId) =>
+      PropositosProvider._(argument: granjaId, from: this);
+
+  @override
+  String toString() => r'propositosProvider';
+}
+
+@ProviderFor(tiposAdquisicion)
+final tiposAdquisicionProvider = TiposAdquisicionFamily._();
+
+final class TiposAdquisicionProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<CatalogoItem>>,
+          List<CatalogoItem>,
+          FutureOr<List<CatalogoItem>>
+        >
+    with
+        $FutureModifier<List<CatalogoItem>>,
+        $FutureProvider<List<CatalogoItem>> {
+  TiposAdquisicionProvider._({
+    required TiposAdquisicionFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'tiposAdquisicionProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$tiposAdquisicionHash();
+
+  @override
+  String toString() {
+    return r'tiposAdquisicionProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<CatalogoItem>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<CatalogoItem>> create(Ref ref) {
+    final argument = this.argument as String;
+    return tiposAdquisicion(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TiposAdquisicionProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$tiposAdquisicionHash() => r'efcfb26712f56d6f5bf85b21c899b1741d9c0300';
+
+final class TiposAdquisicionFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<CatalogoItem>>, String> {
+  TiposAdquisicionFamily._()
+    : super(
+        retry: null,
+        name: r'tiposAdquisicionProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  TiposAdquisicionProvider call(String granjaId) =>
+      TiposAdquisicionProvider._(argument: granjaId, from: this);
+
+  @override
+  String toString() => r'tiposAdquisicionProvider';
+}

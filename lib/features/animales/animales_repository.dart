@@ -7,6 +7,7 @@ import '../model/grupo/grupo.dart';
 import '../model/loteEntrada/loteEntrada.dart';
 import '../model/ejemplar/ejemplar.dart';
 import '../model/bajaEjemplar/baja_ejemplar.dart';
+import '../model/catalogoItem/catalogo_item.dart';
 
  
 class AnimalesRepository {
@@ -55,7 +56,7 @@ class AnimalesRepository {
       print(e);
     }
   }
-
+  
 
   // ── Grupos de la granja ───────────────────────────────────────────────────
   Future<List<Grupo>> getGrupos(String granjaId) async {
@@ -121,9 +122,13 @@ class AnimalesRepository {
           tipo_animal_id,
           grupo_id,
           brazalete,
+          proposito_id,
+          tipo_adquisicion_id,
           fecha_adquisicion,
+          costo_adquisicion,
           activo,
           notas,
+          lote_entrada_id,
           tipo_animal ( nombre ),
           grupos ( nombre )
         ''')
@@ -138,7 +143,95 @@ class AnimalesRepository {
     }).toList();
   }
 
-  // ── Bajas de ejemplares (individuales, con info de lote de baja) ──────────
+  // ── Catálogos para el formulario de ejemplar ──────────────────────────────
+  /// Catálogo de propósitos (Postura, Carne, Ornamental…). Incluye los
+  /// globales (granja_id null) y los propios de la granja, si los hubiera.
+  Future<List<CatalogoItem>> getPropositos(String granjaId) async {
+    final data = await _client
+        .from('cat_proposito_animal')
+        .select('id, nombre')
+        .or('granja_id.is.null,granja_id.eq.$granjaId')
+        .eq('activo', true)
+        .order('orden');
+    return (data as List).map((e) => CatalogoItem.fromJson(e)).toList();
+  }
+
+  /// Catálogo de formas de adquisición (Compra, Nacimiento, Donación…).
+  Future<List<CatalogoItem>> getTiposAdquisicion(String granjaId) async {
+    final data = await _client
+        .from('cat_tipo_adquisicion')
+        .select('id, nombre')
+        .or('granja_id.is.null,granja_id.eq.$granjaId')
+        .eq('activo', true)
+        .order('orden');
+    return (data as List).map((e) => CatalogoItem.fromJson(e)).toList();
+  }
+
+  // ── CRUD de ejemplares ─────────────────────────────────────────────────────
+  Future<void> addEjemplar({
+    required String granjaId,
+    required String tipoAnimalId,
+    required String grupoId,
+    required int brazalete,
+    required String propositoId,
+    required String tipoAdquisicionId,
+    required DateTime fechaAdquisicion,
+    double? costoAdquisicion,
+    String? notas,
+    String? loteEntradaId,
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+    await _client.from('ejemplares').insert({
+      'granja_id': granjaId,
+      'tipo_animal_id': tipoAnimalId,
+      'grupo_id': grupoId,
+      'brazalete': brazalete,
+      'proposito_id': propositoId,
+      'tipo_adquisicion_id': tipoAdquisicionId,
+      'fecha_adquisicion': _soloFecha(fechaAdquisicion),
+      'costo_adquisicion': costoAdquisicion,
+      'notas': notas,
+      'lote_entrada_id': loteEntradaId,
+      'created_by': userId,
+    });
+  }
+
+  Future<void> updateEjemplar({
+    required String id,
+    required String tipoAnimalId,
+    required String grupoId,
+    required int brazalete,
+    required String propositoId,
+    required String tipoAdquisicionId,
+    required DateTime fechaAdquisicion,
+    double? costoAdquisicion,
+    String? notas,
+    required bool activo,
+  }) async {
+    await _client
+        .from('ejemplares')
+        .update({
+          'tipo_animal_id': tipoAnimalId,
+          'grupo_id': grupoId,
+          'brazalete': brazalete,
+          'proposito_id': propositoId,
+          'tipo_adquisicion_id': tipoAdquisicionId,
+          'fecha_adquisicion': _soloFecha(fechaAdquisicion),
+          'costo_adquisicion': costoAdquisicion,
+          'notas': notas,
+          'activo': activo,
+        })
+        .eq('id', id);
+  }
+
+  Future<void> deleteEjemplar(String id) async {
+    await _client.from('ejemplares').delete().eq('id', id);
+  }
+
+  static String _soloFecha(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+
   /// Lista las bajas de ejemplares de la granja con: brazalete, tipo, grupo,
   /// razón de baja y, si aplica, el id del lote de baja al que pertenecen
   /// (para poder agruparlas en la tab "Bajas → Por lote").

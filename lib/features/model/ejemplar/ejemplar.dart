@@ -7,9 +7,15 @@ class Ejemplar {
   final String tipoAnimalId;
   final String grupoId;
   final int brazalete;
+  final String propositoId;
+  final String tipoAdquisicionId;
   final DateTime fechaAdquisicion;
+  final double? costoAdquisicion;
   final bool activo;
   final String? notas;
+
+  /// Si el ejemplar se creó como parte de un lote de entrada.
+  final String? loteEntradaId;
 
   /// Nombre del tipo de animal (aplanado desde el join `tipo_animal`).
   final String tipoNombre;
@@ -23,9 +29,13 @@ class Ejemplar {
     required this.tipoAnimalId,
     required this.grupoId,
     required this.brazalete,
+    required this.propositoId,
+    required this.tipoAdquisicionId,
     required this.fechaAdquisicion,
+    this.costoAdquisicion,
     required this.activo,
     this.notas,
+    this.loteEntradaId,
     required this.tipoNombre,
     required this.grupoNombre,
   });
@@ -37,15 +47,17 @@ class Ejemplar {
       tipoAnimalId: json['tipo_animal_id'] as String,
       grupoId: json['grupo_id'] as String,
       brazalete: json['brazalete'] as int,
+      propositoId: json['proposito_id'] as String,
+      tipoAdquisicionId: json['tipo_adquisicion_id'] as String,
       fechaAdquisicion: DateTime.parse(json['fecha_adquisicion'] as String),
+      costoAdquisicion: json['costo_adquisicion'] == null
+          ? null
+          : (json['costo_adquisicion'] as num).toDouble(),
       activo: json['activo'] as bool,
       notas: json['notas'] as String?,
+      loteEntradaId: json['lote_entrada_id'] as String?,
       tipoNombre: (json['tipo_nombre'] as String?) ?? '',
       grupoNombre: (json['grupo_nombre'] as String?) ?? '',
     );
   }
 }
-
-/* tengo una bd en supabase nesesito que la revises y la compares con la siguiente idea y me digas cual es mejor?
-
-pero que bd seria mas comoda(la bd de supabase o la propuesta, se debe pensar tambien en que sea comoodo y facil usala bd para una app ui/ux) tanto para agregar de una gallina para el probedor A como para agregar 10 para el probedor A y lo mismo para las ventas o muertes y hacendo lo mismo para el probedor B tomando en cuenta que algunos tienen brazalete y otros no? */
