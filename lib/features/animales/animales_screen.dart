@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:nueva_app/shared/widgets/confirmation_dialog.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
@@ -384,7 +385,7 @@ class _AppBarSection extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // TAB 1: GRUPOS
 // ─────────────────────────────────────────────────────────────────────────────
-class _GruposTab extends StatelessWidget {
+class _GruposTab extends ConsumerWidget {
   final String granjaId;
   final String tipoFiltro;
   final AsyncValue<List<TipoAnimal>> tiposAsync;
@@ -410,7 +411,7 @@ class _GruposTab extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return tiposAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
@@ -487,6 +488,35 @@ class _GruposTab extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _GrupoCard(
+                            onLongPress: () {
+                              ConfirmationDialog.show(
+                                context: context,
+                                isDark: isDark,
+                                title: 'Eliminar Grupo',
+                                content:
+                                    '¿Estás seguro de que deseas eliminar el grupo "${grupo.nombre}"? Esta acción no se puede deshacer.',
+                                onConfirm: () async {
+                                  try {
+                                    await ref
+                                        .read(animalesRepositoryProvider)
+                                        .deleteGrupo(
+                                          farmId: granjaId,
+                                          grupoId: grupo.id,
+                                        );
+
+                                    //ref.invalidate(animalesRepositoryProvider);
+                                    ref.invalidate(gruposProvider(granjaId));
+                                    ref.invalidate(
+                                      conteosGruposProvider(granjaId),
+                                    );
+                                    print('Error al eliminar granja:');
+                                  } catch (e) {
+                                    print('Error al eliminar granja: $e');
+                                  }
+                                },
+                              );
+                            },
+
                             grupo: grupo,
                             tipo: tipo,
                             conteo: conteo,
@@ -572,7 +602,7 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
         return CustomScrollView(
           slivers: [
             // Buscador
-            SliverToBoxAdapter(
+            /* SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: _SearchField(
@@ -582,7 +612,7 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
                   onChanged: (v) => setState(() => _query = v),
                 ),
               ),
-            ),
+            ), */
 
             // Toggle Activos / Todos
             SliverToBoxAdapter(
@@ -592,8 +622,7 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
                   isDark: widget.isDark,
                   options: const ['Activos', 'Todos'],
                   selectedIndex: _soloActivos ? 0 : 1,
-                  onSelected: (i) =>
-                      setState(() => _soloActivos = i == 0),
+                  onSelected: (i) => setState(() => _soloActivos = i == 0),
                 ),
               ),
             ),
@@ -755,7 +784,7 @@ class _LotesTab extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         // Barra de búsqueda (visual — implementa lógica si la necesitas)
-        SliverToBoxAdapter(
+        /* SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Container(
@@ -792,7 +821,7 @@ class _LotesTab extends ConsumerWidget {
             ),
           ),
         ),
-
+ */
         // Un bloque de lotes por grupo
         ...gruposFiltrados.map((grupo) {
           final tipo = tipos.firstWhere(
@@ -971,7 +1000,7 @@ class _LoteTabCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // TAB 4: TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
-class _TiposTab extends StatelessWidget {
+class _TiposTab extends ConsumerWidget {
   final String granjaId;
   final List<TipoAnimal> tipos;
   final List<Grupo> grupos;
@@ -987,7 +1016,7 @@ class _TiposTab extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (tipos.isEmpty) {
       return _TabPlaceholder(
         icon: Icons.layers_outlined,
@@ -1012,80 +1041,104 @@ class _TiposTab extends StatelessWidget {
         );
         final color = _colorParaTipo(tipo.id, tipos);
 
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.bgCard : AppColors.bgLight,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isDark ? AppColors.border1lg : AppColors.border1,
+        return GestureDetector(
+          onLongPress: () {
+            ConfirmationDialog.show(
+              context: context,
+              isDark: isDark,
+              title: 'Eliminar Tipo',
+              content:
+                  '¿Estás seguro de que deseas eliminar el Tipo "${tipo.nombre}"? Esta acción no se puede deshacer.',
+              onConfirm: () async {
+                try {
+                  await ref
+                      .read(animalesRepositoryProvider)
+                      .deleteTipoAnimal(farmId: granjaId, tipoId: tipo.id);
+
+                  //ref.invalidate(animalesRepositoryProvider);
+                  ref.invalidate(tiposAnimalProvider(granjaId));
+                  //ref.invalidate(conteosGruposProvider(granjaId));
+                } catch (e) {
+                  print('Error al eliminar Tipo: $e');
+                }
+              },
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.bgCard : AppColors.bgLight,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? AppColors.border1lg : AppColors.border1,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tipo.nombre,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.textPrimary
-                            : AppColors.textPrimaryLg,
-                      ),
-                    ),
-                    Text(
-                      '${gruposDeTipo.length} grupos · $vivos vivos',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? AppColors.textSecondary
-                            : AppColors.textSecondaryLg,
-                      ),
-                    ),
-                    if (tipo.descripcion != null)
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        tipo.descripcion!,
+                        tipo.nombre,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : AppColors.textPrimaryLg,
+                        ),
+                      ),
+                      Text(
+                        '${gruposDeTipo.length} grupos · $vivos vivos',
+                        style: TextStyle(
+                          fontSize: 12,
                           color: isDark
                               ? AppColors.textSecondary
                               : AppColors.textSecondaryLg,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                  ],
+                      if (tipo.descripcion != null)
+                        Text(
+                          tipo.descripcion!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark
+                                ? AppColors.textSecondary
+                                : AppColors.textSecondaryLg,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              _CardMenu(
-                isDark: isDark,
-                onEdit: () => context.push('/tipos/${tipo.id}/editar'),
-                onDelete: () => _confirmarEliminar(context, tipo),
-              ),
-            ],
+                /* _CardMenu(
+                  isDark: isDark,
+                  onEdit: () => context.push('/tipos/${tipo.id}/editar'),
+                  onDelete: () => _confirmarEliminar(context, tipo),
+                ), */
+              ],
+            ),
           ),
         );
       },
@@ -1197,7 +1250,7 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
             ),
 
             // ── Buscador ───────────────────────────────────────────────
-            SliverToBoxAdapter(
+            /* SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: _SearchField(
@@ -1207,7 +1260,7 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
                   onChanged: (v) => setState(() => _query = v),
                 ),
               ),
-            ),
+            ), */
 
             if (_porLote)
               ..._buildPorLote(bajasFiltradasPorTipo, q)
@@ -1250,11 +1303,10 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, i) =>
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _BajaLoteCard(lote: lotes[i], isDark: widget.isDark),
-                ),
+            (context, i) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _BajaLoteCard(lote: lotes[i], isDark: widget.isDark),
+            ),
             childCount: lotes.length,
           ),
         ),
@@ -1824,7 +1876,7 @@ class _GrupoCard extends ConsumerWidget {
   final GrupoConteo conteo;
   final Color stripColor;
   final bool expandido, colapsado, isDark;
-  final VoidCallback onToggleExpand, onToggleColapso;
+  final VoidCallback onToggleExpand, onToggleColapso, onLongPress;
   final String granjaId;
 
   const _GrupoCard({
@@ -1838,215 +1890,220 @@ class _GrupoCard extends ConsumerWidget {
     required this.onToggleColapso,
     required this.granjaId,
     required this.isDark,
+    required this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.bgCard : AppColors.bgLight,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: const EdgeInsets.only(
-              top: 16,
-              left: 16,
-              right: 48,
-              bottom: 16,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _mostrarDetalle(context),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              grupo.nombre,
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? AppColors.textPrimary
-                                    : AppColors.textPrimaryLg,
-                              ),
-                            ),
-                            if (grupo.descripcion != null && !colapsado)
+    return GestureDetector(
+      //onTap: onTap,
+      onLongPress: onLongPress,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.bgCard : AppColors.bgLight,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.only(
+                top: 16,
+                left: 16,
+                right: 48,
+                bottom: 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _mostrarDetalle(context),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                grupo.descripcion!,
+                                grupo.nombre,
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
                                   color: isDark
-                                      ? AppColors.textSecondary
-                                      : AppColors.textSecondaryLg,
+                                      ? AppColors.textPrimary
+                                      : AppColors.textPrimaryLg,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                          ],
+                              if (grupo.descripcion != null && !colapsado)
+                                Text(
+                                  grupo.descripcion!,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isDark
+                                        ? AppColors.textSecondary
+                                        : AppColors.textSecondaryLg,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.egg_outlined,
+                            size: 22,
+                            color: isDark
+                                ? AppColors.textPrimary
+                                : AppColors.textPrimaryLg,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${conteo.vivos}',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? AppColors.textPrimary
+                                  : AppColors.textPrimaryLg,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              colapsado ? Icons.expand_more : Icons.expand_less,
+                              color: isDark
+                                  ? AppColors.textPrimary
+                                  : AppColors.textPrimaryLg,
+                            ),
+                            onPressed: onToggleColapso,
+                          ),
+                          /* _CardMenu(
+                            onEdit: () =>
+                                context.push('/grupos/${grupo.id}/editar'),
+                            onDelete: () => _confirmarEliminar(context),
+                            isDark: isDark,
+                          ), */
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (!colapsado) ...[
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(
-                          Icons.egg_outlined,
-                          size: 22,
-                          color: isDark
-                              ? AppColors.textPrimary
-                              : AppColors.textPrimaryLg,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${conteo.vivos}',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? AppColors.textPrimary
-                                : AppColors.textPrimaryLg,
+                        Expanded(
+                          child: _MiniStat(
+                            icon: Icons.egg_outlined,
+                            value: '${conteo.vivos}',
+                            label: 'Vivos',
+                            isDark: isDark,
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(
-                            colapsado ? Icons.expand_more : Icons.expand_less,
-                            color: isDark
-                                ? AppColors.textPrimary
-                                : AppColors.textPrimaryLg,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _MiniStat(
+                            icon: Icons.tag,
+                            value: '${conteo.total}',
+                            label: 'Brazaletes',
+                            isDark: isDark,
                           ),
-                          onPressed: onToggleColapso,
                         ),
-                        _CardMenu(
-                          onEdit: () =>
-                              context.push('/grupos/${grupo.id}/editar'),
-                          onDelete: () => _confirmarEliminar(context),
-                          isDark: isDark,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _MiniStat(
+                            icon: Icons.one_x_mobiledata_rounded,
+                            value: '${conteo.muertes}',
+                            label: 'Muertes',
+                            danger: true,
+                            isDark: isDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _LotesSection(
+                      grupoId: grupo.id,
+                      expandido: expandido,
+                      onToggle: onToggleExpand,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ActionButton(
+                            icon: Icons.add,
+                            label: 'Ejemplar',
+                            isDark: isDark,
+                            onTap: () => context.push(
+                              '/aves/nuevo?tipo=${grupo.tipoAnimalId}&grupo=${grupo.id}',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _ActionButton(
+                            icon: Icons.inventory_2_outlined,
+                            label: 'Lote',
+                            isDark: isDark,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => NuevoLoteEntrada(
+                                    isDark: isDark,
+                                  ), // Ya no pasa isDark
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _ActionButton(
+                            icon: Icons.one_x_mobiledata_rounded,
+                            label: 'Baja',
+                            danger: true,
+                            isDark: isDark,
+                            onTap: () =>
+                                context.push('/bajas/nueva?grupo=${grupo.id}'),
+                          ),
                         ),
                       ],
                     ),
                   ],
-                ),
-                if (!colapsado) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _MiniStat(
-                          icon: Icons.egg_outlined,
-                          value: '${conteo.vivos}',
-                          label: 'Vivos',
-                          isDark: isDark,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _MiniStat(
-                          icon: Icons.tag,
-                          value: '${conteo.total}',
-                          label: 'Brazaletes',
-                          isDark: isDark,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _MiniStat(
-                          icon: Icons.one_x_mobiledata_rounded,
-                          value: '${conteo.muertes}',
-                          label: 'Muertes',
-                          danger: true,
-                          isDark: isDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _LotesSection(
-                    grupoId: grupo.id,
-                    expandido: expandido,
-                    onToggle: onToggleExpand,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.add,
-                          label: 'Ejemplar',
-                          isDark: isDark,
-                          onTap: () => context.push(
-                            '/aves/nuevo?tipo=${grupo.tipoAnimalId}&grupo=${grupo.id}',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.inventory_2_outlined,
-                          label: 'Lote',
-                          isDark: isDark,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => NuevoLoteEntrada(
-                                  isDark: isDark,
-                                ), // Ya no pasa isDark
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.one_x_mobiledata_rounded,
-                          label: 'Baja',
-                          danger: true,
-                          isDark: isDark,
-                          onTap: () =>
-                              context.push('/bajas/nueva?grupo=${grupo.id}'),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-          // Franja de color lateral
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 32,
-              color: stripColor,
-              alignment: Alignment.center,
-              child: RotatedBox(
-                quarterTurns: 3,
-                child: Text(
-                  tipo.nombre,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
+            // Franja de color lateral
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 32,
+                color: stripColor,
+                alignment: Alignment.center,
+                child: RotatedBox(
+                  quarterTurns: 3,
+                  child: Text(
+                    tipo.nombre,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

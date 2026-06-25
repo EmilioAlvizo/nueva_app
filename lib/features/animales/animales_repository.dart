@@ -42,21 +42,20 @@ class AnimalesRepository {
   }
 
   /// eliminar tipo de animal 
-  Future<void> deleteTipoAnimal({
-    required String granjaId,
-    required String nombre,
-    String? descripcion,
-  }) async {
+  Future<void> deleteTipoAnimal({required String farmId,required String tipoId}) async {
     final userId = supabase.auth.currentUser?.id;
 
-    await _client.from('tipo_animal').insert({
-      'granja_id': granjaId,
-      'nombre': nombre,
-      'created_by': userId,
-      'descripcion': descripcion,
-    });
+    if (userId == null) throw Exception('Usuario no autenticado');
+
+    try {
+      await supabase.from('tipo_animal').delete()
+        .eq('granja_id',farmId)
+        .eq('id', tipoId);
+    } catch (e) {
+      print(e);
+    }
   }
-  
+
 
   // ── Grupos de la granja ───────────────────────────────────────────────────
   Future<List<Grupo>> getGrupos(String granjaId) async {
@@ -66,6 +65,21 @@ class AnimalesRepository {
         .eq('granja_id', granjaId)
         .order('nombre');
     return (data as List).map((e) => Grupo.fromJson(e)).toList();
+  }
+
+  /// eliminar grupos
+  Future<void> deleteGrupo({required String farmId,required String grupoId}) async {
+    final userId = supabase.auth.currentUser?.id;
+
+    if (userId == null) throw Exception('Usuario no autenticado');
+
+    try {
+      await supabase.from('grupos').delete()
+        .eq('granja_id',farmId)
+        .eq('id', grupoId);
+    } catch (e) {
+      print(e);
+    }
   }
  
   // ── Lotes de entrada con conteos (usa vista existente + join cat) ─────────

@@ -45,3 +45,7 @@ class Ejemplar {
     );
   }
 }
+
+/* tengo una bd en supabase nesesito que la revises y la compares con la siguiente idea y me digas cual es mejor?
+
+pero que bd seria mas comoda(la bd de supabase o la propuesta, se debe pensar tambien en que sea comoodo y facil usala bd para una app ui/ux) tanto para agregar de una gallina para el probedor A como para agregar 10 para el probedor A y lo mismo para las ventas o muertes y hacendo lo mismo para el probedor B tomando en cuenta que algunos tienen brazalete y otros no? */
