@@ -1,12 +1,14 @@
 // lib/features/animales/model/ejemplar/ejemplar.dart
 
 /// Un animal individual identificado por su número de brazalete.
-class Ejemplar {
+class Animal {
   final String id;
   final String granjaId;
   final String tipoAnimalId;
-  final String grupoId;
-  final int brazalete;
+  final String? grupoId;
+  final String? altaId;
+  final String? bajaId;
+  final int? brazalete;
   final String propositoId;
   final String tipoAdquisicionId;
   final DateTime fechaAdquisicion;
@@ -14,7 +16,7 @@ class Ejemplar {
   final bool activo;
   final String? notas;
 
-  /// Si el ejemplar se creó como parte de un lote de entrada.
+  /// Si el Animal se creó como parte de un lote de entrada.
   final String? loteEntradaId;
 
   /// Nombre del tipo de animal (aplanado desde el join `tipo_animal`).
@@ -23,12 +25,14 @@ class Ejemplar {
   /// Nombre del grupo (aplanado desde el join `grupos`).
   final String grupoNombre;
 
-  const Ejemplar({
+  const Animal({
     required this.id,
     required this.granjaId,
     required this.tipoAnimalId,
-    required this.grupoId,
-    required this.brazalete,
+    this.grupoId,
+    this.altaId,
+    this.bajaId,
+    this.brazalete,
     required this.propositoId,
     required this.tipoAdquisicionId,
     required this.fechaAdquisicion,
@@ -40,13 +44,15 @@ class Ejemplar {
     required this.grupoNombre,
   });
 
-  factory Ejemplar.fromJson(Map<String, dynamic> json) {
-    return Ejemplar(
+  factory Animal.fromJson(Map<String, dynamic> json) {
+    return Animal(
       id: json['id'] as String,
       granjaId: json['granja_id'] as String,
       tipoAnimalId: json['tipo_animal_id'] as String,
-      grupoId: json['grupo_id'] as String,
-      brazalete: json['brazalete'] as int,
+      grupoId: json['grupo_id'] as String?,
+      altaId: json['alta_id'] as String?,
+      bajaId: json['baja_id'] as String?,
+      brazalete: json['brazalete'] as int?,
       propositoId: json['proposito_id'] as String,
       tipoAdquisicionId: json['tipo_adquisicion_id'] as String,
       fechaAdquisicion: DateTime.parse(json['fecha_adquisicion'] as String),

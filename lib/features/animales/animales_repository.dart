@@ -86,15 +86,15 @@ class AnimalesRepository {
   // ── Lotes de entrada con conteos (usa vista existente + join cat) ─────────
   Future<List<LoteEntrada>> getLotesDeGrupo(String grupoId) async {
     final data = await _client
-        .from('vista_lotes_entrada')
+        .from('vista_altas_animales')
         .select('''
           id,
           grupo_id,
           tipo_animal_id,
-          fecha_adquisicion,
+          fecha_alta,
           proveedor,
           costo_total,
-          total_ejemplares,
+          total_animales,
           brazaletes,
           cat_tipo_adquisicion!tipo_adquisicion_id ( nombre )
         ''')
@@ -110,17 +110,19 @@ class AnimalesRepository {
     }).toList();
   }
  
-  // ── Ejemplares individuales de la granja ──────────────────────────────────
+  // ── Animales individuales de la granja ──────────────────────────────────
   /// Lista todos los ejemplares de la granja con el nombre de su tipo y
-  /// grupo ya incluidos (join). Útil para la tab "Ejemplares".
-  Future<List<Ejemplar>> getEjemplares(String granjaId) async {
+  /// grupo ya incluidos (join). Útil para la tab "Animales".
+  Future<List<Animal>> getAnimales(String granjaId) async {
     final data = await _client
-        .from('ejemplares')
+        .from('animales')
         .select('''
           id,
           granja_id,
           tipo_animal_id,
           grupo_id,
+          alta_id,
+          baja_id,
           brazalete,
           proposito_id,
           tipo_adquisicion_id,
@@ -128,7 +130,6 @@ class AnimalesRepository {
           costo_adquisicion,
           activo,
           notas,
-          lote_entrada_id,
           tipo_animal ( nombre ),
           grupos ( nombre )
         ''')
@@ -139,7 +140,7 @@ class AnimalesRepository {
       final raw = Map<String, dynamic>.from(e);
       raw['tipo_nombre'] = (raw['tipo_animal'] as Map?)?['nombre'] ?? '';
       raw['grupo_nombre'] = (raw['grupos'] as Map?)?['nombre'] ?? '';
-      return Ejemplar.fromJson(raw);
+      return Animal.fromJson(raw);
     }).toList();
   }
 
@@ -181,7 +182,7 @@ class AnimalesRepository {
     String? loteEntradaId,
   }) async {
     final userId = supabase.auth.currentUser?.id;
-    await _client.from('ejemplares').insert({
+    await _client.from('animales').insert({
       'granja_id': granjaId,
       'tipo_animal_id': tipoAnimalId,
       'grupo_id': grupoId,
@@ -209,7 +210,7 @@ class AnimalesRepository {
     required bool activo,
   }) async {
     await _client
-        .from('ejemplares')
+        .from('animales')
         .update({
           'tipo_animal_id': tipoAnimalId,
           'grupo_id': grupoId,
@@ -225,7 +226,7 @@ class AnimalesRepository {
   }
 
   Future<void> deleteEjemplar(String id) async {
-    await _client.from('ejemplares').delete().eq('id', id);
+    await _client.from('animales').delete().eq('id', id);
   }
 
   static String _soloFecha(DateTime d) =>
@@ -274,21 +275,21 @@ class AnimalesRepository {
   Future<Map<String, _ConteoGrupo>> getConteosGrupos(String granjaId) async {
     // vivos
     final vivosData = await _client
-        .from('ejemplares')
+        .from('animales')
         .select('grupo_id')
         .eq('granja_id', granjaId)
         .eq('activo', true);
  
     // muertos (activo=false, lo manejamos contando bajas)
     final muertosData = await _client
-        .from('ejemplares')
+        .from('animales')
         .select('grupo_id')
         .eq('granja_id', granjaId)
         .eq('activo', false);
  
     // total
     final totalData = await _client
-        .from('ejemplares')
+        .from('animales')
         .select('grupo_id')
         .eq('granja_id', granjaId);
  

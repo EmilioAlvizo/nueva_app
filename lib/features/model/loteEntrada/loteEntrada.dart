@@ -31,7 +31,7 @@ class LoteEntrada {
         tipoAdquisicionNombre: j['tipo_adquisicion_nombre'] as String? ?? '',
         totalEjemplares: (j['total_ejemplares'] as num?)?.toInt() ?? 0,
         brazaletes: (j['brazaletes'] as List<dynamic>?)
-                ?.map((e) => (e as num).toInt())
+                ?.map((e) => ((e ?? 0) as num).toInt())
                 .toList() ??
             [],
       );

@@ -9,14 +9,14 @@ import '../../../features/animales/animales_provider.dart';
 import '../grupo/grupo.dart';
 import 'ejemplar.dart';
 
-/// Bottom sheet para crear o editar un [Ejemplar].
+/// Bottom sheet para crear o editar un [Animal].
 ///
 /// - Modo creación: pasa `ejemplar: null`.
-/// - Modo edición: pasa el [Ejemplar] existente; los campos se precargan.
+/// - Modo edición: pasa el [Animal] existente; los campos se precargan.
 class NuevoEjemplar extends ConsumerStatefulWidget {
   final String granjaId;
   final bool isDark;
-  final Ejemplar? ejemplar;
+  final Animal? ejemplar;
 
   /// Tipo de animal preseleccionado (por ejemplo, el filtro activo de la
   /// pantalla) cuando se crea un ejemplar nuevo.
@@ -138,7 +138,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
         );
       }
 
-      ref.invalidate(ejemplaresProvider(widget.granjaId));
+      ref.invalidate(animalesProvider(widget.granjaId));
       ref.invalidate(conteosGruposProvider(widget.granjaId));
 
       if (mounted) Navigator.of(context).pop();
@@ -394,7 +394,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                     onChanged: (v) => setState(() => _activo = v),
                     activeColor: AppColors.green,
                     title: Text(
-                      'Ejemplar activo',
+                      'Animal activo',
                       style: TextStyle(
                         fontSize: 14,
                         color: isDark

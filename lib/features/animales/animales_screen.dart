@@ -143,7 +143,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
                     onToggleColapso: _toggleColapso,
                     isDark: isDark,
                   ),
-                  // ── Ejemplares ──────────────────────────────────────
+                  // ── Animales ──────────────────────────────────────
                   _EjemplaresTab(
                     granjaId: widget.granjaId,
                     tipoFiltro: tipoFiltro,
@@ -579,7 +579,7 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
     super.dispose();
   }
 
-  Future<void> _abrirFormulario({Ejemplar? ejemplar}) {
+  Future<void> _abrirFormulario({Animal? ejemplar}) {
     return showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -595,7 +595,7 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
     );
   }
 
-  void _confirmarEliminar(Ejemplar ejemplar) {
+  void _confirmarEliminar(Animal ejemplar) {
     ConfirmationDialog.show(
       context: context,
       isDark: widget.isDark,
@@ -608,13 +608,13 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
           await ref
               .read(animalesRepositoryProvider)
               .deleteEjemplar(ejemplar.id);
-          ref.invalidate(ejemplaresProvider(widget.granjaId));
+          ref.invalidate(animalesProvider(widget.granjaId));
           ref.invalidate(conteosGruposProvider(widget.granjaId));
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('No se pudo eliminar: $e')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('No se pudo eliminar: $e')));
           }
         }
       },
@@ -623,7 +623,7 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
 
   @override
   Widget build(BuildContext context) {
-    final ejemplaresAsync = ref.watch(ejemplaresProvider(widget.granjaId));
+    final ejemplaresAsync = ref.watch(animalesProvider(widget.granjaId));
 
     return ejemplaresAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -671,8 +671,7 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
                   isDark: widget.isDark,
                   options: const ['Activos', 'Todos'],
                   selectedIndex: _soloActivos ? 0 : 1,
-                  onSelected: (i) =>
-                      setState(() => _soloActivos = i == 0),
+                  onSelected: (i) => setState(() => _soloActivos = i == 0),
                 ),
               ),
             ),
@@ -715,7 +714,7 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
 
 /// Card individual de un ejemplar (brazalete + tipo + grupo + fecha + estado)
 class _EjemplarCard extends StatelessWidget {
-  final Ejemplar ejemplar;
+  final Animal ejemplar;
   final bool isDark;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -1333,7 +1332,6 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
                 ),
               ),
             ), */
-
             if (_porLote)
               ..._buildPorLote(bajasFiltradasPorTipo, q)
             else
@@ -1375,11 +1373,10 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, i) =>
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _BajaLoteCard(lote: lotes[i], isDark: widget.isDark),
-                ),
+            (context, i) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _BajaLoteCard(lote: lotes[i], isDark: widget.isDark),
+            ),
             childCount: lotes.length,
           ),
         ),
@@ -1578,7 +1575,7 @@ class _BajaLoteCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: (isDark ? AppColors.bgCard2 : AppColors.border1)
-                            .withOpacity(0.6),
+                            .withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -2109,7 +2106,7 @@ class _GrupoCard extends ConsumerWidget {
                         Expanded(
                           child: _ActionButton(
                             icon: Icons.add,
-                            label: 'Ejemplar',
+                            label: 'Animal',
                             isDark: isDark,
                             onTap: () => context.push(
                               '/aves/nuevo?tipo=${grupo.tipoAnimalId}&grupo=${grupo.id}',
@@ -2277,22 +2274,31 @@ class _LotesSection extends ConsumerWidget {
               loading: () => const Center(
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              error: (e, _) =>
-                  Text('Error: $e', style: const TextStyle(color: Colors.red)),
-              data: (lotes) => lotes.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        'Aún no hay lotes de entrada.',
-                        style: TextStyle(fontSize: 12, color: Colors.white38),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  : Column(
-                      children: lotes
-                          .map((l) => _LoteCard(lote: l, isDark: isDark))
-                          .toList(),
-                    ),
+              error: (e, stackTrace) {
+                debugPrint('❌ ERROR EN LOTES: $e');
+                debugPrint('📌 STACKTRACE:\n$stackTrace');
+                return Text(
+                  '$lotesAsync Error: $e',
+                  style: const TextStyle(color: Colors.red),
+                );
+              },
+              data: (lotes) {
+                debugPrint('Contenido de los lotes: $lotes');
+                return lotes.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'Aún no hay lotes de entrada.',
+                          style: TextStyle(fontSize: 12, color: Colors.white38),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    : Column(
+                        children: lotes
+                            .map((l) => _LoteCard(lote: l, isDark: isDark))
+                            .toList(),
+                      );
+              },
             ),
           ),
       ],

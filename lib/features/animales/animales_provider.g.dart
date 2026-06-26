@@ -361,53 +361,53 @@ final class LotesDeGrupoFamily extends $Family
   String toString() => r'lotesDeGrupoProvider';
 }
 
-@ProviderFor(ejemplares)
-final ejemplaresProvider = EjemplaresFamily._();
+@ProviderFor(animales)
+final animalesProvider = AnimalesFamily._();
 
-final class EjemplaresProvider
+final class AnimalesProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<Ejemplar>>,
-          List<Ejemplar>,
-          FutureOr<List<Ejemplar>>
+          AsyncValue<List<Animal>>,
+          List<Animal>,
+          FutureOr<List<Animal>>
         >
-    with $FutureModifier<List<Ejemplar>>, $FutureProvider<List<Ejemplar>> {
-  EjemplaresProvider._({
-    required EjemplaresFamily super.from,
+    with $FutureModifier<List<Animal>>, $FutureProvider<List<Animal>> {
+  AnimalesProvider._({
+    required AnimalesFamily super.from,
     required String super.argument,
   }) : super(
          retry: null,
-         name: r'ejemplaresProvider',
+         name: r'animalesProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$ejemplaresHash();
+  String debugGetCreateSourceHash() => _$animalesHash();
 
   @override
   String toString() {
-    return r'ejemplaresProvider'
+    return r'animalesProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  $FutureProviderElement<List<Ejemplar>> $createElement(
+  $FutureProviderElement<List<Animal>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<Ejemplar>> create(Ref ref) {
+  FutureOr<List<Animal>> create(Ref ref) {
     final argument = this.argument as String;
-    return ejemplares(ref, argument);
+    return animales(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is EjemplaresProvider && other.argument == argument;
+    return other is AnimalesProvider && other.argument == argument;
   }
 
   @override
@@ -416,24 +416,24 @@ final class EjemplaresProvider
   }
 }
 
-String _$ejemplaresHash() => r'43caf40e5458674b9aa5bf979bcc51f02de0d14a';
+String _$animalesHash() => r'ff38046cfe14b51051ff0621e3f8f6eb5a00d078';
 
-final class EjemplaresFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Ejemplar>>, String> {
-  EjemplaresFamily._()
+final class AnimalesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<Animal>>, String> {
+  AnimalesFamily._()
     : super(
         retry: null,
-        name: r'ejemplaresProvider',
+        name: r'animalesProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  EjemplaresProvider call(String granjaId) =>
-      EjemplaresProvider._(argument: granjaId, from: this);
+  AnimalesProvider call(String granjaId) =>
+      AnimalesProvider._(argument: granjaId, from: this);
 
   @override
-  String toString() => r'ejemplaresProvider';
+  String toString() => r'animalesProvider';
 }
 
 @ProviderFor(bajasEjemplares)

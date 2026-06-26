@@ -51,10 +51,10 @@ class GrupoConteo {
 Future<List<LoteEntrada>> lotesDeGrupo(Ref ref, String grupoId) =>
     ref.watch(animalesRepositoryProvider).getLotesDeGrupo(grupoId);
 
-// ── Ejemplares individuales (tab "Ejemplares") ────────────────────────────────
+// ── Animales individuales (tab "Animales") ────────────────────────────────
 @riverpod
-Future<List<Ejemplar>> ejemplares(Ref ref, String granjaId) =>
-    ref.watch(animalesRepositoryProvider).getEjemplares(granjaId);
+Future<List<Animal>> animales(Ref ref, String granjaId) =>
+    ref.watch(animalesRepositoryProvider).getAnimales(granjaId);
 
 // ── Bajas de ejemplares (tab "Bajas") ─────────────────────────────────────────
 @riverpod
