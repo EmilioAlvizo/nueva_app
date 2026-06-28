@@ -290,13 +290,13 @@ final lotesDeGrupoProvider = LotesDeGrupoFamily._();
 final class LotesDeGrupoProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<LoteEntrada>>,
-          List<LoteEntrada>,
-          FutureOr<List<LoteEntrada>>
+          AsyncValue<List<AltaAnimales>>,
+          List<AltaAnimales>,
+          FutureOr<List<AltaAnimales>>
         >
     with
-        $FutureModifier<List<LoteEntrada>>,
-        $FutureProvider<List<LoteEntrada>> {
+        $FutureModifier<List<AltaAnimales>>,
+        $FutureProvider<List<AltaAnimales>> {
   LotesDeGrupoProvider._({
     required LotesDeGrupoFamily super.from,
     required String super.argument,
@@ -320,12 +320,12 @@ final class LotesDeGrupoProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<LoteEntrada>> $createElement(
+  $FutureProviderElement<List<AltaAnimales>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<LoteEntrada>> create(Ref ref) {
+  FutureOr<List<AltaAnimales>> create(Ref ref) {
     final argument = this.argument as String;
     return lotesDeGrupo(ref, argument);
   }
@@ -341,10 +341,10 @@ final class LotesDeGrupoProvider
   }
 }
 
-String _$lotesDeGrupoHash() => r'b8c747571c6bebb04ab0ff22ba18e1032dc375bf';
+String _$lotesDeGrupoHash() => r'f84373fa4818bb87d22dffeb5198691dcd60f7c8';
 
 final class LotesDeGrupoFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<LoteEntrada>>, String> {
+    with $FunctionalFamilyOverride<FutureOr<List<AltaAnimales>>, String> {
   LotesDeGrupoFamily._()
     : super(
         retry: null,

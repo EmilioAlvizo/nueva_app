@@ -7,7 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../features/animales/animales_provider.dart';
 //import '../../animales_provider.dart';
 import '../grupo/grupo.dart';
-import 'ejemplar.dart';
+import 'animal.dart';
 
 /// Bottom sheet para crear o editar un [Animal].
 ///
@@ -125,7 +125,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
           activo: _activo,
         );
       } else {
-        await repo.addEjemplar(
+        await repo.addAnimal(
           granjaId: widget.granjaId,
           tipoAnimalId: _tipoAnimalId!,
           grupoId: _grupoId!,

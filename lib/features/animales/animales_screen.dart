@@ -7,12 +7,12 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
-import '../model/loteEntrada/loteEntrada.dart';
-import '../model/loteEntrada/nuevo_loteEntrada.dart';
+import '../model/altaAnimales/altaAnimales.dart';
+import '../model/altaAnimales/nuevo_loteEntrada.dart';
 import '../model/grupo/nuevo_grupo.dart';
 import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
-import '../model/ejemplar/ejemplar.dart';
-import '../model/ejemplar/nuevo_ejemplar.dart';
+import '../model/animal/animal.dart';
+import '../model/animal/nuevo_ejemplar.dart';
 import '../model/bajaEjemplar/baja_ejemplar.dart';
 import 'animales_provider.dart';
 import 'tipo_filtro.dart';
@@ -951,7 +951,7 @@ class _LotesDeGrupoSliver extends ConsumerWidget {
 
 /// Card de lote en la tab de Lotes (diseño compacto de lista)
 class _LoteTabCard extends StatelessWidget {
-  final LoteEntrada lote;
+  final AltaAnimales lote;
   final String tipoNombre;
   final String grupoNombre;
   final bool isDark;
@@ -966,7 +966,7 @@ class _LoteTabCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy");
-    final vivos = lote.brazaletes.length;
+    final vivos = lote.cantidadAnimales;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1010,7 +1010,7 @@ class _LoteTabCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  fmt.format(lote.fechaAdquisicion),
+                  fmt.format(lote.fechaAlta),
                   style: TextStyle(
                     fontSize: 11,
                     color: isDark
@@ -1021,7 +1021,7 @@ class _LoteTabCard extends StatelessWidget {
                 if (lote.proveedor != null || lote.costoTotal != null)
                   Text(
                     [
-                      lote.tipoAdquisicionNombre,
+                      lote.tipoAdquisicionId,
                       if (lote.proveedor != null) lote.proveedor!,
                     ].join(' · '),
                     style: const TextStyle(
@@ -1036,7 +1036,7 @@ class _LoteTabCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$vivos/${lote.totalEjemplares}',
+                '$vivos/${lote.cantidadAnimales}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -2310,14 +2310,14 @@ class _LotesSection extends ConsumerWidget {
 // CARD DE LOTE (dentro de grupo expandido)
 // ─────────────────────────────────────────────────────────────────────────────
 class _LoteCard extends StatelessWidget {
-  final LoteEntrada lote;
+  final AltaAnimales lote;
   final bool isDark;
   const _LoteCard({required this.lote, this.isDark = true});
 
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy");
-    final vivos = lote.brazaletes.length;
+    final vivos = lote.cantidadAnimales;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2343,7 +2343,7 @@ class _LoteCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      fmt.format(lote.fechaAdquisicion),
+                      fmt.format(lote.fechaAlta),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -2352,7 +2352,7 @@ class _LoteCard extends StatelessWidget {
                     ),
                     Text(
                       [
-                        lote.tipoAdquisicionNombre,
+                        lote.tipoAdquisicionId,
                         if (lote.proveedor != null) lote.proveedor!,
                         if (lote.costoTotal != null)
                           '\$${lote.costoTotal!.toStringAsFixed(0)}',
@@ -2368,7 +2368,7 @@ class _LoteCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '$vivos/${lote.totalEjemplares}',
+                '$vivos/${lote.cantidadAnimales}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -2384,12 +2384,12 @@ class _LoteCard extends StatelessWidget {
               ),
             ],
           ),
-          if (lote.brazaletes.isNotEmpty) ...[
+          if (lote.brazaletes?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
             Wrap(
               spacing: 4,
               runSpacing: 4,
-              children: lote.brazaletes
+              children: lote.brazaletes!
                   .map((b) => _BrazaleteBadge(numero: b, isDark: isDark))
                   .toList(),
             ),

@@ -4,16 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/supabase/supabase_client.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
-import '../model/loteEntrada/loteEntrada.dart';
-import '../model/ejemplar/ejemplar.dart';
+import '../model/altaAnimales/altaAnimales.dart';
+import '../model/animal/animal.dart';
 import '../model/bajaEjemplar/baja_ejemplar.dart';
 import '../model/catalogoItem/catalogo_item.dart';
 
- 
 class AnimalesRepository {
   final SupabaseClient _client;
   AnimalesRepository(this._client);
- 
+
   // ── Tipos de animal de la granja ──────────────────────────────────────────
   Future<List<TipoAnimal>> getTipos(String granjaId) async {
     final data = await _client
@@ -26,7 +25,7 @@ class AnimalesRepository {
   }
 
   /// agregar nuevo tipo de animal a la granja se requiere el Id de la granja [granjaId]
-  /// el nombre del nuevo tipo de animal [nombre] 
+  /// el nombre del nuevo tipo de animal [nombre]
   Future<void> addTipoAnimal({
     required String granjaId,
     required String nombre,
@@ -42,21 +41,25 @@ class AnimalesRepository {
     });
   }
 
-  /// eliminar tipo de animal 
-  Future<void> deleteTipoAnimal({required String farmId,required String tipoId}) async {
+  /// eliminar tipo de animal
+  Future<void> deleteTipoAnimal({
+    required String farmId,
+    required String tipoId,
+  }) async {
     final userId = supabase.auth.currentUser?.id;
 
     if (userId == null) throw Exception('Usuario no autenticado');
 
     try {
-      await supabase.from('tipo_animal').delete()
-        .eq('granja_id',farmId)
-        .eq('id', tipoId);
+      await supabase
+          .from('tipo_animal')
+          .delete()
+          .eq('granja_id', farmId)
+          .eq('id', tipoId);
     } catch (e) {
       print(e);
     }
   }
-  
 
   // ── Grupos de la granja ───────────────────────────────────────────────────
   Future<List<Grupo>> getGrupos(String granjaId) async {
@@ -69,47 +72,56 @@ class AnimalesRepository {
   }
 
   /// eliminar grupos
-  Future<void> deleteGrupo({required String farmId,required String grupoId}) async {
+  Future<void> deleteGrupo({
+    required String farmId,
+    required String grupoId,
+  }) async {
     final userId = supabase.auth.currentUser?.id;
 
     if (userId == null) throw Exception('Usuario no autenticado');
 
     try {
-      await supabase.from('grupos').delete()
-        .eq('granja_id',farmId)
-        .eq('id', grupoId);
+      await supabase
+          .from('grupos')
+          .delete()
+          .eq('granja_id', farmId)
+          .eq('id', grupoId);
     } catch (e) {
       print(e);
     }
   }
- 
+
   // ── Lotes de entrada con conteos (usa vista existente + join cat) ─────────
-  Future<List<LoteEntrada>> getLotesDeGrupo(String grupoId) async {
+  Future<List<AltaAnimales>> vistaAltasAnimales(String grupoId) async {
     final data = await _client
         .from('vista_altas_animales')
         .select('''
           id,
+          granja_id,
           grupo_id,
           tipo_animal_id,
           fecha_alta,
           proveedor,
           costo_total,
-          total_animales,
+          cantidad_animales,
+          created_by,    
+          created_at,
           brazaletes,
           cat_tipo_adquisicion!tipo_adquisicion_id ( nombre )
         ''')
         .eq('grupo_id', grupoId)
-        .order('fecha_adquisicion', ascending: false);
- 
+        .order('fecha_alta', ascending: false);
+    print('data');
+    print(data);
     return (data as List).map((e) {
       final raw = Map<String, dynamic>.from(e);
       // Aplanar el join
       raw['tipo_adquisicion_nombre'] =
           (raw['cat_tipo_adquisicion'] as Map?)?['nombre'] ?? '';
-      return LoteEntrada.fromJson(raw);
+      return AltaAnimales.fromJson(raw);
     }).toList();
   }
- 
+
   // ── Animales individuales de la granja ──────────────────────────────────
   /// Lista todos los ejemplares de la granja con el nombre de su tipo y
   /// grupo ya incluidos (join). Útil para la tab "Animales".
@@ -169,10 +181,10 @@ class AnimalesRepository {
   }
 
   // ── CRUD de ejemplares ─────────────────────────────────────────────────────
-  Future<void> addEjemplar({
+  Future<void> addAnimal({
     required String granjaId,
     required String tipoAnimalId,
-    required String grupoId,
+    String? grupoId,
     required int brazalete,
     required String propositoId,
     required String tipoAdquisicionId,
@@ -232,7 +244,6 @@ class AnimalesRepository {
   static String _soloFecha(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-
   /// Lista las bajas de ejemplares de la granja con: brazalete, tipo, grupo,
   /// razón de baja y, si aplica, el id del lote de baja al que pertenecen
   /// (para poder agruparlas en la tab "Bajas → Por lote").
@@ -279,22 +290,22 @@ class AnimalesRepository {
         .select('grupo_id')
         .eq('granja_id', granjaId)
         .eq('activo', true);
- 
+
     // muertos (activo=false, lo manejamos contando bajas)
     final muertosData = await _client
         .from('animales')
         .select('grupo_id')
         .eq('granja_id', granjaId)
         .eq('activo', false);
- 
+
     // total
     final totalData = await _client
         .from('animales')
         .select('grupo_id')
         .eq('granja_id', granjaId);
- 
+
     final Map<String, _ConteoGrupo> result = {};
- 
+
     for (final e in vivosData as List) {
       final gId = e['grupo_id'] as String;
       result.putIfAbsent(gId, () => _ConteoGrupo());
@@ -310,19 +321,17 @@ class AnimalesRepository {
       result.putIfAbsent(gId, () => _ConteoGrupo());
       result[gId]!.total++;
     }
- 
+
     return result;
   }
 }
- 
+
 class _ConteoGrupo {
   int vivos = 0;
   int muertes = 0;
   int total = 0;
 }
 
-final animalesRepositoryProvider = Provider<AnimalesRepository>((
-  ref,
-) {
+final animalesRepositoryProvider = Provider<AnimalesRepository>((ref) {
   return AnimalesRepository(Supabase.instance.client);
 });

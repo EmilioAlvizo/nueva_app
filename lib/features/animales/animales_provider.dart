@@ -4,8 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'animales_repository.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
-import '../model/loteEntrada/loteEntrada.dart';
-import '../model/ejemplar/ejemplar.dart';
+import '../model/altaAnimales/altaAnimales.dart';
+import '../model/animal/animal.dart';
 import '../model/bajaEjemplar/baja_ejemplar.dart';
 import '../model/catalogoItem/catalogo_item.dart';
 
@@ -48,8 +48,8 @@ class GrupoConteo {
 
 // ── Lotes de un grupo (carga lazy al expandir) ────────────────────────────────
 @riverpod
-Future<List<LoteEntrada>> lotesDeGrupo(Ref ref, String grupoId) =>
-    ref.watch(animalesRepositoryProvider).getLotesDeGrupo(grupoId);
+Future<List<AltaAnimales>> lotesDeGrupo(Ref ref, String grupoId) =>
+    ref.watch(animalesRepositoryProvider).vistaAltasAnimales(grupoId);
 
 // ── Animales individuales (tab "Animales") ────────────────────────────────
 @riverpod

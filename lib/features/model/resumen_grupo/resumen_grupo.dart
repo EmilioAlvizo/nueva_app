@@ -1,4 +1,4 @@
-import '../loteEntrada/loteEntrada.dart';
+import '../altaAnimales/altaAnimales.dart';
 import '../grupo/grupo.dart';
 
 class ResumenGrupo {
@@ -6,7 +6,7 @@ class ResumenGrupo {
   final int vivos;
   final int totalEjemplares;
   final int muertes;
-  final List<LoteEntrada> lotes;
+  final List<AltaAnimales> lotes;
  
   const ResumenGrupo({
     required this.grupo,
