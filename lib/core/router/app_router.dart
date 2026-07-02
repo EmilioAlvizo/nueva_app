@@ -6,6 +6,8 @@ import '../../features/auth/presentation/providers/auth_session_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/model/miembro_granja/collaborators_screen.dart';
+import '../../features/huevos/huevos_screen.dart';
+import '../../features/comida/comida_screen.dart';
 import '../../features/animales/animales_screen.dart';
 import '../../features/granja/granja_provider.dart';
 import '../../features/home/home_screen.dart';
@@ -74,8 +76,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.animales,
-                builder: (context, state) =>
-                    const AnimalesTabContainer(), // Contenedor inteligente
+                builder: (context, state) => AnimalesTabContainer(
+                  screenBuilder: (granjaId) =>
+                      AnimalesScreen(granjaId: granjaId),
+                ),
               ),
             ],
           ),
@@ -84,8 +88,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.huevos,
-                builder: (context, state) =>
-                    const Center(child: Text('Pantalla de Huevos')),
+                builder: (context, state) => AnimalesTabContainer(
+                  screenBuilder: (granjaId) => HuevosScreen(granjaId: granjaId),
+                ),
               ),
             ],
           ),
@@ -94,8 +99,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.comida,
-                builder: (context, state) =>
-                    const Center(child: Text('Pantalla de Comida')),
+                builder: (context, state) => AnimalesTabContainer(
+                  screenBuilder: (granjaId) => ComidaScreen(granjaId: granjaId),
+                ),
               ),
             ],
           ),
@@ -138,7 +144,13 @@ class _AuthStateListenable extends ChangeNotifier {
 /// Este widget evalúa si hay una granja seleccionada en el estado de Riverpod.
 /// Si hay, renderiza `AnimalesScreen(granjaId)`, si no, te pide seleccionar una.
 class AnimalesTabContainer extends ConsumerWidget {
-  const AnimalesTabContainer({super.key});
+  // 1. Cambiamos el tipo a una función que recibe un String y devuelve un Widget
+  final Widget Function(String granjaId) screenBuilder;
+
+  const AnimalesTabContainer({
+    super.key,
+    required this.screenBuilder, // 2. Actualizamos el constructor
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -154,6 +166,7 @@ class AnimalesTabContainer extends ConsumerWidget {
       );
     }
 
-    return AnimalesScreen(granjaId: selectedFarm.id);
+    // 3. Invocamos la función constructora pasando el ID
+    return screenBuilder(selectedFarm.id);
   }
 }

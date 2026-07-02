@@ -13,11 +13,12 @@ import '../model/grupo/nuevo_grupo.dart';
 import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
 import '../model/animal/animal.dart';
 import '../model/animal/nuevo_ejemplar.dart';
-import '../model/bajaEjemplar/baja_ejemplar.dart';
+import '../model/bajaAnimal/baja_animal.dart';
 import 'animales_provider.dart';
 import 'tipo_filtro.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
+import 'editar_baja_sheet.dart';
 
 // ─── Helpers de color ────────────────────────────────────────────────────────
 Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
@@ -1260,38 +1261,22 @@ class _BajasTab extends ConsumerStatefulWidget {
 }
 
 class _BajasTabState extends ConsumerState<_BajasTab> {
-  final _searchCtrl = TextEditingController();
-  String _query = '';
-  bool _porLote = true; // true = "Por lote", false = "Por ejemplar"
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final bajasAsync = ref.watch(bajasEjemplaresProvider(widget.granjaId));
+    final bajasAsync = ref.watch(bajasAnimalesProvider(widget.granjaId));
 
     return bajasAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (todasLasBajas) {
-        final bajasFiltradasPorTipo = widget.tipoFiltro == 'all'
+        final bajas = widget.tipoFiltro == 'all'
             ? todasLasBajas
             : todasLasBajas
                   .where((b) => b.tipoAnimalId == widget.tipoFiltro)
                   .toList();
 
-        final totalAves = bajasFiltradasPorTipo.length;
-        final lotesUnicos = bajasFiltradasPorTipo
-            .map((b) => b.lotesBajaId)
-            .whereType<String>()
-            .toSet()
-            .length;
-
-        final q = _query.trim().toLowerCase();
+        final totalAves = bajas.fold<int>(0, (sum, b) => sum + b.cantidadAnimales);
+        final totalEventos = bajas.length;
 
         return CustomScrollView(
           slivers: [
@@ -1301,41 +1286,39 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                 child: _BajasResumenCard(
                   totalAves: totalAves,
-                  lotes: lotesUnicos,
+                  eventos: totalEventos,
                   isDark: widget.isDark,
                 ),
               ),
             ),
 
-            // ── Toggle Por lote / Por ejemplar ────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                child: _SegmentedToggle(
+            if (bajas.isEmpty)
+              SliverToBoxAdapter(
+                child: _TabPlaceholder(
+                  icon: Icons.remove_circle_outline,
+                  titulo: 'Sin bajas',
+                  subtitulo: 'El historial de bajas aparecerá aquí',
                   isDark: widget.isDark,
-                  options: const ['Por lote', 'Por ejemplar'],
-                  selectedIndex: _porLote ? 0 : 1,
-                  onSelected: (i) => setState(() => _porLote = i == 0),
                 ),
-              ),
-            ),
-
-            // ── Buscador ───────────────────────────────────────────────
-            /* SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: _SearchField(
-                  controller: _searchCtrl,
-                  hint: 'Buscar por tipo, grupo o razón…',
-                  isDark: widget.isDark,
-                  onChanged: (v) => setState(() => _query = v),
-                ),
-              ),
-            ), */
-            if (_porLote)
-              ..._buildPorLote(bajasFiltradasPorTipo, q)
+              )
             else
-              ..._buildPorEjemplar(bajasFiltradasPorTipo, q),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _BajaEventoCard(
+                        baja: bajas[i],
+                        isDark: widget.isDark,
+                        onTap: () => _editarBaja(bajas[i]),
+                        onLongPress: () => _confirmarBorrado(bajas[i]),
+                      ),
+                    ),
+                    childCount: bajas.length,
+                  ),
+                ),
+              ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
@@ -1344,95 +1327,69 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
     );
   }
 
-  List<Widget> _buildPorLote(List<BajaEjemplar> bajas, String q) {
-    var lotes = BajaLote.agruparDesde(bajas);
-
-    if (q.isNotEmpty) {
-      lotes = lotes.where((l) {
-        return l.tipoNombre.toLowerCase().contains(q) ||
-            l.grupoNombre.toLowerCase().contains(q) ||
-            l.razonNombre.toLowerCase().contains(q);
-      }).toList();
-    }
-
-    if (lotes.isEmpty) {
-      return [
-        SliverToBoxAdapter(
-          child: _TabPlaceholder(
-            icon: Icons.remove_circle_outline,
-            titulo: 'Sin bajas por lote',
-            subtitulo: 'Las bajas registradas en conjunto aparecerán aquí',
-            isDark: widget.isDark,
-          ),
-        ),
-      ];
-    }
-
-    return [
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, i) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _BajaLoteCard(lote: lotes[i], isDark: widget.isDark),
-            ),
-            childCount: lotes.length,
-          ),
-        ),
-      ),
-    ];
+  void _editarBaja(BajaAnimal baja) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => EditarBajaSheet(baja: baja, isDark: widget.isDark),
+    );
   }
 
-  List<Widget> _buildPorEjemplar(List<BajaEjemplar> bajas, String q) {
-    var lista = bajas;
-    if (q.isNotEmpty) {
-      lista = lista.where((b) {
-        return b.brazalete.toString().contains(q) ||
-            b.tipoNombre.toLowerCase().contains(q) ||
-            b.grupoNombre.toLowerCase().contains(q) ||
-            b.razonNombre.toLowerCase().contains(q);
-      }).toList();
-    }
-
-    if (lista.isEmpty) {
-      return [
-        SliverToBoxAdapter(
-          child: _TabPlaceholder(
-            icon: Icons.remove_circle_outline,
-            titulo: 'Sin bajas',
-            subtitulo: 'El historial de bajas aparecerá aquí',
-            isDark: widget.isDark,
-          ),
+  Future<void> _confirmarBorrado(BajaAnimal baja) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar baja'),
+        content: Text(
+          baja.esLote
+              ? '¿Eliminar este evento de baja de ${baja.cantidadAnimales} animales? '
+                    'Los animales afectados volverán a estar activos.'
+              : '¿Eliminar esta baja? El animal afectado volverá a estar activo.',
         ),
-      ];
-    }
-
-    return [
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, i) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _BajaEjemplarRow(baja: lista[i], isDark: widget.isDark),
-            ),
-            childCount: lista.length,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
           ),
-        ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('Eliminar'),
+          ),
+        ],
       ),
-    ];
+    );
+
+    if (confirmar != true) return;
+
+    try {
+      await ref.read(animalesRepositoryProvider).eliminarBaja(baja.id);
+      ref.invalidate(bajasAnimalesProvider(widget.granjaId));
+      ref.invalidate(animalesProvider(widget.granjaId)); // refresca activos
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Baja eliminada')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar: $e')),
+        );
+      }
+    }
   }
 }
 
-/// Card de resumen con el total de aves dadas de baja y el número de lotes.
+/// Card de resumen con el total de aves dadas de baja y el número de eventos.
 class _BajasResumenCard extends StatelessWidget {
   final int totalAves;
-  final int lotes;
+  final int eventos;
   final bool isDark;
   const _BajasResumenCard({
     required this.totalAves,
-    required this.lotes,
+    required this.eventos,
     required this.isDark,
   });
 
@@ -1493,7 +1450,7 @@ class _BajasResumenCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$lotes',
+                '$eventos',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -1503,7 +1460,7 @@ class _BajasResumenCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'lotes',
+                'eventos',
                 style: TextStyle(
                   fontSize: 11,
                   color: isDark
@@ -1519,218 +1476,177 @@ class _BajasResumenCard extends StatelessWidget {
   }
 }
 
-/// Card de una baja agrupada por lote ("Por lote")
-class _BajaLoteCard extends StatelessWidget {
-  final BajaLote lote;
+/// Card de un evento de baja. Funciona tanto para bajas de 1 animal como
+/// para bajas masivas (`cantidadAnimales > 1`); el diseño es el mismo,
+/// solo cambia el badge y el texto de brazaletes.
+class _BajaEventoCard extends StatelessWidget {
+  final BajaAnimal baja;
   final bool isDark;
-  const _BajaLoteCard({required this.lote, required this.isDark});
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
-  @override
-  Widget build(BuildContext context) {
-    final fmt = DateFormat("d 'de' MMMM yyyy");
-    final color = lote.esMuerte ? Colors.redAccent : Colors.orangeAccent;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : AppColors.bgLight,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? AppColors.border1lg : AppColors.border1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _RazonTag(label: lote.razonNombre, color: color),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.calendar_today,
-                      size: 11,
-                      color: isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textSecondaryLg,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      fmt.format(lote.fechaBaja),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark
-                            ? AppColors.textSecondary
-                            : AppColors.textSecondaryLg,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: (isDark ? AppColors.bgCard2 : AppColors.border1)
-                            .withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'LOTE',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: isDark
-                              ? AppColors.textSecondary
-                              : AppColors.textSecondaryLg,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${lote.tipoNombre} · ${lote.grupoNombre}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.textPrimary
-                        : AppColors.textPrimaryLg,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  lote.brazaletes.map((b) => '#$b').join(', '),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondaryLg,
-                  ),
-                ),
-                if (lote.notas != null && lote.notas!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    lote.notas!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textSecondaryLg,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${lote.cantidad}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: isDark
-                      ? AppColors.textPrimary
-                      : AppColors.textPrimaryLg,
-                ),
-              ),
-              Text(
-                'aves',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isDark
-                      ? AppColors.textSecondary
-                      : AppColors.textSecondaryLg,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Fila de una baja individual ("Por ejemplar")
-class _BajaEjemplarRow extends StatelessWidget {
-  final BajaEjemplar baja;
-  final bool isDark;
-  const _BajaEjemplarRow({required this.baja, required this.isDark});
+  const _BajaEventoCard({
+    required this.baja,
+    required this.isDark,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy");
     final color = baja.esMuerte ? Colors.redAccent : Colors.orangeAccent;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : AppColors.bgLight,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? AppColors.border1lg : AppColors.border1,
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.bgCard : AppColors.bgLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? AppColors.border1lg : AppColors.border1,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _RazonTag(label: baja.razonNombre, color: color),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.calendar_today,
-                      size: 11,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _RazonTag(label: baja.razonNombre, color: color),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 11,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        fmt.format(baja.fechaBaja),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLg,
+                        ),
+                      ),
+                      if (baja.esLote) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (isDark
+                                    ? AppColors.bgCard2
+                                    : AppColors.border1)
+                                .withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'LOTE',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : AppColors.textSecondaryLg,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    baja.grupoNombre != null
+                        ? '${baja.tipoNombre} · ${baja.grupoNombre}'
+                        : baja.tipoNombre,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       color: isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textSecondaryLg,
+                          ? AppColors.textPrimary
+                          : AppColors.textPrimaryLg,
                     ),
-                    const SizedBox(width: 4),
+                  ),
+                  if (baja.brazaletes.isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      fmt.format(baja.fechaBaja),
+                      baja.brazaletes.map((b) => '#$b').join(', '),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (baja.notas != null && baja.notas!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      baja.notas!,
+                      style: TextStyle(
+                        fontSize: 12,
                         color: isDark
                             ? AppColors.textSecondary
                             : AppColors.textSecondaryLg,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 6),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  '#${baja.brazalete} · ${baja.tipoNombre} · ${baja.grupoNombre}',
+                  '${baja.cantidadAnimales}',
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
                     color: isDark
                         ? AppColors.textPrimary
                         : AppColors.textPrimaryLg,
                   ),
                 ),
+                Text(
+                  baja.cantidadAnimales == 1 ? 'ave' : 'aves',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLg,
+                  ),
+                ),
+                if (baja.importeTotal != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '\$${baja.importeTotal!.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
               ],
             ),
-          ),
-          Text(
-            '-1 ave',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

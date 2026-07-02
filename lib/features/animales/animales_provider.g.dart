@@ -436,55 +436,53 @@ final class AnimalesFamily extends $Family
   String toString() => r'animalesProvider';
 }
 
-@ProviderFor(bajasEjemplares)
-final bajasEjemplaresProvider = BajasEjemplaresFamily._();
+@ProviderFor(bajasAnimales)
+final bajasAnimalesProvider = BajasAnimalesFamily._();
 
-final class BajasEjemplaresProvider
+final class BajasAnimalesProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<BajaEjemplar>>,
-          List<BajaEjemplar>,
-          FutureOr<List<BajaEjemplar>>
+          AsyncValue<List<BajaAnimal>>,
+          List<BajaAnimal>,
+          FutureOr<List<BajaAnimal>>
         >
-    with
-        $FutureModifier<List<BajaEjemplar>>,
-        $FutureProvider<List<BajaEjemplar>> {
-  BajasEjemplaresProvider._({
-    required BajasEjemplaresFamily super.from,
+    with $FutureModifier<List<BajaAnimal>>, $FutureProvider<List<BajaAnimal>> {
+  BajasAnimalesProvider._({
+    required BajasAnimalesFamily super.from,
     required String super.argument,
   }) : super(
          retry: null,
-         name: r'bajasEjemplaresProvider',
+         name: r'bajasAnimalesProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$bajasEjemplaresHash();
+  String debugGetCreateSourceHash() => _$bajasAnimalesHash();
 
   @override
   String toString() {
-    return r'bajasEjemplaresProvider'
+    return r'bajasAnimalesProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  $FutureProviderElement<List<BajaEjemplar>> $createElement(
+  $FutureProviderElement<List<BajaAnimal>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<BajaEjemplar>> create(Ref ref) {
+  FutureOr<List<BajaAnimal>> create(Ref ref) {
     final argument = this.argument as String;
-    return bajasEjemplares(ref, argument);
+    return bajasAnimales(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is BajasEjemplaresProvider && other.argument == argument;
+    return other is BajasAnimalesProvider && other.argument == argument;
   }
 
   @override
@@ -493,24 +491,24 @@ final class BajasEjemplaresProvider
   }
 }
 
-String _$bajasEjemplaresHash() => r'8becd152083252bb2c653f4a9b72cb1c222536ae';
+String _$bajasAnimalesHash() => r'f6e431640576ba2d5bdb875a879ee13f58578f24';
 
-final class BajasEjemplaresFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<BajaEjemplar>>, String> {
-  BajasEjemplaresFamily._()
+final class BajasAnimalesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<BajaAnimal>>, String> {
+  BajasAnimalesFamily._()
     : super(
         retry: null,
-        name: r'bajasEjemplaresProvider',
+        name: r'bajasAnimalesProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  BajasEjemplaresProvider call(String granjaId) =>
-      BajasEjemplaresProvider._(argument: granjaId, from: this);
+  BajasAnimalesProvider call(String granjaId) =>
+      BajasAnimalesProvider._(argument: granjaId, from: this);
 
   @override
-  String toString() => r'bajasEjemplaresProvider';
+  String toString() => r'bajasAnimalesProvider';
 }
 
 @ProviderFor(propositos)
@@ -665,4 +663,81 @@ final class TiposAdquisicionFamily extends $Family
 
   @override
   String toString() => r'tiposAdquisicionProvider';
+}
+
+@ProviderFor(razonesBaja)
+final razonesBajaProvider = RazonesBajaFamily._();
+
+final class RazonesBajaProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<CatalogoItem>>,
+          List<CatalogoItem>,
+          FutureOr<List<CatalogoItem>>
+        >
+    with
+        $FutureModifier<List<CatalogoItem>>,
+        $FutureProvider<List<CatalogoItem>> {
+  RazonesBajaProvider._({
+    required RazonesBajaFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'razonesBajaProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$razonesBajaHash();
+
+  @override
+  String toString() {
+    return r'razonesBajaProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<CatalogoItem>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<CatalogoItem>> create(Ref ref) {
+    final argument = this.argument as String;
+    return razonesBaja(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is RazonesBajaProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$razonesBajaHash() => r'5c2f7f3de59d4e64ec9ec29c4248457d88851e10';
+
+final class RazonesBajaFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<CatalogoItem>>, String> {
+  RazonesBajaFamily._()
+    : super(
+        retry: null,
+        name: r'razonesBajaProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  RazonesBajaProvider call(String granjaId) =>
+      RazonesBajaProvider._(argument: granjaId, from: this);
+
+  @override
+  String toString() => r'razonesBajaProvider';
 }

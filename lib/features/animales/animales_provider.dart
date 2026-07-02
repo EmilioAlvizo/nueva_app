@@ -6,7 +6,7 @@ import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/altaAnimales/altaAnimales.dart';
 import '../model/animal/animal.dart';
-import '../model/bajaEjemplar/baja_ejemplar.dart';
+import '../model/bajaAnimal/baja_animal.dart';
 import '../model/catalogoItem/catalogo_item.dart';
 
 part 'animales_provider.g.dart';
@@ -58,8 +58,8 @@ Future<List<Animal>> animales(Ref ref, String granjaId) =>
 
 // ── Bajas de ejemplares (tab "Bajas") ─────────────────────────────────────────
 @riverpod
-Future<List<BajaEjemplar>> bajasEjemplares(Ref ref, String granjaId) =>
-    ref.watch(animalesRepositoryProvider).getBajasEjemplares(granjaId);
+Future<List<BajaAnimal>> bajasAnimales(Ref ref, String granjaId) =>
+    ref.watch(animalesRepositoryProvider).getBajasAnimales(granjaId);
 
 // ── Catálogos para el formulario de ejemplar ──────────────────────────────────
 @riverpod
@@ -69,3 +69,7 @@ Future<List<CatalogoItem>> propositos(Ref ref, String granjaId) =>
 @riverpod
 Future<List<CatalogoItem>> tiposAdquisicion(Ref ref, String granjaId) =>
     ref.watch(animalesRepositoryProvider).getTiposAdquisicion(granjaId);
+
+@riverpod
+Future<List<CatalogoItem>> razonesBaja(Ref ref, String granjaId) =>
+    ref.watch(animalesRepositoryProvider).getRazonesBaja(granjaId);

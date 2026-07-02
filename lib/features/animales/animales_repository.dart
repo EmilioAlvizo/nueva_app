@@ -6,7 +6,7 @@ import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/altaAnimales/altaAnimales.dart';
 import '../model/animal/animal.dart';
-import '../model/bajaEjemplar/baja_ejemplar.dart';
+import '../model/bajaAnimal/baja_animal.dart';
 import '../model/catalogoItem/catalogo_item.dart';
 
 class AnimalesRepository {
@@ -244,42 +244,67 @@ class AnimalesRepository {
   static String _soloFecha(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  /// Lista las bajas de ejemplares de la granja con: brazalete, tipo, grupo,
-  /// razón de baja y, si aplica, el id del lote de baja al que pertenecen
-  /// (para poder agruparlas en la tab "Bajas → Por lote").
-  Future<List<BajaEjemplar>> getBajasEjemplares(String granjaId) async {
+  /// Lista las bajas (eventos) de la granja con: tipo, grupo (si aplica),
+  /// razón de baja y brazaletes de los animales afectados. Usa la vista
+  /// `vista_bajas_animales`, que ya agrega los brazaletes y nombres.
+  Future<List<BajaAnimal>> getBajasAnimales(String granjaId) async {
     final data = await _client
-        .from('bajas_ejemplares')
-        .select('''
-          id,
-          ejemplar_id,
-          razon_baja_id,
-          fecha_baja,
-          importe_venta,
-          notas,
-          lotes_baja_id,
-          cat_razon_baja ( nombre ),
-          ejemplares!inner (
-            brazalete,
-            granja_id,
-            tipo_animal_id,
-            tipo_animal ( nombre ),
-            grupos ( nombre )
-          )
-        ''')
-        .eq('ejemplares.granja_id', granjaId)
+        .from('vista_bajas_animales')
+        .select()
+        .eq('granja_id', granjaId)
         .order('fecha_baja', ascending: false);
 
-    return (data as List).map((e) {
-      final raw = Map<String, dynamic>.from(e);
-      final ejemplar = (raw['ejemplares'] as Map?) ?? {};
-      raw['brazalete'] = ejemplar['brazalete'];
-      raw['tipo_animal_id'] = ejemplar['tipo_animal_id'];
-      raw['tipo_nombre'] = (ejemplar['tipo_animal'] as Map?)?['nombre'] ?? '';
-      raw['grupo_nombre'] = (ejemplar['grupos'] as Map?)?['nombre'] ?? '';
-      raw['razon_nombre'] = (raw['cat_razon_baja'] as Map?)?['nombre'] ?? '';
-      return BajaEjemplar.fromJson(raw);
-    }).toList();
+    return (data as List)
+        .map((e) => BajaAnimal.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// Catálogo de razones de baja (Muerte, Venta, Donación, Sacrificio…).
+  /// Incluye los globales (granja_id null) y los propios de la granja.
+  Future<List<CatalogoItem>> getRazonesBaja(String granjaId) async {
+    final data = await _client
+        .from('cat_razon_baja')
+        .select('id, nombre')
+        .or('granja_id.is.null,granja_id.eq.$granjaId')
+        .eq('activo', true)
+        .order('orden');
+    return (data as List).map((e) => CatalogoItem.fromJson(e)).toList();
+  }
+
+  /// Actualiza los campos editables de un evento de baja ya existente.
+  /// No toca `cantidad_animales` ni los animales enlazados: cambiar cuántos
+  /// o cuáles animales pertenecen al evento equivale a crear una baja nueva.
+  Future<void> actualizarBaja({
+    required String id,
+    required String razonBajaId,
+    required DateTime fechaBaja,
+    double? importeTotal,
+    String? notas,
+  }) async {
+    await _client
+        .from('bajas_animales')
+        .update({
+          'razon_baja_id': razonBajaId,
+          'fecha_baja': _soloFecha(fechaBaja),
+          'importe_total': importeTotal,
+          'notas': notas,
+        })
+        .eq('id', id);
+  }
+
+  /// Elimina un evento de baja y revierte sus efectos: los animales que
+  /// quedaron enlazados a esta baja vuelven a estar activos y sin baja_id.
+  /// No usa una sola transacción atómica (Supabase client no expone RPC
+  /// transaccional por defecto), así que primero se revierten los animales
+  /// y luego se borra el evento; si el borrado falla, los animales ya
+  /// quedaron reactivados, lo cual es el estado más seguro.
+  Future<void> eliminarBaja(String bajaId) async {
+    await _client
+        .from('animales')
+        .update({'baja_id': null, 'activo': true})
+        .eq('baja_id', bajaId);
+
+    await _client.from('bajas_animales').delete().eq('id', bajaId);
   }
 
   // ── Conteos de vivos/muertes por grupo ────────────────────────────────────

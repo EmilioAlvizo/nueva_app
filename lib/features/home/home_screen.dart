@@ -91,7 +91,8 @@ class _AppBar extends ConsumerWidget {
     // ── Filtro de tipo de animal: solo tiene sentido en la pestaña Animales
     //    y cuando hay una granja seleccionada con tipos registrados.
     final selectedFarm = ref.watch(selectedFarmProvider);
-    final isAnimalesTab = navigationShell.currentIndex == _animalesTabIndex;
+    //final isAnimalesTab = navigationShell.currentIndex == _animalesTabIndex;
+    final isAnimalesTab = [1,2,3].contains(navigationShell.currentIndex);
     final puedeFiltrar = isAnimalesTab && selectedFarm != null;
 
     final tiposAsync = puedeFiltrar
