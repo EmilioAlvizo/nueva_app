@@ -28,14 +28,14 @@ Future<List<Grupo>> grupos(Ref ref, String granjaId) =>
 
 // ── Conteos por grupo (vivos / muertes / total) ───────────────────────────────
 @riverpod
-Future<Map<String, GrupoConteo>> conteosGrupos(
-  Ref ref,
-  String granjaId,
-) async {
+Future<Map<String, GrupoConteo>> conteosGrupos(Ref ref, String granjaId) async {
   final repo = ref.watch(animalesRepositoryProvider);
   final raw = await repo.getConteosGrupos(granjaId);
   return raw.map(
-    (k, v) => MapEntry(k, GrupoConteo(vivos: v.vivos, muertes: v.muertes, total: v.total)),
+    (k, v) => MapEntry(
+      k,
+      GrupoConteo(vivos: v.vivos, muertes: v.muertes, total: v.total),
+    ),
   );
 }
 
@@ -43,13 +43,73 @@ class GrupoConteo {
   final int vivos;
   final int muertes;
   final int total;
-  const GrupoConteo({required this.vivos, required this.muertes, required this.total});
+  const GrupoConteo({
+    required this.vivos,
+    required this.muertes,
+    required this.total,
+  });
+}
+
+class AltasQuery {
+  const AltasQuery({required this.granjaId, this.grupoId});
+
+  final String granjaId;
+  final String? grupoId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AltasQuery &&
+        other.granjaId == granjaId &&
+        other.grupoId == grupoId;
+  }
+
+  @override
+  int get hashCode => Object.hash(granjaId, grupoId);
+}
+
+class BraceletAvailabilityQuery {
+  const BraceletAvailabilityQuery({
+    required this.granjaId,
+    required this.tipoAnimalId,
+  });
+
+  final String granjaId;
+  final String tipoAnimalId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is BraceletAvailabilityQuery &&
+        other.granjaId == granjaId &&
+        other.tipoAnimalId == tipoAnimalId;
+  }
+
+  @override
+  int get hashCode => Object.hash(granjaId, tipoAnimalId);
 }
 
 // ── Lotes de un grupo (carga lazy al expandir) ────────────────────────────────
 @riverpod
 Future<List<AltaAnimales>> lotesDeGrupo(Ref ref, String grupoId) =>
     ref.watch(animalesRepositoryProvider).vistaAltasAnimales(grupoId);
+
+@riverpod
+Future<List<AltaAnimales>> altasByFarm(Ref ref, AltasQuery query) {
+  return ref
+      .watch(animalesRepositoryProvider)
+      .getAltas(query.granjaId, grupoId: query.grupoId);
+}
+
+@riverpod
+Future<NoGroupOverview> noGroupOverview(Ref ref, String granjaId) {
+  return ref.watch(animalesRepositoryProvider).getNoGroupOverview(granjaId);
+}
+
+@riverpod
+Future<List<int>> availableBracelets(Ref ref, BraceletAvailabilityQuery query) {
+  return ref
+      .watch(animalesRepositoryProvider)
+      .getAvailableBracelets(query.granjaId, query.tipoAnimalId);
+}
 
 // ── Animales individuales (tab "Animales") ────────────────────────────────
 @riverpod

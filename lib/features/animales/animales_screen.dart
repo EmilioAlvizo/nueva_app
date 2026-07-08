@@ -8,13 +8,13 @@ import '../../../../core/theme/app_colors.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/altaAnimales/altaAnimales.dart';
-import '../model/altaAnimales/nuevo_loteEntrada.dart';
+import '../model/altaAnimales/animal_registration_sheet.dart';
 import '../model/grupo/nuevo_grupo.dart';
 import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
 import '../model/animal/animal.dart';
-import '../model/animal/nuevo_ejemplar.dart';
 import '../model/bajaAnimal/baja_animal.dart';
 import 'animales_provider.dart';
+import 'animales_repository.dart' show NoGroupOverview;
 import 'tipo_filtro.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
@@ -27,22 +27,22 @@ Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
 }
 
 // ─── Definición de tabs ──────────────────────────────────────────────────────
-enum _Tab { grupos, ejemplares, lotes, tipos, bajas }
+enum _Tab { grupos, animales, altas, bajas, tipos }
 
 const _tabLabel = {
   _Tab.grupos: 'Grupos',
-  _Tab.ejemplares: 'Ejemplares',
-  _Tab.lotes: 'Lotes',
-  _Tab.tipos: 'Tipos',
+  _Tab.animales: 'Animales',
+  _Tab.altas: 'Altas',
   _Tab.bajas: 'Bajas',
+  _Tab.tipos: 'Tipos',
 };
 
 const _tabIcon = {
   _Tab.grupos: Icons.create_new_folder_outlined,
-  _Tab.ejemplares: Icons.tag,
-  _Tab.lotes: Icons.inventory_2_outlined,
-  _Tab.tipos: Icons.layers_outlined,
+  _Tab.animales: Icons.tag,
+  _Tab.altas: Icons.inventory_2_outlined,
   _Tab.bajas: Icons.remove_circle_outline,
+  _Tab.tipos: Icons.layers_outlined,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -106,6 +106,9 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
     final tiposAsync = ref.watch(tiposAnimalProvider(widget.granjaId));
     final gruposAsync = ref.watch(gruposProvider(widget.granjaId));
     final conteosAsync = ref.watch(conteosGruposProvider(widget.granjaId));
+    final noGroupOverviewAsync = ref.watch(
+      noGroupOverviewProvider(widget.granjaId),
+    );
 
     final tipos = tiposAsync.value ?? [];
     final grupos = gruposAsync.value ?? [];
@@ -138,6 +141,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
                     tiposAsync: tiposAsync,
                     gruposAsync: gruposAsync,
                     conteosAsync: conteosAsync,
+                    noGroupOverviewAsync: noGroupOverviewAsync,
                     expandidos: _expandidos,
                     colapsados: _colapsados,
                     onToggleExpand: _toggleExpand,
@@ -151,12 +155,19 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
                     tipos: tipos,
                     isDark: isDark,
                   ),
-                  // ── Lotes ───────────────────────────────────────────
+                  // ── Altas ───────────────────────────────────────────
                   _LotesTab(
                     granjaId: widget.granjaId,
                     tipoFiltro: tipoFiltro,
                     tipos: tipos,
                     grupos: grupos,
+                    isDark: isDark,
+                  ),
+                  // ── Bajas ────────────────────────────────────────────
+                  _BajasTab(
+                    granjaId: widget.granjaId,
+                    tipoFiltro: tipoFiltro,
+                    tipos: tipos,
                     isDark: isDark,
                   ),
                   // ── Tipos ───────────────────────────────────────────
@@ -165,13 +176,6 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
                     tipos: tipos,
                     grupos: grupos,
                     conteos: conteosAsync.value ?? {},
-                    isDark: isDark,
-                  ),
-                  // ── Bajas ────────────────────────────────────────────
-                  _BajasTab(
-                    granjaId: widget.granjaId,
-                    tipoFiltro: tipoFiltro,
-                    tipos: tipos,
                     isDark: isDark,
                   ),
                 ],
@@ -188,11 +192,12 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
     final actions = [
       (
         Icons.add,
-        'Nuevo ejemplar',
-        'Un animal con su brazalete',
-        NuevoEjemplar(
+        'Nuevo animal',
+        'Alta individual',
+        AnimalRegistrationSheet(
           granjaId: widget.granjaId,
           isDark: isDark,
+          initialQuantity: 1,
           tipoAnimalIdInicial: ref.read(tipoFiltroProvider) == 'all'
               ? null
               : ref.read(tipoFiltroProvider),
@@ -200,9 +205,16 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
       ),
       (
         Icons.inventory_2_outlined,
-        'Nuevo lote de entrada',
-        'Varios ejemplares juntos',
-        NuevoLoteEntrada(isDark: isDark),
+        'Nueva alta',
+        'Alta múltiple',
+        AnimalRegistrationSheet(
+          granjaId: widget.granjaId,
+          isDark: isDark,
+          initialQuantity: 2,
+          tipoAnimalIdInicial: ref.read(tipoFiltroProvider) == 'all'
+              ? null
+              : ref.read(tipoFiltroProvider),
+        ),
       ),
       (
         Icons.create_new_folder_outlined,
@@ -260,11 +272,6 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
       ],
     );
   }
-}
-
-// Extensión para iterar enum en orden
-extension _TabValues on _Tab {
-  static List<_Tab> get valores => _Tab.values;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -399,6 +406,7 @@ class _GruposTab extends ConsumerWidget {
   final AsyncValue<List<TipoAnimal>> tiposAsync;
   final AsyncValue<List<Grupo>> gruposAsync;
   final AsyncValue<Map<String, GrupoConteo>> conteosAsync;
+  final AsyncValue<NoGroupOverview> noGroupOverviewAsync;
   final Set<String> expandidos;
   final Set<String> colapsados;
   final ValueChanged<String> onToggleExpand;
@@ -411,6 +419,7 @@ class _GruposTab extends ConsumerWidget {
     required this.tiposAsync,
     required this.gruposAsync,
     required this.conteosAsync,
+    required this.noGroupOverviewAsync,
     required this.expandidos,
     required this.colapsados,
     required this.onToggleExpand,
@@ -429,120 +438,143 @@ class _GruposTab extends ConsumerWidget {
         data: (grupos) => conteosAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
-          data: (conteos) {
-            final gruposFiltrados = tipoFiltro == 'all'
-                ? grupos
-                : grupos.where((g) => g.tipoAnimalId == tipoFiltro).toList();
-            final totalVivos = grupos.fold<int>(
-              0,
-              (s, g) => s + (conteos[g.id]?.vivos ?? 0),
-            );
-            final totalMuertes = grupos.fold<int>(
-              0,
-              (s, g) => s + (conteos[g.id]?.muertes ?? 0),
-            );
+          data: (conteos) => noGroupOverviewAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (noGroupOverview) {
+              final gruposFiltrados = tipoFiltro == 'all'
+                  ? grupos
+                  : grupos.where((g) => g.tipoAnimalId == tipoFiltro).toList();
+              final totalVivos = grupos.fold<int>(
+                0,
+                (s, g) => s + (conteos[g.id]?.vivos ?? 0),
+              );
+              final totalMuertes = grupos.fold<int>(
+                0,
+                (s, g) => s + (conteos[g.id]?.muertes ?? 0),
+              );
 
-            return CustomScrollView(
-              slivers: [
-                // Stats
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Row(
-                      children: [
-                        _StatTile(
-                          value: '$totalVivos',
-                          label: 'Aves vivas',
-                          color: AppColors.green,
-                        ),
-                        const SizedBox(width: 10),
-                        _StatTile(
-                          value: '${gruposFiltrados.length}',
-                          label: 'Grupos',
-                          color: const Color(0xFF4B5563),
-                        ),
-                        const SizedBox(width: 10),
-                        _StatTile(
-                          value: '$totalMuertes',
-                          label: 'Muertes',
-                          color: const Color(0xFF7C3F2B),
-                        ),
-                      ],
+              final hasNoGroupCard =
+                  noGroupOverview.activeCount > 0 ||
+                  noGroupOverview.deadCount > 0 ||
+                  noGroupOverview.latestAltas.isNotEmpty;
+
+              return CustomScrollView(
+                slivers: [
+                  // Stats
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Row(
+                        children: [
+                          _StatTile(
+                            value: '$totalVivos',
+                            label: 'Aves vivas',
+                            color: AppColors.green,
+                          ),
+                          const SizedBox(width: 10),
+                          _StatTile(
+                            value: '${gruposFiltrados.length}',
+                            label: 'Grupos',
+                            color: const Color(0xFF4B5563),
+                          ),
+                          const SizedBox(width: 10),
+                          _StatTile(
+                            value: '$totalMuertes',
+                            label: 'Muertes',
+                            color: const Color(0xFF7C3F2B),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                if (gruposFiltrados.isEmpty)
-                  SliverToBoxAdapter(child: _EmptyState(tipos: tipos))
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, i) {
-                        final grupo = gruposFiltrados[i];
-                        final conteo =
-                            conteos[grupo.id] ??
-                            const GrupoConteo(vivos: 0, muertes: 0, total: 0);
-                        final color = _colorParaTipo(grupo.tipoAnimalId, tipos);
-                        final tipo = tipos.firstWhere(
-                          (t) => t.id == grupo.tipoAnimalId,
-                          orElse: () => TipoAnimal(
-                            id: '',
-                            granjaId: '',
-                            nombre: '',
-                            createdBy: '',
-                          ),
-                        );
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _GrupoCard(
-                            onLongPress: () {
-                              ConfirmationDialog.show(
-                                context: context,
-                                isDark: isDark,
-                                title: 'Eliminar Grupo',
-                                content:
-                                    '¿Estás seguro de que deseas eliminar el grupo "${grupo.nombre}"? Esta acción no se puede deshacer.',
-                                onConfirm: () async {
-                                  try {
-                                    await ref
-                                        .read(animalesRepositoryProvider)
-                                        .deleteGrupo(
-                                          farmId: granjaId,
-                                          grupoId: grupo.id,
-                                        );
-
-                                    //ref.invalidate(animalesRepositoryProvider);
-                                    ref.invalidate(gruposProvider(granjaId));
-                                    ref.invalidate(
-                                      conteosGruposProvider(granjaId),
-                                    );
-                                    print('Error al eliminar granja:');
-                                  } catch (e) {
-                                    print('Error al eliminar granja: $e');
-                                  }
-                                },
-                              );
-                            },
-
-                            grupo: grupo,
-                            tipo: tipo,
-                            conteo: conteo,
-                            stripColor: color,
-                            expandido: expandidos.contains(grupo.id),
-                            colapsado: colapsados.contains(grupo.id),
-                            onToggleExpand: () => onToggleExpand(grupo.id),
-                            onToggleColapso: () => onToggleColapso(grupo.id),
-                            granjaId: granjaId,
-                            isDark: isDark,
-                          ),
-                        );
-                      }, childCount: gruposFiltrados.length),
+                  if (hasNoGroupCard)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: _NoGroupCard(
+                          overview: noGroupOverview,
+                          isDark: isDark,
+                        ),
+                      ),
                     ),
-                  ),
-              ],
-            );
-          },
+
+                  if (gruposFiltrados.isEmpty)
+                    SliverToBoxAdapter(child: _EmptyState(tipos: tipos))
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, i) {
+                          final grupo = gruposFiltrados[i];
+                          final conteo =
+                              conteos[grupo.id] ??
+                              const GrupoConteo(vivos: 0, muertes: 0, total: 0);
+                          final color = _colorParaTipo(
+                            grupo.tipoAnimalId,
+                            tipos,
+                          );
+                          final tipo = tipos.firstWhere(
+                            (t) => t.id == grupo.tipoAnimalId,
+                            orElse: () => TipoAnimal(
+                              id: '',
+                              granjaId: '',
+                              nombre: '',
+                              createdBy: '',
+                            ),
+                          );
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _GrupoCard(
+                              onLongPress: () {
+                                ConfirmationDialog.show(
+                                  context: context,
+                                  isDark: isDark,
+                                  title: 'Eliminar Grupo',
+                                  content:
+                                      '¿Estás seguro de que deseas eliminar el grupo "${grupo.nombre}"? Esta acción no se puede deshacer.',
+                                  onConfirm: () async {
+                                    try {
+                                      await ref
+                                          .read(animalesRepositoryProvider)
+                                          .deleteGrupo(
+                                            farmId: granjaId,
+                                            grupoId: grupo.id,
+                                          );
+
+                                      //ref.invalidate(animalesRepositoryProvider);
+                                      ref.invalidate(gruposProvider(granjaId));
+                                      ref.invalidate(
+                                        conteosGruposProvider(granjaId),
+                                      );
+                                      print('Error al eliminar granja:');
+                                    } catch (e) {
+                                      print('Error al eliminar granja: $e');
+                                    }
+                                  },
+                                );
+                              },
+
+                              grupo: grupo,
+                              tipo: tipo,
+                              conteo: conteo,
+                              stripColor: color,
+                              expandido: expandidos.contains(grupo.id),
+                              colapsado: colapsados.contains(grupo.id),
+                              onToggleExpand: () => onToggleExpand(grupo.id),
+                              onToggleColapso: () => onToggleColapso(grupo.id),
+                              granjaId: granjaId,
+                              isDark: isDark,
+                            ),
+                          );
+                        }, childCount: gruposFiltrados.length),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -585,10 +617,10 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => NuevoEjemplar(
+      builder: (_) => AnimalRegistrationSheet(
         granjaId: widget.granjaId,
         isDark: widget.isDark,
-        ejemplar: ejemplar,
+        initialQuantity: 1,
         tipoAnimalIdInicial: widget.tipoFiltro == 'all'
             ? null
             : widget.tipoFiltro,
@@ -681,10 +713,10 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
               SliverToBoxAdapter(
                 child: _TabPlaceholder(
                   icon: Icons.tag,
-                  titulo: 'Sin ejemplares',
+                  titulo: 'Sin animales',
                   subtitulo: ejemplares.isEmpty
-                      ? 'Registra un ejemplar o lote de entrada para verlos aquí'
-                      : 'Ningún ejemplar coincide con la búsqueda',
+                      ? 'Registra un animal o un alta para verlos aquí'
+                      : 'Ningún animal coincide con la búsqueda',
                   isDark: widget.isDark,
                 ),
               )
@@ -847,7 +879,7 @@ class _LotesTab extends ConsumerWidget {
     if (grupos.isEmpty) {
       return _TabPlaceholder(
         icon: Icons.inventory_2_outlined,
-        titulo: 'Sin lotes',
+        titulo: 'Sin altas',
         subtitulo: 'Crea un grupo primero',
         isDark: isDark,
       );
@@ -1047,7 +1079,7 @@ class _LoteTabCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'vivos',
+                'registrados',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDark
@@ -1275,7 +1307,10 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
                   .where((b) => b.tipoAnimalId == widget.tipoFiltro)
                   .toList();
 
-        final totalAves = bajas.fold<int>(0, (sum, b) => sum + b.cantidadAnimales);
+        final totalAves = bajas.fold<int>(
+          0,
+          (sum, b) => sum + b.cantidadAnimales,
+        );
         final totalEventos = bajas.length;
 
         return CustomScrollView(
@@ -1368,15 +1403,15 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
       ref.invalidate(bajasAnimalesProvider(widget.granjaId));
       ref.invalidate(animalesProvider(widget.granjaId)); // refresca activos
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Baja eliminada')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Baja eliminada')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
       }
     }
   }
@@ -1546,10 +1581,9 @@ class _BajaEventoCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: (isDark
-                                    ? AppColors.bgCard2
-                                    : AppColors.border1)
-                                .withValues(alpha: 0.6),
+                            color:
+                                (isDark ? AppColors.bgCard2 : AppColors.border1)
+                                    .withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -1856,6 +1890,131 @@ class _TabPlaceholder extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // CARD DE GRUPO (igual a antes, se mantiene en tab Grupos)
 // ─────────────────────────────────────────────────────────────────────────────
+class _NoGroupCard extends StatelessWidget {
+  const _NoGroupCard({required this.overview, required this.isDark});
+
+  final NoGroupOverview overview;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.border1lg : AppColors.border1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sin grupo',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _MiniStat(
+                  icon: Icons.egg_outlined,
+                  value: '${overview.activeCount}',
+                  label: 'Activos',
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MiniStat(
+                  icon: Icons.remove_circle_outline,
+                  value: '${overview.deadCount}',
+                  label: 'Bajas',
+                  danger: true,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${overview.activeCount} activos',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLg,
+            ),
+          ),
+          Text(
+            '${overview.deadCount} bajas',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLg,
+            ),
+          ),
+          if (overview.latestAltas.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Últimas altas',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...overview.latestAltas
+                .take(3)
+                .map(
+                  (alta) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.inventory_2_outlined,
+                          size: 16,
+                          color: AppColors.green,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${alta.cantidadAnimales} ${alta.cantidadAnimales == 1 ? 'animal' : 'animales'}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark
+                                  ? AppColors.textPrimary
+                                  : AppColors.textPrimaryLg,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          DateFormat('dd/MM/yyyy').format(alta.fechaAlta),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark
+                                ? AppColors.textSecondary
+                                : AppColors.textSecondaryLg,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _GrupoCard extends ConsumerWidget {
   final Grupo grupo;
   final TipoAnimal tipo;
@@ -2024,8 +2183,16 @@ class _GrupoCard extends ConsumerWidget {
                             icon: Icons.add,
                             label: 'Animal',
                             isDark: isDark,
-                            onTap: () => context.push(
-                              '/aves/nuevo?tipo=${grupo.tipoAnimalId}&grupo=${grupo.id}',
+                            onTap: () => showModalBottomSheet(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              isScrollControlled: true,
+                              builder: (_) => AnimalRegistrationSheet(
+                                granjaId: granjaId,
+                                isDark: isDark,
+                                initialQuantity: 1,
+                                tipoAnimalIdInicial: grupo.tipoAnimalId,
+                              ),
                             ),
                           ),
                         ),
@@ -2033,18 +2200,19 @@ class _GrupoCard extends ConsumerWidget {
                         Expanded(
                           child: _ActionButton(
                             icon: Icons.inventory_2_outlined,
-                            label: 'Lote',
+                            label: 'Alta',
                             isDark: isDark,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => NuevoLoteEntrada(
-                                    isDark: isDark,
-                                  ), // Ya no pasa isDark
-                                ),
-                              );
-                            },
+                            onTap: () => showModalBottomSheet(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              isScrollControlled: true,
+                              builder: (_) => AnimalRegistrationSheet(
+                                granjaId: granjaId,
+                                isDark: isDark,
+                                initialQuantity: 2,
+                                tipoAnimalIdInicial: grupo.tipoAnimalId,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),

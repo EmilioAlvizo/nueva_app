@@ -361,6 +361,237 @@ final class LotesDeGrupoFamily extends $Family
   String toString() => r'lotesDeGrupoProvider';
 }
 
+@ProviderFor(altasByFarm)
+final altasByFarmProvider = AltasByFarmFamily._();
+
+final class AltasByFarmProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<AltaAnimales>>,
+          List<AltaAnimales>,
+          FutureOr<List<AltaAnimales>>
+        >
+    with
+        $FutureModifier<List<AltaAnimales>>,
+        $FutureProvider<List<AltaAnimales>> {
+  AltasByFarmProvider._({
+    required AltasByFarmFamily super.from,
+    required AltasQuery super.argument,
+  }) : super(
+         retry: null,
+         name: r'altasByFarmProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$altasByFarmHash();
+
+  @override
+  String toString() {
+    return r'altasByFarmProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AltaAnimales>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AltaAnimales>> create(Ref ref) {
+    final argument = this.argument as AltasQuery;
+    return altasByFarm(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AltasByFarmProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$altasByFarmHash() => r'1e80da80c51e019ca03b05fda9ddc0f20cc36910';
+
+final class AltasByFarmFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AltaAnimales>>, AltasQuery> {
+  AltasByFarmFamily._()
+    : super(
+        retry: null,
+        name: r'altasByFarmProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  AltasByFarmProvider call(AltasQuery query) =>
+      AltasByFarmProvider._(argument: query, from: this);
+
+  @override
+  String toString() => r'altasByFarmProvider';
+}
+
+@ProviderFor(noGroupOverview)
+final noGroupOverviewProvider = NoGroupOverviewFamily._();
+
+final class NoGroupOverviewProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<NoGroupOverview>,
+          NoGroupOverview,
+          FutureOr<NoGroupOverview>
+        >
+    with $FutureModifier<NoGroupOverview>, $FutureProvider<NoGroupOverview> {
+  NoGroupOverviewProvider._({
+    required NoGroupOverviewFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'noGroupOverviewProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$noGroupOverviewHash();
+
+  @override
+  String toString() {
+    return r'noGroupOverviewProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<NoGroupOverview> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<NoGroupOverview> create(Ref ref) {
+    final argument = this.argument as String;
+    return noGroupOverview(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is NoGroupOverviewProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$noGroupOverviewHash() => r'd1c35424cea93355bf7b04ffee10b1263860b046';
+
+final class NoGroupOverviewFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<NoGroupOverview>, String> {
+  NoGroupOverviewFamily._()
+    : super(
+        retry: null,
+        name: r'noGroupOverviewProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  NoGroupOverviewProvider call(String granjaId) =>
+      NoGroupOverviewProvider._(argument: granjaId, from: this);
+
+  @override
+  String toString() => r'noGroupOverviewProvider';
+}
+
+@ProviderFor(availableBracelets)
+final availableBraceletsProvider = AvailableBraceletsFamily._();
+
+final class AvailableBraceletsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<int>>,
+          List<int>,
+          FutureOr<List<int>>
+        >
+    with $FutureModifier<List<int>>, $FutureProvider<List<int>> {
+  AvailableBraceletsProvider._({
+    required AvailableBraceletsFamily super.from,
+    required BraceletAvailabilityQuery super.argument,
+  }) : super(
+         retry: null,
+         name: r'availableBraceletsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$availableBraceletsHash();
+
+  @override
+  String toString() {
+    return r'availableBraceletsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<int>> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<int>> create(Ref ref) {
+    final argument = this.argument as BraceletAvailabilityQuery;
+    return availableBracelets(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AvailableBraceletsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$availableBraceletsHash() =>
+    r'59e373192e2ea11925a2206db7822cd83de549ee';
+
+final class AvailableBraceletsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<int>>,
+          BraceletAvailabilityQuery
+        > {
+  AvailableBraceletsFamily._()
+    : super(
+        retry: null,
+        name: r'availableBraceletsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  AvailableBraceletsProvider call(BraceletAvailabilityQuery query) =>
+      AvailableBraceletsProvider._(argument: query, from: this);
+
+  @override
+  String toString() => r'availableBraceletsProvider';
+}
+
 @ProviderFor(animales)
 final animalesProvider = AnimalesFamily._();
 
