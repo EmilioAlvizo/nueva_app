@@ -1,13 +1,10 @@
 // lib/features/huevos/domain/huevo_models.dart
 
-import 'package:flutter/material.dart';
-
 // ─── Recolección de huevos ────────────────────────────────────────────────────
 class RecoleccionHuevo {
   final String id;
   final String granjaId;
   final String tipoAnimalId;
-  final String periodoAlimentoId;
   final String? grupoId;
   final DateTime fecha;
   final int huevosBuenos;
@@ -23,7 +20,6 @@ class RecoleccionHuevo {
     required this.id,
     required this.granjaId,
     required this.tipoAnimalId,
-    required this.periodoAlimentoId,
     this.grupoId,
     required this.fecha,
     required this.huevosBuenos,
@@ -37,19 +33,18 @@ class RecoleccionHuevo {
   int get total => huevosBuenos + huevosRotos;
 
   factory RecoleccionHuevo.fromJson(Map<String, dynamic> j) => RecoleccionHuevo(
-        id: j['id'] as String,
-        granjaId: j['granja_id'] as String,
-        tipoAnimalId: j['tipo_animal_id'] as String,
-        periodoAlimentoId: j['periodo_alimento_id'] as String,
-        grupoId: j['grupo_id'] as String?,
-        fecha: DateTime.parse(j['fecha'] as String),
-        huevosBuenos: (j['huevos_buenos'] as num).toInt(),
-        huevosRotos: (j['huevos_rotos'] as num).toInt(),
-        notas: j['notas'] as String?,
-        createdAt: DateTime.parse(j['created_at'] as String),
-        tipoNombre: j['tipo_nombre'] as String? ?? '',
-        grupoNombre: j['grupo_nombre'] as String?,
-      );
+    id: j['id'] as String,
+    granjaId: j['granja_id'] as String,
+    tipoAnimalId: j['tipo_animal_id'] as String,
+    grupoId: j['grupo_id'] as String?,
+    fecha: DateTime.parse(j['fecha'] as String),
+    huevosBuenos: (j['cantidad_buena'] as num).toInt(),
+    huevosRotos: (j['cantidad_merma'] as num).toInt(),
+    notas: j['notas'] as String?,
+    createdAt: DateTime.parse(j['created_at'] as String),
+    tipoNombre: j['tipo_nombre'] as String? ?? '',
+    grupoNombre: j['grupo_nombre'] as String?,
+  );
 }
 
 // ─── Reducción de huevos ──────────────────────────────────────────────────────
@@ -57,8 +52,7 @@ class ReduccionHuevo {
   final String id;
   final String granjaId;
   final String tipoAnimalId;
-  final String periodoAlimentoId;
-  final String razonReduccionId;
+  final String razonSalidaId;
   final int cantidad;
   final double? importe;
   final DateTime fecha;
@@ -73,8 +67,7 @@ class ReduccionHuevo {
     required this.id,
     required this.granjaId,
     required this.tipoAnimalId,
-    required this.periodoAlimentoId,
-    required this.razonReduccionId,
+    required this.razonSalidaId,
     required this.cantidad,
     this.importe,
     required this.fecha,
@@ -85,19 +78,21 @@ class ReduccionHuevo {
   });
 
   factory ReduccionHuevo.fromJson(Map<String, dynamic> j) => ReduccionHuevo(
-        id: j['id'] as String,
-        granjaId: j['granja_id'] as String,
-        tipoAnimalId: j['tipo_animal_id'] as String,
-        periodoAlimentoId: j['periodo_alimento_id'] as String,
-        razonReduccionId: j['razon_reduccion_id'] as String,
-        cantidad: (j['cantidad'] as num).toInt(),
-        importe: (j['importe'] as num?)?.toDouble(),
-        fecha: DateTime.parse(j['fecha'] as String),
-        notas: j['notas'] as String?,
-        createdAt: DateTime.parse(j['created_at'] as String),
-        tipoNombre: j['tipo_nombre'] as String? ?? '',
-        razonNombre: j['razon_nombre'] as String? ?? '',
-      );
+    id: j['id'] as String,
+    granjaId: j['granja_id'] as String,
+    tipoAnimalId: j['tipo_animal_id'] as String,
+    razonSalidaId: j['razon_salida_id'] as String,
+    cantidad: (j['cantidad'] as num).toInt(),
+    importe: (j['importe_total'] as num?)?.toDouble(),
+    fecha: DateTime.parse(j['fecha'] as String),
+    notas: j['notas'] as String?,
+    createdAt: DateTime.parse(j['created_at'] as String),
+    tipoNombre: j['tipo_nombre'] as String? ?? '',
+    razonNombre: j['razon_nombre'] as String? ?? '',
+  );
+
+  @Deprecated('Use razonSalidaId instead.')
+  String get razonReduccionId => razonSalidaId;
 }
 
 // ─── Item unificado (para mostrar en lista combinada) ─────────────────────────
@@ -120,7 +115,7 @@ class MovHuevo {
   final int? cantidad;
   final double? importe;
   final String? razonNombre;
-  final String? razonReduccionId;
+  final String? razonSalidaId;
   final String? notas;
 
   const MovHuevo._({
@@ -136,35 +131,38 @@ class MovHuevo {
     this.cantidad,
     this.importe,
     this.razonNombre,
-    this.razonReduccionId,
+    this.razonSalidaId,
     this.notas,
   });
 
   factory MovHuevo.deRecoleccion(RecoleccionHuevo r) => MovHuevo._(
-        tipo: TipoMovHuevo.recoleccion,
-        id: r.id,
-        fecha: r.fecha,
-        tipoAnimalId: r.tipoAnimalId,
-        tipoNombre: r.tipoNombre,
-        grupoId: r.grupoId,
-        grupoNombre: r.grupoNombre,
-        huevosBuenos: r.huevosBuenos,
-        huevosRotos: r.huevosRotos,
-        notas: r.notas,
-      );
+    tipo: TipoMovHuevo.recoleccion,
+    id: r.id,
+    fecha: r.fecha,
+    tipoAnimalId: r.tipoAnimalId,
+    tipoNombre: r.tipoNombre,
+    grupoId: r.grupoId,
+    grupoNombre: r.grupoNombre,
+    huevosBuenos: r.huevosBuenos,
+    huevosRotos: r.huevosRotos,
+    notas: r.notas,
+  );
 
   factory MovHuevo.deReduccion(ReduccionHuevo r) => MovHuevo._(
-        tipo: TipoMovHuevo.reduccion,
-        id: r.id,
-        fecha: r.fecha,
-        tipoAnimalId: r.tipoAnimalId,
-        tipoNombre: r.tipoNombre,
-        cantidad: r.cantidad,
-        importe: r.importe,
-        razonNombre: r.razonNombre,
-        razonReduccionId: r.razonReduccionId,
-        notas: r.notas,
-      );
+    tipo: TipoMovHuevo.reduccion,
+    id: r.id,
+    fecha: r.fecha,
+    tipoAnimalId: r.tipoAnimalId,
+    tipoNombre: r.tipoNombre,
+    cantidad: r.cantidad,
+    importe: r.importe,
+    razonNombre: r.razonNombre,
+    razonSalidaId: r.razonSalidaId,
+    notas: r.notas,
+  );
+
+  @Deprecated('Use razonSalidaId instead.')
+  String? get razonReduccionId => razonSalidaId;
 }
 
 // ─── Stats de huevos por tipo ─────────────────────────────────────────────────

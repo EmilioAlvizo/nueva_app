@@ -5,11 +5,14 @@ import '../../../../core/supabase/supabase_client.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
 import '../model/grupo/grupo.dart';
 import '../model/altaAnimales/altaAnimales.dart';
+import '../model/altaAnimales/registrar_alta_animales_input.dart';
 import '../model/animal/animal.dart';
 import '../model/bajaAnimal/baja_animal.dart';
 import '../model/catalogoItem/catalogo_item.dart';
 
 class AnimalesRepository {
+  static const int _maxBraceletValue = 32767;
+
   final SupabaseClient _client;
   AnimalesRepository(this._client);
 
@@ -20,7 +23,6 @@ class AnimalesRepository {
         .select()
         .eq('granja_id', granjaId)
         .order('nombre');
-    print(data);
     return (data as List).map((e) => TipoAnimal.fromJson(e)).toList();
   }
 
@@ -56,9 +58,7 @@ class AnimalesRepository {
           .delete()
           .eq('granja_id', farmId)
           .eq('id', tipoId);
-    } catch (e) {
-      print(e);
-    }
+    } catch (_) {}
   }
 
   // ── Grupos de la granja ───────────────────────────────────────────────────
@@ -86,40 +86,104 @@ class AnimalesRepository {
           .delete()
           .eq('granja_id', farmId)
           .eq('id', grupoId);
-    } catch (e) {
-      print(e);
-    }
+    } catch (_) {}
   }
 
   // ── Lotes de entrada con conteos (usa vista existente + join cat) ─────────
   Future<List<AltaAnimales>> vistaAltasAnimales(String grupoId) async {
     final data = await _client
         .from('vista_altas_animales')
-        .select('''
-          id,
-          granja_id,
-          grupo_id,
-          tipo_animal_id,
-          fecha_alta,
-          proveedor,
-          costo_total,
-          cantidad_animales,
-          created_by,    
-          created_at,
-          brazaletes,
-          cat_tipo_adquisicion!tipo_adquisicion_id ( nombre )
-        ''')
+        .select(_altasSelect)
         .eq('grupo_id', grupoId)
         .order('fecha_alta', ascending: false);
-    print('data');
-    print(data);
-    return (data as List).map((e) {
-      final raw = Map<String, dynamic>.from(e);
-      // Aplanar el join
-      raw['tipo_adquisicion_nombre'] =
-          (raw['cat_tipo_adquisicion'] as Map?)?['nombre'] ?? '';
-      return AltaAnimales.fromJson(raw);
-    }).toList();
+    return _mapAltas(data);
+  }
+
+  Future<AltaAnimales> registrarAltaAnimales(
+    RegistrarAltaAnimalesInput input,
+  ) async {
+    _validateRegistrarAltaInput(input);
+
+    final data = await _client
+        .rpc('registrar_alta_animales', params: input.toRpcParams())
+        .single();
+
+    return AltaAnimales.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  Future<List<AltaAnimales>> getAltas(
+    String granjaId, {
+    String? grupoId,
+  }) async {
+    var query = _client
+        .from('vista_altas_animales')
+        .select(_altasSelect)
+        .eq('granja_id', granjaId);
+
+    if (grupoId != null) {
+      query = query.eq('grupo_id', grupoId);
+    }
+
+    final data = await query.order('fecha_alta', ascending: false);
+    return _mapAltas(data);
+  }
+
+  Future<NoGroupOverview> getNoGroupOverview(String granjaId) async {
+    final activeAnimals = await _client
+        .from('animales')
+        .select('id')
+        .eq('granja_id', granjaId)
+        .eq('activo', true)
+        .isFilter('grupo_id', null);
+
+    final deadAnimals = await _client
+        .from('animales')
+        .select('id')
+        .eq('granja_id', granjaId)
+        .eq('activo', false)
+        .isFilter('grupo_id', null);
+
+    final altas = await _client
+        .from('vista_altas_animales')
+        .select(_altasSelect)
+        .eq('granja_id', granjaId)
+        .isFilter('grupo_id', null)
+        .order('fecha_alta', ascending: false)
+        .limit(3);
+
+    return NoGroupOverview(
+      activeCount: (activeAnimals as List).length,
+      deadCount: (deadAnimals as List).length,
+      latestAltas: _mapAltas(altas),
+    );
+  }
+
+  Future<List<int>> getAvailableBracelets(
+    String granjaId,
+    String tipoAnimalId,
+  ) async {
+    final data = await _client
+        .from('animales')
+        .select('brazalete')
+        .eq('granja_id', granjaId)
+        .eq('tipo_animal_id', tipoAnimalId)
+        .order('brazalete', ascending: true);
+
+    final usedBracelets = (data as List)
+        .map((row) => row['brazalete'])
+        .whereType<num>()
+        .map((value) => value.toInt())
+        .where((value) => value > 0 && value <= _maxBraceletValue)
+        .toSet();
+
+    final availableBracelets = <int>[];
+    for (var bracelet = 1; bracelet <= _maxBraceletValue; bracelet++) {
+      if (!usedBracelets.contains(bracelet)) {
+        availableBracelets.add(bracelet);
+      }
+    }
+
+    return availableBracelets;
   }
 
   // ── Animales individuales de la granja ──────────────────────────────────
@@ -138,11 +202,11 @@ class AnimalesRepository {
           brazalete,
           proposito_id,
           tipo_adquisicion_id,
-          fecha_adquisicion,
-          costo_adquisicion,
-          activo,
-          notas,
-          tipo_animal ( nombre ),
+      fecha_adquisicion,
+      costo_adquisicion,
+      activo,
+      notas,
+      tipo_animal ( nombre ),
           grupos ( nombre )
         ''')
         .eq('granja_id', granjaId)
@@ -191,7 +255,6 @@ class AnimalesRepository {
     required DateTime fechaAdquisicion,
     double? costoAdquisicion,
     String? notas,
-    String? loteEntradaId,
   }) async {
     final userId = supabase.auth.currentUser?.id;
     await _client.from('animales').insert({
@@ -204,7 +267,6 @@ class AnimalesRepository {
       'fecha_adquisicion': _soloFecha(fechaAdquisicion),
       'costo_adquisicion': costoAdquisicion,
       'notas': notas,
-      'lote_entrada_id': loteEntradaId,
       'created_by': userId,
     });
   }
@@ -308,7 +370,7 @@ class AnimalesRepository {
   }
 
   // ── Conteos de vivos/muertes por grupo ────────────────────────────────────
-  Future<Map<String, _ConteoGrupo>> getConteosGrupos(String granjaId) async {
+  Future<Map<String, ConteoGrupo>> getConteosGrupos(String granjaId) async {
     // vivos
     final vivosData = await _client
         .from('animales')
@@ -329,21 +391,21 @@ class AnimalesRepository {
         .select('grupo_id')
         .eq('granja_id', granjaId);
 
-    final Map<String, _ConteoGrupo> result = {};
+    final Map<String, ConteoGrupo> result = {};
 
     for (final e in vivosData as List) {
       final gId = e['grupo_id'] as String;
-      result.putIfAbsent(gId, () => _ConteoGrupo());
+      result.putIfAbsent(gId, () => ConteoGrupo());
       result[gId]!.vivos++;
     }
     for (final e in muertosData as List) {
       final gId = e['grupo_id'] as String;
-      result.putIfAbsent(gId, () => _ConteoGrupo());
+      result.putIfAbsent(gId, () => ConteoGrupo());
       result[gId]!.muertes++;
     }
     for (final e in totalData as List) {
       final gId = e['grupo_id'] as String;
-      result.putIfAbsent(gId, () => _ConteoGrupo());
+      result.putIfAbsent(gId, () => ConteoGrupo());
       result[gId]!.total++;
     }
 
@@ -351,7 +413,82 @@ class AnimalesRepository {
   }
 }
 
-class _ConteoGrupo {
+List<AltaAnimales> _mapAltas(dynamic data) => (data as List)
+    .map((row) => AltaAnimales.fromJson(Map<String, dynamic>.from(row)))
+    .toList();
+
+void _validateRegistrarAltaInput(RegistrarAltaAnimalesInput input) {
+  if (input.cantidad <= 0) {
+    throw ArgumentError.value(
+      input.cantidad,
+      'cantidad',
+      'must be greater than 0',
+    );
+  }
+
+  final bracelets = input.bracelets;
+  if (bracelets == null) {
+    return;
+  }
+
+  if (bracelets.length > input.cantidad) {
+    throw ArgumentError.value(
+      bracelets,
+      'bracelets',
+      'count must be less than or equal to cantidad',
+    );
+  }
+
+  final uniqueBracelets = <int>{};
+  for (final bracelet in bracelets) {
+    if (bracelet <= 0 || bracelet > AnimalesRepository._maxBraceletValue) {
+      throw ArgumentError.value(
+        bracelet,
+        'bracelets',
+        'must contain only positive small integers',
+      );
+    }
+
+    if (!uniqueBracelets.add(bracelet)) {
+      throw ArgumentError.value(
+        bracelets,
+        'bracelets',
+        'must not contain duplicates',
+      );
+    }
+  }
+}
+
+const String _altasSelect = '''
+id,
+granja_id,
+grupo_id,
+tipo_animal_id,
+proposito_id,
+tipo_adquisicion_id,
+fecha_alta,
+proveedor,
+costo_total,
+cantidad_animales,
+created_by,
+created_at,
+notas,
+brazaletes
+''';
+
+class NoGroupOverview {
+  const NoGroupOverview({
+    required this.activeCount,
+    required this.deadCount,
+    required this.latestAltas,
+  });
+
+  final int activeCount;
+  final int deadCount;
+  final List<AltaAnimales> latestAltas;
+}
+
+class ConteoGrupo {
   int vivos = 0;
   int muertes = 0;
   int total = 0;

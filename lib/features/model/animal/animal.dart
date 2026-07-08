@@ -9,15 +9,12 @@ class Animal {
   final String? altaId;
   final String? bajaId;
   final int? brazalete;
-  final String propositoId;
-  final String tipoAdquisicionId;
+  final String? propositoId;
+  final String? tipoAdquisicionId;
   final DateTime fechaAdquisicion;
   final double? costoAdquisicion;
   final bool activo;
   final String? notas;
-
-  /// Si el Animal se creó como parte de un lote de entrada.
-  final String? loteEntradaId;
 
   /// Nombre del tipo de animal (aplanado desde el join `tipo_animal`).
   final String tipoNombre;
@@ -33,13 +30,12 @@ class Animal {
     this.altaId,
     this.bajaId,
     this.brazalete,
-    required this.propositoId,
-    required this.tipoAdquisicionId,
+    this.propositoId,
+    this.tipoAdquisicionId,
     required this.fechaAdquisicion,
     this.costoAdquisicion,
     required this.activo,
     this.notas,
-    this.loteEntradaId,
     required this.tipoNombre,
     required this.grupoNombre,
   });
@@ -53,17 +49,16 @@ class Animal {
       altaId: json['alta_id'] as String?,
       bajaId: json['baja_id'] as String?,
       brazalete: json['brazalete'] as int?,
-      propositoId: json['proposito_id'] as String,
-      tipoAdquisicionId: json['tipo_adquisicion_id'] as String,
+      propositoId: json['proposito_id'] as String?,
+      tipoAdquisicionId: json['tipo_adquisicion_id'] as String?,
       fechaAdquisicion: DateTime.parse(json['fecha_adquisicion'] as String),
       costoAdquisicion: json['costo_adquisicion'] == null
           ? null
           : (json['costo_adquisicion'] as num).toDouble(),
       activo: json['activo'] as bool,
       notas: json['notas'] as String?,
-      loteEntradaId: json['lote_entrada_id'] as String?,
       tipoNombre: (json['tipo_nombre'] as String?) ?? '',
-      grupoNombre: (json['grupo_nombre'] as String?) ?? '',
+      grupoNombre: (json['grupo_nombre'] as String?) ?? 'Sin grupo',
     );
   }
 }

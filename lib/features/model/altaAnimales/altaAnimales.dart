@@ -39,17 +39,18 @@ class AltaAnimales {
     tipoAnimalId: j['tipo_animal_id'] as String,
     grupoId: j['grupo_id'] as String?,
     propositoId: j['proposito_id'] as String?,
-    tipoAdquisicionId: j['tipo_adquisicion_id'] as String? ?? '',
+    tipoAdquisicionId: j['tipo_adquisicion_id'] as String?,
     proveedor: j['proveedor'] as String?,
     fechaAlta: DateTime.parse(j['fecha_alta'] as String),
     cantidadAnimales: j['cantidad_animales'] as int,
     costoTotal: (j['costo_total'] as num?)?.toDouble(),
     notas: j['notas'] as String?,
     createdBy: j['created_by'] as String,
-    createdAt: DateTime.parse(j['fecha_alta'] as String),
-    brazaletes: (j['brazaletes'] as List<dynamic>?)
-                ?.map((e) => ((e ?? 0) as num).toInt())
-                .toList() ??
-            [],
+    createdAt: DateTime.parse(j['created_at'] as String),
+    brazaletes:
+        (j['brazaletes'] as List<dynamic>?)
+            ?.map((e) => ((e ?? 0) as num).toInt())
+            .toList() ??
+        [],
   );
 }
