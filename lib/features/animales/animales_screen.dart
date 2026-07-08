@@ -431,16 +431,16 @@ class _GruposTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return tiposAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => Center(child: Text('Error 1: $e')),
       data: (tipos) => gruposAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text('Error 2: $e')),
         data: (grupos) => conteosAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (e, _) => Center(child: Text('Error 3: $e')),
           data: (conteos) => noGroupOverviewAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => Center(child: Text('Error 4: $e')),
             data: (noGroupOverview) {
               final gruposFiltrados = tipoFiltro == 'all'
                   ? grupos

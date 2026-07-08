@@ -394,17 +394,22 @@ class AnimalesRepository {
     final Map<String, ConteoGrupo> result = {};
 
     for (final e in vivosData as List) {
-      final gId = e['grupo_id'] as String;
+      final gId = e['grupo_id'] as String?;
+      if (gId == null) continue; // animal sin grupo, skip
       result.putIfAbsent(gId, () => ConteoGrupo());
       result[gId]!.vivos++;
     }
+
     for (final e in muertosData as List) {
-      final gId = e['grupo_id'] as String;
+      final gId = e['grupo_id'] as String?;
+      if (gId == null) continue;
       result.putIfAbsent(gId, () => ConteoGrupo());
       result[gId]!.muertes++;
     }
+
     for (final e in totalData as List) {
-      final gId = e['grupo_id'] as String;
+      final gId = e['grupo_id'] as String?;
+      if (gId == null) continue;
       result.putIfAbsent(gId, () => ConteoGrupo());
       result[gId]!.total++;
     }
