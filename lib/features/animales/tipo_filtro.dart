@@ -58,7 +58,7 @@ class TipoFiltroBadgeButton extends StatelessWidget {
       if (idx >= 0) tipoSel = tipos[idx];
     }
     final activo = tipoSel != null;
-    final color = activo ? colorParaTipoAnimal(tipoSel!.id, tipos) : null;
+    final color = activo ? colorParaTipoAnimal(tipoSel.id, tipos) : null;
 
     return GestureDetector(
       onTap: () => showTipoFiltroPicker(
@@ -100,7 +100,7 @@ class TipoFiltroBadgeButton extends StatelessWidget {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 90),
                 child: Text(
-                  tipoSel!.nombre,
+                  tipoSel.nombre,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,

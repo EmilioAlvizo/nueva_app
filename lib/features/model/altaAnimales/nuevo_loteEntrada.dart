@@ -928,7 +928,7 @@ class _BrazaletesWidgetState extends State<_BrazaletesWidget> {
                 }
               },
               child: Text(
-                'Asignar ${_preview().length > 0 ? "(${_preview().length} brazaletes)" : ""}',
+                'Asignar ${_preview().isNotEmpty ? "(${_preview().length} brazaletes)" : ""}',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,

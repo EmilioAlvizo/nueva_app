@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/router/app_router.dart';
-import '../auth/data/auth_repository.dart';
 import '../settings/presentation/providers/theme_provider.dart'; // Tu provider de tema real
 import '../../shared/widgets/setting_sheet.dart';
 import '../granja/granja.dart';
@@ -80,13 +78,10 @@ class _AppBar extends ConsumerWidget {
 
   // Índice de la pestaña "Animales" en el bottom nav (ver _BottomBar._icons).
   // Si reordenas las pestañas, actualiza este valor.
-  static const int _animalesTabIndex = 1;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 2. Extraemos dinámicamente el nombre del usuario desde Supabase authRepositoryProvider
-    final user = ref.watch(authRepositoryProvider).currentUser;
-    final userNombre = user?.userMetadata?['nombre'] ?? 'Granjero';
 
     // ── Filtro de tipo de animal: solo tiene sentido en la pestaña Animales
     //    y cuando hay una granja seleccionada con tipos registrados.
@@ -96,10 +91,10 @@ class _AppBar extends ConsumerWidget {
     final puedeFiltrar = isAnimalesTab && selectedFarm != null;
 
     final tiposAsync = puedeFiltrar
-        ? ref.watch(tiposAnimalProvider(selectedFarm!.id))
+        ? ref.watch(tiposAnimalProvider(selectedFarm.id))
         : null;
     final gruposAsync = puedeFiltrar
-        ? ref.watch(gruposProvider(selectedFarm!.id))
+        ? ref.watch(gruposProvider(selectedFarm.id))
         : null;
     final tipos = tiposAsync?.value ?? const [];
     final grupos = gruposAsync?.value ?? const [];

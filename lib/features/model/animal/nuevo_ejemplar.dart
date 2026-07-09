@@ -220,7 +220,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                 // ── Tipo de animal ──────────────────────────────────────
                 _Label('Tipo de animal', isDark),
                 DropdownButtonFormField<String>(
-                  value: _tipoAnimalId,
+                  initialValue: _tipoAnimalId,
                   items: tipos
                       .map(
                         (t) => DropdownMenuItem(
@@ -243,7 +243,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                 // ── Grupo ────────────────────────────────────────────────
                 _Label('Grupo', isDark),
                 DropdownButtonFormField<String>(
-                  value: _grupoId,
+                  initialValue: _grupoId,
                   items: grupos
                       .map(
                         (g) => DropdownMenuItem(
@@ -284,7 +284,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                   loading: () => const LinearProgressIndicator(),
                   error: (e, _) => Text('Error al cargar propósitos: $e'),
                   data: (props) => DropdownButtonFormField<String>(
-                    value: _propositoId,
+                    initialValue: _propositoId,
                     items: props
                         .map(
                           (p) => DropdownMenuItem(
@@ -309,7 +309,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                   loading: () => const LinearProgressIndicator(),
                   error: (e, _) => Text('Error al cargar catálogo: $e'),
                   data: (lista) => DropdownButtonFormField<String>(
-                    value: _tipoAdquisicionId,
+                    initialValue: _tipoAdquisicionId,
                     items: lista
                         .map(
                           (t) => DropdownMenuItem(
@@ -392,7 +392,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                     contentPadding: EdgeInsets.zero,
                     value: _activo,
                     onChanged: (v) => setState(() => _activo = v),
-                    activeColor: AppColors.green,
+                    activeThumbColor: AppColors.green,
                     title: Text(
                       'Animal activo',
                       style: TextStyle(

@@ -1,16 +1,13 @@
 // lib/features/huevos/presentation/huevos_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/supabase/supabase_client.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/widgets/green_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../animales/animales_provider.dart';
-import '../granja/granja_provider.dart';
 import '../settings/presentation/providers/theme_provider.dart';
 import 'huevo_repository.dart';
 import 'huevo_models.dart';
@@ -916,9 +913,6 @@ class _RecoleccionFormState extends ConsumerState<_RecoleccionForm> {
             ?.where((g) => _tipoSel == null || g.tipoAnimalId == _tipoSel)
             .toList() ??
         [];
-    final bgColor = widget.isDark ? AppColors.bg : Colors.white;
-    final titleColor =
-        widget.isDark ? AppColors.textPrimary : const Color(0xFF1A1A2E);
     final fmt = DateFormat("d 'de' MMMM yyyy");
     final esEdicion = widget.editando != null;
 

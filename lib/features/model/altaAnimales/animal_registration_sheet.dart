@@ -8,7 +8,7 @@ import 'package:nueva_app/features/model/altaAnimales/registrar_alta_animales_in
 
 import '../../../../core/theme/app_colors.dart';
 
-const _visibleAvailableBraceletLimit = 48;
+const _visibleAvailableBraceletLimit = 10;
 
 class AnimalRegistrationSheet extends ConsumerStatefulWidget {
   const AnimalRegistrationSheet({
@@ -177,7 +177,7 @@ class _AnimalRegistrationSheetState
                   loading: () => const LinearProgressIndicator(),
                   error: (error, _) => Text('Error: $error'),
                   data: (tipos) => DropdownButtonFormField<String>(
-                    value: _tipoAnimalId,
+                    initialValue: _tipoAnimalId,
                     items: tipos
                         .map(
                           (tipo) => DropdownMenuItem(
@@ -201,7 +201,7 @@ class _AnimalRegistrationSheetState
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String?>(
-                  value: _grupoId,
+                  initialValue: _grupoId,
                   items: [
                     const DropdownMenuItem<String?>(
                       value: null,
@@ -224,7 +224,7 @@ class _AnimalRegistrationSheetState
                   loading: () => const LinearProgressIndicator(),
                   error: (error, _) => Text('Error: $error'),
                   data: (items) => DropdownButtonFormField<String>(
-                    value: _propositoId,
+                    initialValue: _propositoId,
                     items: items
                         .map(
                           (item) => DropdownMenuItem(
@@ -244,7 +244,7 @@ class _AnimalRegistrationSheetState
                   loading: () => const LinearProgressIndicator(),
                   error: (error, _) => Text('Error: $error'),
                   data: (items) => DropdownButtonFormField<String>(
-                    value: _tipoAdquisicionId,
+                    initialValue: _tipoAdquisicionId,
                     items: items
                         .map(
                           (item) => DropdownMenuItem(

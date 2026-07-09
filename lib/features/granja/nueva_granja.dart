@@ -24,7 +24,6 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
   final _locationCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   bool _isLoading = false;
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -39,7 +38,6 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
@@ -58,7 +56,6 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Ocurrió un error al crear la granja. Inténtalo de nuevo.';
         _isLoading = false;
       });
     }
@@ -69,7 +66,6 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
     // Colores adaptativos según el tema actual
     final bgColor = widget.isDark ? AppColors.bg : Colors.white;
     final titleColor = widget.isDark ? AppColors.textPrimary : const Color(0xFF1A1A2E);
-    final inputLabelColor = widget.isDark ? AppColors.bgInput : const Color(0xFFF0F4F8);
 
     return Padding(
       // Evita que el teclado móvil tape los inputs de texto

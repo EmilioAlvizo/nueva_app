@@ -1,8 +1,6 @@
 // lib/features/model/tipoAnimal/nuevo_tipoAnimal.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nueva_app/features/auth/presentation/providers/auth_session_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 //import '/features/auth/data/auth_repository.dart';
 //import '/features/settings/presentation/providers/theme_provider.dart';
@@ -27,7 +25,6 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
   final _locationCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   bool _isLoading = false;
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -42,7 +39,6 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
@@ -61,7 +57,6 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Ocurrió un error al crear la granja. Inténtalo de nuevo.';
         _isLoading = false;
       });
     }
@@ -72,7 +67,6 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
     // Colores adaptativos según el tema actual
     final bgColor = widget.isDark ? AppColors.bg : Colors.white;
     final titleColor = widget.isDark ? AppColors.textPrimary : const Color(0xFF1A1A2E);
-    final inputLabelColor = widget.isDark ? AppColors.bgInput : const Color(0xFFF0F4F8);
 
     return Padding(
       // Evita que el teclado móvil tape los inputs de texto

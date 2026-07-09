@@ -1,3 +1,15 @@
+class AltaBrazalete {
+  final int numero;
+  final bool activo;
+
+  const AltaBrazalete({required this.numero, required this.activo});
+
+  factory AltaBrazalete.fromJson(Map<String, dynamic> json) => AltaBrazalete(
+    numero: (json['numero'] as num).toInt(),
+    activo: json['activo'] as bool? ?? true,
+  );
+}
+
 class AltaAnimales {
   final String id;
   final String granjaId;
@@ -13,8 +25,13 @@ class AltaAnimales {
   final String createdBy;
   final DateTime createdAt;
 
-  //vista
+  // Vista legacy: solo números agregados desde `vista_altas_animales`.
   final List<int>? brazaletes;
+
+  // Vista enriquecida desde `animales`: conserva si el ejemplar sigue activo.
+  final List<AltaBrazalete>? brazaletesDetalle;
+  final int? cantidadVivos;
+  final int? cantidadMuertos;
 
   const AltaAnimales({
     required this.id,
@@ -31,6 +48,9 @@ class AltaAnimales {
     required this.createdBy,
     required this.createdAt,
     this.brazaletes,
+    this.brazaletesDetalle,
+    this.cantidadVivos,
+    this.cantidadMuertos,
   });
 
   factory AltaAnimales.fromJson(Map<String, dynamic> j) => AltaAnimales(
@@ -52,5 +72,53 @@ class AltaAnimales {
             ?.map((e) => ((e ?? 0) as num).toInt())
             .toList() ??
         [],
+    brazaletesDetalle: (j['brazaletes_detalle'] as List<dynamic>?)
+        ?.map(
+          (e) => AltaBrazalete.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList(),
+    cantidadVivos: (j['cantidad_vivos'] as num?)?.toInt(),
+    cantidadMuertos: (j['cantidad_muertos'] as num?)?.toInt(),
+  );
+
+  int get vivosCount => cantidadVivos ?? cantidadAnimales;
+
+  int get muertosCount => cantidadMuertos ?? 0;
+
+  List<AltaBrazalete> get brazaletesDetalleSafe {
+    final detalle = brazaletesDetalle;
+    if (detalle != null) {
+      return detalle;
+    }
+
+    return [
+      for (final numero in brazaletes ?? const <int>[])
+        AltaBrazalete(numero: numero, activo: true),
+    ];
+  }
+
+  AltaAnimales copyWith({
+    List<int>? brazaletes,
+    List<AltaBrazalete>? brazaletesDetalle,
+    int? cantidadVivos,
+    int? cantidadMuertos,
+  }) => AltaAnimales(
+    id: id,
+    granjaId: granjaId,
+    tipoAnimalId: tipoAnimalId,
+    grupoId: grupoId,
+    propositoId: propositoId,
+    tipoAdquisicionId: tipoAdquisicionId,
+    proveedor: proveedor,
+    fechaAlta: fechaAlta,
+    cantidadAnimales: cantidadAnimales,
+    costoTotal: costoTotal,
+    notas: notas,
+    createdBy: createdBy,
+    createdAt: createdAt,
+    brazaletes: brazaletes ?? this.brazaletes,
+    brazaletesDetalle: brazaletesDetalle ?? this.brazaletesDetalle,
+    cantidadVivos: cantidadVivos ?? this.cantidadVivos,
+    cantidadMuertos: cantidadMuertos ?? this.cantidadMuertos,
   );
 }

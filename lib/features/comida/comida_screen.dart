@@ -1,6 +1,5 @@
 // lib/features/comida/presentation/comida_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -211,7 +210,7 @@ class _TotalTab extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(children: [
                 _StatTile(
-                  value: '${stats.totalKg.toStringAsFixed(1)}',
+                  value: stats.totalKg.toStringAsFixed(1),
                   label: 'Kg',
                   color: AppColors.green,
                   isDark: isDark,
@@ -1159,7 +1158,7 @@ class _PeriodoFormState extends ConsumerState<_PeriodoForm> {
           Switch(
             value: _activo,
             onChanged: (v) => setState(() => _activo = v),
-            activeColor: AppColors.green,
+            activeThumbColor: AppColors.green,
           ),
         ]),
         const SizedBox(height: 16),

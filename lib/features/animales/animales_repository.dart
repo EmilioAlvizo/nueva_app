@@ -96,7 +96,7 @@ class AnimalesRepository {
         .select(_altasSelect)
         .eq('grupo_id', grupoId)
         .order('fecha_alta', ascending: false);
-    return _mapAltas(data);
+    return _enrichAltas(_mapAltas(data));
   }
 
   Future<AltaAnimales> registrarAltaAnimales(
@@ -125,7 +125,7 @@ class AnimalesRepository {
     }
 
     final data = await query.order('fecha_alta', ascending: false);
-    return _mapAltas(data);
+    return _enrichAltas(_mapAltas(data));
   }
 
   Future<NoGroupOverview> getNoGroupOverview(String granjaId) async {
@@ -154,7 +154,7 @@ class AnimalesRepository {
     return NoGroupOverview(
       activeCount: (activeAnimals as List).length,
       deadCount: (deadAnimals as List).length,
-      latestAltas: _mapAltas(altas),
+      latestAltas: await _enrichAltas(_mapAltas(altas)),
     );
   }
 
@@ -416,6 +416,67 @@ class AnimalesRepository {
 
     return result;
   }
+
+  Future<List<AltaAnimales>> _enrichAltas(List<AltaAnimales> altas) async {
+    if (altas.isEmpty) {
+      return altas;
+    }
+
+    final altaIds = altas.map((alta) => alta.id).toList(growable: false);
+    final animalesData = await _client
+        .from('animales')
+        .select('alta_id, brazalete, activo')
+        .inFilter('alta_id', altaIds)
+        .order('alta_id')
+        .order('brazalete', ascending: true);
+
+    final statsByAlta = <String, _AltaEnrichment>{};
+
+    for (final row in animalesData as List) {
+      final json = Map<String, dynamic>.from(row as Map);
+      final altaId = json['alta_id'] as String?;
+      if (altaId == null) {
+        continue;
+      }
+
+      final stats = statsByAlta.putIfAbsent(altaId, _AltaEnrichment.new);
+      final isActive = json['activo'] as bool? ?? true;
+      if (isActive) {
+        stats.vivos++;
+      } else {
+        stats.muertos++;
+      }
+
+      final bracelet = (json['brazalete'] as num?)?.toInt();
+      if (bracelet != null) {
+        stats.brazaletes.add(AltaBrazalete(numero: bracelet, activo: isActive));
+      }
+    }
+
+    return [
+      for (final alta in altas)
+        switch (statsByAlta[alta.id]) {
+          final _AltaEnrichment stats => alta.copyWith(
+            brazaletes: [
+              for (final bracelet in stats.brazaletes) bracelet.numero,
+            ],
+            brazaletesDetalle: stats.brazaletes,
+            cantidadVivos: stats.vivos,
+            cantidadMuertos: stats.muertos,
+          ),
+          null => alta.copyWith(
+            cantidadVivos: alta.cantidadAnimales,
+            cantidadMuertos: 0,
+          ),
+        },
+    ];
+  }
+}
+
+class _AltaEnrichment {
+  int vivos = 0;
+  int muertos = 0;
+  final List<AltaBrazalete> brazaletes = [];
 }
 
 List<AltaAnimales> _mapAltas(dynamic data) => (data as List)

@@ -68,8 +68,8 @@ class _ScreenTestApp extends StatelessWidget {
 }
 
 class _ScreenFakeRepository extends AnimalesRepository {
-  _ScreenFakeRepository({required this.noGroupOverview, this.groups = const []})
-    : super(_buildClient());
+  _ScreenFakeRepository({required this.noGroupOverview})
+    : groups = const [], super(_buildClient());
 
   factory _ScreenFakeRepository.empty() => _ScreenFakeRepository(
     noGroupOverview: const NoGroupOverview(

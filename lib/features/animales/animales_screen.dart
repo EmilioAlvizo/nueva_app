@@ -1013,7 +1013,8 @@ class _LoteTabCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy");
-    final vivos = lote.cantidadAnimales;
+    final vivos = lote.vivosCount;
+    final muertos = lote.muertosCount;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1083,7 +1084,7 @@ class _LoteTabCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$vivos/${lote.cantidadAnimales}',
+                _animalCountText(vivos, singular: 'vivo', plural: 'vivos'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -1093,7 +1094,11 @@ class _LoteTabCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'registrados',
+                _animalCountText(
+                  muertos,
+                  singular: 'muerto',
+                  plural: 'muertos',
+                ),
                 style: TextStyle(
                   fontSize: 10,
                   color: isDark
@@ -2355,7 +2360,7 @@ class _LotesSection extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  expandido ? 'Ocultar lotes' : 'Ver lotes de entrada',
+                  expandido ? 'Ocultar altas' : 'Ver altas de animales',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.bgInputLg : AppColors.bg,
@@ -2386,7 +2391,7 @@ class _LotesSection extends ConsumerWidget {
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
                         child: Text(
-                          'Aún no hay lotes de entrada.',
+                          'Aún no hay altas.',
                           style: TextStyle(fontSize: 12, color: Colors.white38),
                           textAlign: TextAlign.center,
                         ),
@@ -2415,7 +2420,8 @@ class _LoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy");
-    final vivos = lote.cantidadAnimales;
+    final vivos = lote.vivosCount;
+    final muertos = lote.muertosCount;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2465,30 +2471,36 @@ class _LoteCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(
-                '$vivos/${lote.cantidadAnimales}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.textPrimary : AppColors.textMuted,
+              Expanded(
+                child: Text(
+                  '${_animalCountText(vivos, singular: 'vivo', plural: 'vivos')} · '
+                  '${_animalCountText(muertos, singular: 'muerto', plural: 'muertos')}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textPrimary : AppColors.textMuted,
+                  ),
                 ),
               ),
-              const SizedBox(width: 4),
-              _CardMenu(
-                size: 16,
-                onEdit: () => context.push('/lotes-entrada/${lote.id}/editar'),
-                onDelete: () {},
-                isDark: isDark,
-              ),
+
             ],
           ),
-          if (lote.brazaletes?.isNotEmpty ?? false) ...[
+          if (lote.brazaletesDetalleSafe.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(
               spacing: 4,
               runSpacing: 4,
-              children: lote.brazaletes!
-                  .map((b) => _BrazaleteBadge(numero: b, isDark: isDark))
+              children: lote.brazaletesDetalleSafe
+                  .map(
+                    (b) => _BrazaleteBadge(
+                      numero: b.numero,
+                      activo: b.activo,
+                      isDark: isDark,
+                    ),
+                  )
                   .toList(),
             ),
           ],
@@ -2500,30 +2512,76 @@ class _LoteCard extends StatelessWidget {
 
 class _BrazaleteBadge extends StatelessWidget {
   final int numero;
+  final bool activo;
   final bool isDark;
-  const _BrazaleteBadge({required this.numero, this.isDark = false});
+  const _BrazaleteBadge({
+    required this.numero,
+    required this.activo,
+    this.isDark = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : AppColors.bgLight,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: isDark ? AppColors.border : AppColors.border1,
+    final backgroundColor = switch ((activo, isDark)) {
+      (true, true) => AppColors.bgCard,
+      (true, false) => AppColors.bgLight,
+      (false, _) => const Color(0x33FF5A5F),
+    };
+    final borderColor = switch ((activo, isDark)) {
+      (true, true) => AppColors.border,
+      (true, false) => AppColors.border1,
+      (false, _) => const Color(0x99FF5A5F),
+    };
+    final textColor = activo
+        ? (isDark ? AppColors.textPrimary : AppColors.textMuted)
+        : const Color(0xFFFF8A8E);
+
+    return Tooltip(
+      message: activo ? 'Ejemplar vivo' : 'Ejemplar muerto',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: borderColor),
         ),
-      ),
-      child: Text(
-        '#$numero',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-          color: isDark ? AppColors.textPrimary : AppColors.textMuted,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '#$numero',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: textColor,
+              ),
+            ),
+            /* if (!activo) ...[
+              const SizedBox(width: 3),
+              Icon(Icons.close_rounded, size: 10, color: textColor),
+              const SizedBox(width: 2),
+              Text(
+                'baja',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+            ], */
+          ],
         ),
       ),
     );
   }
+}
+
+String _animalCountText(
+  int count, {
+  required String singular,
+  required String plural,
+}) {
+  return '$count ${count == 1 ? singular : plural}';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

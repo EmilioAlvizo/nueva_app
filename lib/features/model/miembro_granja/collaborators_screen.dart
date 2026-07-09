@@ -2,11 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../shared/widgets/green_button.dart';
-import '../../../shared/widgets/app_text_field.dart';
-import '../../granja/granja_provider.dart';
 import 'miembro_granja.dart';
-import 'miembro_granja_repository.dart';
 import 'miembro_granja_provider.dart';
 
 class CollaboratorsScreen extends ConsumerWidget {
