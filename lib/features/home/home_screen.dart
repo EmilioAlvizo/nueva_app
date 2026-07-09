@@ -291,8 +291,8 @@ class _NewFarmButton extends StatelessWidget {
             width: 1.5,
           ),
           color: isDark
-              ? AppColors.bgCard.withOpacity(0.5)
-              : Colors.white.withOpacity(0.5),
+              ? AppColors.bgCard.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.5),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -423,7 +423,7 @@ class _FarmCard extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.green.withOpacity(0.15),
+                    color: AppColors.green.withValues(alpha: 0.15),
                     blurRadius: 10,
                     spreadRadius: 1,
                   ),
@@ -478,7 +478,7 @@ class _FarmCard extends StatelessWidget {
                               end: Alignment.bottomCenter,
                               colors: [
                                 Colors.transparent,
-                                Colors.black.withOpacity(0.5),
+                                Colors.black.withValues(alpha: 0.5),
                               ],
                             ),
                           ),
@@ -805,7 +805,7 @@ class _InviteChip extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.35),
+        color: Colors.black.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white24),
       ),

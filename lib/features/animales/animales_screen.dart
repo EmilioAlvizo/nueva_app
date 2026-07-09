@@ -54,8 +54,7 @@ class AnimalesScreen extends ConsumerStatefulWidget {
   ConsumerState<AnimalesScreen> createState() => _AnimalesScreenState();
 }
 
-class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
-    with SingleTickerProviderStateMixin {
+class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
   // ── Tab / Page ──────────────────────────────────────────────────────────────
   late final PageController _pageCtrl;
   _Tab _activeTab = _Tab.grupos;
@@ -63,9 +62,6 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
   // ── Estado de grupos ────────────────────────────────────────────────────────
   final Set<String> _expandidos = {};
   final Set<String> _colapsados = {};
-
-  // ── FAB ─────────────────────────────────────────────────────────────────────
-  bool _fabOpen = false;
 
   @override
   void initState() {
@@ -189,88 +185,106 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen>
   }
 
   Widget _buildFab(BuildContext context, bool isDark) {
-    final actions = [
-      (
-        Icons.add,
-        'Nuevo animal',
-        'Alta individual',
-        AnimalRegistrationSheet(
-          granjaId: widget.granjaId,
-          isDark: isDark,
-          initialQuantity: 1,
-          tipoAnimalIdInicial: ref.read(tipoFiltroProvider) == 'all'
-              ? null
-              : ref.read(tipoFiltroProvider),
-        ),
-      ),
-      (
-        Icons.inventory_2_outlined,
-        'Nueva alta',
-        'Alta múltiple',
-        AnimalRegistrationSheet(
-          granjaId: widget.granjaId,
-          isDark: isDark,
-          initialQuantity: 2,
-          tipoAnimalIdInicial: ref.read(tipoFiltroProvider) == 'all'
-              ? null
-              : ref.read(tipoFiltroProvider),
-        ),
-      ),
-      (
-        Icons.create_new_folder_outlined,
-        'Nuevo grupo',
-        'Corral o agrupación',
-        NuevoGrupo(isDark: isDark),
-      ),
-      (
-        Icons.label_outline,
-        'Nuevo tipo de animal',
-        'Categoría base (Gallina…)',
-        NuevoAnimal(isDark: isDark),
-      ),
-    ];
+    final filteredTypeId = ref.read(tipoFiltroProvider) == 'all'
+        ? null
+        : ref.read(tipoFiltroProvider);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        if (_fabOpen) ...[
-          ...actions.map(
-            (a) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _FabMenuItem(
-                icon: a.$1,
-                label: a.$2,
-                desc: a.$3,
-                onTap: () {
-                  setState(() => _fabOpen = false);
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    builder: (_) => a.$4,
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-        ],
-        FloatingActionButton(
-          backgroundColor: AppColors.green,
-          foregroundColor: isDark ? AppColors.bg : AppColors.bgInputLg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          onPressed: () => setState(() => _fabOpen = !_fabOpen),
-          child: AnimatedRotation(
-            turns: _fabOpen ? 0.125 : 0,
-            duration: const Duration(milliseconds: 200),
-            child: Icon(_fabOpen ? Icons.close : Icons.add, size: 28),
+    final action = switch (_activeTab) {
+      _Tab.grupos => _ContextualFabAction(
+        key: 'grupos',
+        icon: Icons.create_new_folder_outlined,
+        label: 'Nuevo grupo',
+        backgroundColor: AppColors.green,
+        foregroundColor: isDark ? AppColors.bg : AppColors.bgInputLg,
+        onPressed: () => _openSheet(context, NuevoGrupo(isDark: isDark)),
+      ),
+      _Tab.animales => _ContextualFabAction(
+        key: 'animales',
+        icon: Icons.add,
+        label: 'Nuevo animal',
+        backgroundColor: AppColors.green,
+        foregroundColor: isDark ? AppColors.bg : AppColors.bgInputLg,
+        onPressed: () => _openSheet(
+          context,
+          AnimalRegistrationSheet(
+            granjaId: widget.granjaId,
+            isDark: isDark,
+            initialQuantity: 1,
+            tipoAnimalIdInicial: filteredTypeId,
           ),
         ),
-      ],
+      ),
+      _Tab.altas => _ContextualFabAction(
+        key: 'altas',
+        icon: Icons.inventory_2_outlined,
+        label: 'Nueva alta',
+        backgroundColor: AppColors.naranjao,
+        foregroundColor: AppColors.bg,
+        onPressed: () => _openSheet(
+          context,
+          AnimalRegistrationSheet(
+            granjaId: widget.granjaId,
+            isDark: isDark,
+            initialQuantity: 2,
+            tipoAnimalIdInicial: filteredTypeId,
+          ),
+        ),
+      ),
+      _Tab.bajas => _ContextualFabAction(
+        key: 'bajas',
+        icon: Icons.remove_circle,
+        label: 'Bajas próximamente',
+        backgroundColor: const Color(0xFFC94F6D),
+        foregroundColor: Colors.white,
+        onPressed: () => _showPlaceholderSnackBar(
+          context,
+          'El flujo contextual de bajas sigue pendiente en esta vista.',
+        ),
+      ),
+      _Tab.tipos => _ContextualFabAction(
+        key: 'tipos',
+        icon: Icons.label_outline,
+        label: 'Nuevo tipo',
+        backgroundColor: const Color(0xFF5865F2),
+        foregroundColor: Colors.white,
+        onPressed: () => _openSheet(context, NuevoAnimal(isDark: isDark)),
+      ),
+    };
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: ScaleTransition(scale: animation, child: child),
+      ),
+      child: FloatingActionButton.extended(
+        key: ValueKey(action.key),
+        heroTag: 'animales-fab-${action.key}',
+        backgroundColor: action.backgroundColor,
+        foregroundColor: action.foregroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        onPressed: action.onPressed,
+        icon: Icon(action.icon),
+        label: Text(action.label),
+      ),
     );
+  }
+
+  Future<void> _openSheet(BuildContext context, Widget child) {
+    return showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => child,
+    );
+  }
+
+  void _showPlaceholderSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -303,7 +317,7 @@ class _AppBarSection extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.green.withOpacity(0.15),
+                  color: AppColors.green.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -784,7 +798,7 @@ class _EjemplarCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.green.withOpacity(0.12),
+                  color: AppColors.green.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.tag, size: 16, color: AppColors.green),
@@ -836,7 +850,7 @@ class _EstadoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -1017,7 +1031,7 @@ class _LoteTabCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.12),
+              color: AppColors.green.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
@@ -1183,7 +1197,7 @@ class _TiposTab extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
+                    color: color.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -1433,7 +1447,7 @@ class _BajasResumenCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.12),
+        color: Colors.redAccent.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -1442,7 +1456,7 @@ class _BajasResumenCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.redAccent.withOpacity(0.18),
+              color: Colors.redAccent.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -1697,7 +1711,7 @@ class _RazonTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.18),
+        color: color.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -1857,7 +1871,7 @@ class _TabPlaceholder extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.10),
+              color: AppColors.green.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 28, color: AppColors.green),
@@ -2409,7 +2423,7 @@ class _LoteCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2565,7 +2579,7 @@ class _DetalleGrupoSheet extends StatelessWidget {
             '${tipo.nombre} · ${conteo.vivos} aves vivas',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 16),
@@ -2581,7 +2595,7 @@ class _DetalleGrupoSheet extends StatelessWidget {
                       r.$1,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.45),
+                        color: Colors.white.withValues(alpha: 0.45),
                       ),
                     ),
                   ),
@@ -2656,7 +2670,7 @@ class _StatTile extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -2737,7 +2751,7 @@ class _ActionButton extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: danger ? Colors.red.withOpacity(0.3) : AppColors.border1,
+          color: danger ? Colors.red.withValues(alpha: 0.3) : AppColors.border1,
         ),
       ),
       child: Row(
@@ -2804,71 +2818,22 @@ class _CardMenu extends StatelessWidget {
   );
 }
 
-class _FabMenuItem extends StatelessWidget {
-  final IconData icon;
-  final String label, desc;
-  final VoidCallback onTap;
-  const _FabMenuItem({
+class _ContextualFabAction {
+  const _ContextualFabAction({
+    required this.key,
     required this.icon,
     required this.label,
-    required this.desc,
-    required this.onTap,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onPressed,
   });
 
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 16, color: AppColors.green),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                desc,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.white.withOpacity(0.45),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  );
+  final String key;
+  final IconData icon;
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onPressed;
 }
 
 class _EmptyState extends StatelessWidget {
@@ -2894,7 +2859,10 @@ class _EmptyState extends StatelessWidget {
           tipos.isEmpty
               ? 'Empieza creando un tipo de animal.'
               : 'Crea un grupo para empezar a registrar ejemplares.',
-          style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.5)),
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.white.withValues(alpha: 0.5),
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),

@@ -325,7 +325,7 @@ class CollaboratorsScreen extends ConsumerWidget {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.amber.withOpacity(0.15)
+                                ? AppColors.amber.withValues(alpha: 0.15)
                                 : AppColors.bgCard3,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
@@ -556,10 +556,10 @@ class CollaboratorsScreen extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: AppColors.negative.withOpacity(0.08),
+                  color: AppColors.negative.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: AppColors.negative.withOpacity(0.3),
+                    color: AppColors.negative.withValues(alpha: 0.3),
                   ),
                 ),
                 child: const Row(
@@ -608,7 +608,7 @@ class _RolesInfoCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.15),
+              color: AppColors.green.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -750,10 +750,10 @@ class _MemberCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.warning.withOpacity(0.15),
+                            color: AppColors.warning.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: AppColors.warning.withOpacity(0.4),
+                              color: AppColors.warning.withValues(alpha: 0.4),
                             ),
                           ),
                           child: const Row(
@@ -810,9 +810,9 @@ class _MemberCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: roleColor.withOpacity(0.12),
+                color: roleColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: roleColor.withOpacity(0.35)),
+                border: Border.all(color: roleColor.withValues(alpha: 0.35)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -865,7 +865,7 @@ class _RoleOptionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.amber.withOpacity(0.12)
+              ? AppColors.amber.withValues(alpha: 0.12)
               : AppColors.bgCard3,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -880,7 +880,7 @@ class _RoleOptionTile extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.amber.withOpacity(0.2)
+                    ? AppColors.amber.withValues(alpha: 0.2)
                     : AppColors.bgInput,
                 shape: BoxShape.circle,
               ),

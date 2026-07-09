@@ -23,7 +23,7 @@ create or replace function public.registrar_alta_animales(
 )
 returns public.altas_animales
 language plpgsql
-set search_path = ''
+set search_path = public, auth
 as $$
 declare
   created_alta public.altas_animales;

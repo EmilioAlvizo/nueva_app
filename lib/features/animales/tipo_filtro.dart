@@ -74,7 +74,7 @@ class TipoFiltroBadgeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: activo
-              ? color!.withOpacity(0.15)
+              ? color!.withValues(alpha: 0.15)
               : (isDark ? AppColors.bgCard : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
@@ -206,7 +206,7 @@ class TipoFiltroPicker extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -240,13 +240,13 @@ class TipoFiltroPicker extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isSel
-                      ? Colors.white.withOpacity(0.06)
+                      ? Colors.white.withValues(alpha: 0.06)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSel
                         ? Colors.white24
-                        : Colors.white.withOpacity(0.07),
+                        : Colors.white.withValues(alpha: 0.07),
                   ),
                 ),
                 child: Row(

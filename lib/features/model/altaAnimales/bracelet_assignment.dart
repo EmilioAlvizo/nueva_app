@@ -40,6 +40,10 @@ class BraceletAssignment {
 
   int get missingCount => totalCount - _selected.length;
 
+  bool get hasSelectionRoom => _selected.length < totalCount;
+
+  bool isSelected(int bracelet) => _selected.contains(bracelet);
+
   BraceletAssignment autoAssign() {
     if (missingCount <= 0) {
       return this;
@@ -79,6 +83,19 @@ class BraceletAssignment {
       totalCount: totalCount,
       available: _available,
       selected: {..._selected, bracelet},
+    );
+  }
+
+  BraceletAssignment remove(int bracelet) {
+    if (!_selected.contains(bracelet)) {
+      return this;
+    }
+
+    final nextSelected = {..._selected}..remove(bracelet);
+    return BraceletAssignment(
+      totalCount: totalCount,
+      available: _available,
+      selected: nextSelected,
     );
   }
 

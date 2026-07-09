@@ -340,7 +340,7 @@ class _RazonSelector extends StatelessWidget {
           label: Text(r.nombre),
           selected: activo,
           onSelected: (_) => onSelected(r.id),
-          selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+          selectedColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
           labelStyle: TextStyle(
             fontWeight: activo ? FontWeight.w700 : FontWeight.w500,
             color: activo

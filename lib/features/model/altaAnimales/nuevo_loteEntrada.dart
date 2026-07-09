@@ -293,7 +293,7 @@ class _NuevoLoteEntradaState extends ConsumerState<NuevoLoteEntrada> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.green.withOpacity(0.12),
+                        color: AppColors.green.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -330,9 +330,9 @@ class _NuevoLoteEntradaState extends ConsumerState<NuevoLoteEntrada> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       _errorMessage!,
@@ -720,9 +720,9 @@ class _BrazaletesWidgetState extends State<_BrazaletesWidget> {
                 height: 44,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: AppColors.green.withOpacity(0.12),
+                  color: AppColors.green.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.green.withOpacity(0.4)),
+                  border: Border.all(color: AppColors.green.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -754,7 +754,7 @@ class _BrazaletesWidgetState extends State<_BrazaletesWidget> {
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.green.withOpacity(0.25)),
+        border: Border.all(color: AppColors.green.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -870,10 +870,10 @@ class _BrazaletesWidgetState extends State<_BrazaletesWidget> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.green.withOpacity(0.12),
+                                color: AppColors.green.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(7),
                                 border: Border.all(
-                                  color: AppColors.green.withOpacity(0.3),
+                                  color: AppColors.green.withValues(alpha: 0.3),
                                 ),
                               ),
                               child: Text(

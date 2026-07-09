@@ -110,7 +110,7 @@ class _NuevaGranjaState extends ConsumerState<NuevaGranja> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.green.withOpacity(0.12),
+                        color: AppColors.green.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(

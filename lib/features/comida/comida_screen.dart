@@ -235,11 +235,11 @@ class _TotalTab extends ConsumerWidget {
                     child: Column(children: [
                       Text('────',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.4),
+                              color: Colors.white.withValues(alpha: 0.4),
                               fontSize: 16)),
                       Text('────',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.4),
+                              color: Colors.white.withValues(alpha: 0.4),
                               fontSize: 10)),
                     ]),
                   ),
@@ -540,8 +540,8 @@ class _PeriodoCard extends StatelessWidget {
                         border: Border(
                           top: BorderSide(
                             color: isDark
-                                ? Colors.white.withOpacity(0.07)
-                                : Colors.black.withOpacity(0.06),
+                                ? Colors.white.withValues(alpha: 0.07)
+                                : Colors.black.withValues(alpha: 0.06),
                           ),
                         ),
                       ),
@@ -689,8 +689,8 @@ class _LoteCard extends StatelessWidget {
                         border: Border(
                           top: BorderSide(
                             color: isDark
-                                ? Colors.white.withOpacity(0.07)
-                                : Colors.black.withOpacity(0.06),
+                                ? Colors.white.withValues(alpha: 0.07)
+                                : Colors.black.withValues(alpha: 0.06),
                           ),
                         ),
                       ),
@@ -1239,7 +1239,7 @@ class _FormSheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.green.withOpacity(0.12),
+                    color: AppColors.green.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, color: AppColors.green, size: 24),
@@ -1266,9 +1266,9 @@ class _FormSheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   child: Text(error!,
                       style: const TextStyle(
@@ -1442,7 +1442,7 @@ class _StatTile extends StatelessWidget {
             Text(label,
                 style: TextStyle(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.8))),
+                    color: Colors.white.withValues(alpha: 0.8))),
           ]),
         ),
       );
