@@ -19,6 +19,7 @@ import 'tipo_filtro.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
 import 'editar_baja_sheet.dart';
+import 'registrar_baja_sheet.dart';
 
 // ─── Helpers de color ────────────────────────────────────────────────────────
 Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
@@ -233,12 +234,16 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
       _Tab.bajas => _ContextualFabAction(
         key: 'bajas',
         icon: Icons.remove_circle,
-        label: 'Bajas próximamente',
+        label: 'Nueva baja',
         backgroundColor: const Color(0xFFC94F6D),
         foregroundColor: Colors.white,
-        onPressed: () => _showPlaceholderSnackBar(
+        onPressed: () => _openSheet(
           context,
-          'El flujo contextual de bajas sigue pendiente en esta vista.',
+          RegistrarBajaSheet(
+            granjaId: widget.granjaId,
+            isDark: isDark,
+            tipoAnimalIdInicial: filteredTypeId,
+          ),
         ),
       ),
       _Tab.tipos => _ContextualFabAction(
@@ -279,12 +284,6 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
       isScrollControlled: true,
       builder: (_) => child,
     );
-  }
-
-  void _showPlaceholderSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -1391,48 +1390,31 @@ class _BajasTabState extends ConsumerState<_BajasTab> {
   }
 
   Future<void> _confirmarBorrado(BajaAnimal baja) async {
-    final confirmar = await showDialog<bool>(
+    ConfirmationDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar baja'),
-        content: Text(
-          baja.esLote
-              ? '¿Eliminar este evento de baja de ${baja.cantidadAnimales} animales? '
-                    'Los animales afectados volverán a estar activos.'
-              : '¿Eliminar esta baja? El animal afectado volverá a estar activo.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+      isDark: widget.isDark,
+      title: 'Eliminar baja',
+      content: baja.esLote
+          ? '¿Deseas eliminar esta baja de ${baja.cantidadAnimales} animales? Los animales afectados volverán a estar activos.'
+          : '¿Deseas eliminar esta baja? El animal afectado volverá a estar activo.',
+      onConfirm: () async {
+        try {
+          await ref.read(animalesRepositoryProvider).eliminarBaja(baja.id);
+          invalidateAnimalesInventoryMutationProviders(ref, widget.granjaId);
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Baja eliminada')));
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
+          }
+        }
+      },
     );
-
-    if (confirmar != true) return;
-
-    try {
-      await ref.read(animalesRepositoryProvider).eliminarBaja(baja.id);
-      ref.invalidate(bajasAnimalesProvider(widget.granjaId));
-      ref.invalidate(animalesProvider(widget.granjaId)); // refresca activos
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Baja eliminada')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
-      }
-    }
   }
 }
 
@@ -1550,6 +1532,9 @@ class _BajaEventoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy");
     final color = baja.esMuerte ? Colors.redAccent : Colors.orangeAccent;
+    final helperColor = isDark
+        ? AppColors.textSecondary
+        : AppColors.textSecondaryLg;
 
     return InkWell(
       onTap: onTap,
@@ -1678,27 +1663,100 @@ class _BajaEventoCard extends StatelessWidget {
                 ),
                 Text(
                   baja.cantidadAnimales == 1 ? 'ave' : 'aves',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondaryLg,
-                  ),
+                  style: TextStyle(fontSize: 10, color: helperColor),
                 ),
                 if (baja.importeTotal != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     '\$${baja.importeTotal!.toStringAsFixed(2)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: Colors.green,
                     ),
                   ),
                 ],
+                const SizedBox(height: 10),
+                _BajaCardActionButton(
+                  icon: Icons.edit_outlined,
+                  label: 'Editar',
+                  isDark: isDark,
+                  onTap: onTap,
+                ),
+                const SizedBox(height: 6),
+                _BajaCardActionButton(
+                  icon: Icons.delete_outline,
+                  label: 'Mantén para eliminar',
+                  isDark: isDark,
+                  color: Colors.redAccent,
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Mantén presionada la card para confirmar la eliminación.',
+                      ),
+                    ),
+                  ),
+                  onLongPress: onLongPress,
+                ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BajaCardActionButton extends StatelessWidget {
+  const _BajaCardActionButton({
+    required this.icon,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+    this.color,
+    this.onLongPress,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isDark;
+  final VoidCallback onTap;
+  final Color? color;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor =
+        color ?? (isDark ? AppColors.textPrimary : AppColors.textPrimaryLg);
+    final backgroundColor = foregroundColor.withValues(alpha: 0.1);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: foregroundColor),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: foregroundColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2485,7 +2543,6 @@ class _LoteCard extends StatelessWidget {
                   ),
                 ),
               ),
-
             ],
           ),
           if (lote.brazaletesDetalleSafe.isNotEmpty) ...[

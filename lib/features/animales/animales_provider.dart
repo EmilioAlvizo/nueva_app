@@ -8,6 +8,7 @@ import '../model/altaAnimales/altaAnimales.dart';
 import '../model/animal/animal.dart';
 import '../model/bajaAnimal/baja_animal.dart';
 import '../model/catalogoItem/catalogo_item.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show WidgetRef;
 
 part 'animales_provider.g.dart';
 
@@ -133,3 +134,15 @@ Future<List<CatalogoItem>> tiposAdquisicion(Ref ref, String granjaId) =>
 @riverpod
 Future<List<CatalogoItem>> razonesBaja(Ref ref, String granjaId) =>
     ref.watch(animalesRepositoryProvider).getRazonesBaja(granjaId);
+
+void invalidateAnimalesInventoryMutationProviders(
+  WidgetRef ref,
+  String granjaId,
+) {
+  ref.invalidate(bajasAnimalesProvider(granjaId));
+  ref.invalidate(animalesProvider(granjaId));
+  ref.invalidate(conteosGruposProvider(granjaId));
+  ref.invalidate(noGroupOverviewProvider(granjaId));
+  ref.invalidate(lotesDeGrupoProvider);
+  ref.invalidate(altasByFarmProvider);
+}

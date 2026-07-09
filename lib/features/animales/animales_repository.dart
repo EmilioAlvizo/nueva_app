@@ -8,6 +8,7 @@ import '../model/altaAnimales/altaAnimales.dart';
 import '../model/altaAnimales/registrar_alta_animales_input.dart';
 import '../model/animal/animal.dart';
 import '../model/bajaAnimal/baja_animal.dart';
+import '../model/bajaAnimal/registrar_baja_animales_input.dart';
 import '../model/catalogoItem/catalogo_item.dart';
 
 class AnimalesRepository {
@@ -333,6 +334,14 @@ class AnimalesRepository {
     return (data as List).map((e) => CatalogoItem.fromJson(e)).toList();
   }
 
+  Future<void> registrarBajaAnimales(RegistrarBajaAnimalesInput input) async {
+    _validateRegistrarBajaInput(input);
+
+    await _client
+        .rpc('registrar_baja_animales', params: input.toRpcParams())
+        .single();
+  }
+
   /// Actualiza los campos editables de un evento de baja ya existente.
   /// No toca `cantidad_animales` ni los animales enlazados: cambiar cuántos
   /// o cuáles animales pertenecen al evento equivale a crear una baja nueva.
@@ -522,6 +531,25 @@ void _validateRegistrarAltaInput(RegistrarAltaAnimalesInput input) {
         'must not contain duplicates',
       );
     }
+  }
+}
+
+void _validateRegistrarBajaInput(RegistrarBajaAnimalesInput input) {
+  if (input.animalIds.isEmpty) {
+    throw ArgumentError.value(
+      input.animalIds,
+      'animalIds',
+      'must contain at least one animal',
+    );
+  }
+
+  final uniqueIds = input.animalIds.toSet();
+  if (uniqueIds.length != input.animalIds.length) {
+    throw ArgumentError.value(
+      input.animalIds,
+      'animalIds',
+      'must not contain duplicates',
+    );
   }
 }
 
