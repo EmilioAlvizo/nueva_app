@@ -1015,105 +1015,107 @@ class _LoteTabCard extends StatelessWidget {
     final vivos = lote.vivosCount;
     final muertos = lote.muertosCount;
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : AppColors.bgLight,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? AppColors.border1lg : AppColors.border1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.green.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.inventory_2_outlined,
-              size: 18,
-              color: AppColors.green,
-            ),
+    return InkWell(
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.bgCard : AppColors.bgLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? AppColors.border1lg : AppColors.border1,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.green.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.inventory_2_outlined,
+                size: 18,
+                color: AppColors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$tipoNombre · $grupoNombre',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.textPrimary
+                          : AppColors.textPrimaryLg,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    fmt.format(lote.fechaAlta),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLg,
+                    ),
+                  ),
+                  if (lote.proveedor != null || lote.costoTotal != null)
+                    Text(
+                      [
+                        lote.tipoAdquisicionId,
+                        if (lote.proveedor != null) lote.proveedor!,
+                      ].join(' · '),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.green,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '$tipoNombre · $grupoNombre',
+                  _animalCountText(vivos, singular: 'vivo', plural: 'vivos'),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: isDark
                         ? AppColors.textPrimary
                         : AppColors.textPrimaryLg,
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  fmt.format(lote.fechaAlta),
+                  _animalCountText(
+                    muertos,
+                    singular: 'muerto',
+                    plural: 'muertos',
+                  ),
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     color: isDark
                         ? AppColors.textSecondary
                         : AppColors.textSecondaryLg,
                   ),
                 ),
-                if (lote.proveedor != null || lote.costoTotal != null)
-                  Text(
-                    [
-                      lote.tipoAdquisicionId,
-                      if (lote.proveedor != null) lote.proveedor!,
-                    ].join(' · '),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.green,
-                    ),
-                  ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _animalCountText(vivos, singular: 'vivo', plural: 'vivos'),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? AppColors.textPrimary
-                      : AppColors.textPrimaryLg,
-                ),
-              ),
-              Text(
-                _animalCountText(
-                  muertos,
-                  singular: 'muerto',
-                  plural: 'muertos',
-                ),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isDark
-                      ? AppColors.textSecondary
-                      : AppColors.textSecondaryLg,
-                ),
-              ),
-            ],
-          ),
-          _CardMenu(
-            size: 16,
-            isDark: isDark,
-            onEdit: () => context.push('/lotes-entrada/${lote.id}/editar'),
-            onDelete: () {},
-          ),
-        ],
+            _CardMenu(
+              size: 16,
+              isDark: isDark,
+              onEdit: () => context.push('/lotes-entrada/${lote.id}/editar'),
+              onDelete: () {},
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1676,7 +1678,7 @@ class _BajaEventoCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 10),
+                /* const SizedBox(height: 10),
                 _BajaCardActionButton(
                   icon: Icons.edit_outlined,
                   label: 'Editar',
@@ -1697,7 +1699,7 @@ class _BajaEventoCard extends StatelessWidget {
                     ),
                   ),
                   onLongPress: onLongPress,
-                ),
+                ), */
               ],
             ),
           ],
