@@ -14,7 +14,7 @@ import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
 import '../model/animal/animal.dart';
 import '../model/bajaAnimal/baja_animal.dart';
 import 'animales_provider.dart';
-import 'animales_repository.dart' show NoGroupOverview;
+import 'animales_repository.dart' show NoGroupOverview, NoGroupTypeOverview;
 import 'tipo_filtro.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
@@ -25,6 +25,88 @@ import 'registrar_baja_sheet.dart';
 Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
   final idx = tipos.indexWhere((t) => t.id == tipoId);
   return AppColors.tipoColor[(idx < 0 ? 0 : idx) % AppColors.tipoColor.length];
+}
+
+void _showAltaEditPlaceholder(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('La edición de altas todavía está pendiente.'),
+    ),
+  );
+}
+
+Future<void> _showAltaDeleteConfirmation({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String granjaId,
+  required AltaAnimales alta,
+}) async {
+  final hasBajasOrMuertos =
+      alta.muertosCount > 0 ||
+      alta.brazaletesDetalleSafe.any((item) => !item.activo);
+  final deleted = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(
+        hasBajasOrMuertos ? 'Eliminar alta con bajas/muertos' : 'Eliminar alta',
+      ),
+      content: Text(
+        hasBajasOrMuertos
+            ? 'Esta alta incluye animales muertos o en baja. Para eliminarla de forma segura también se deben borrar esas bajas/muertos asociados. ¿Deseas continuar?'
+            : 'Se eliminará esta alta y sus animales asociados. Esta acción no se puede deshacer.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: hasBajasOrMuertos
+                ? const Color(0xFFC94F6D)
+                : AppColors.green,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: Text(
+            hasBajasOrMuertos
+                ? 'Eliminar alta y bajas/muertos'
+                : 'Eliminar alta',
+          ),
+        ),
+      ],
+    ),
+  );
+
+  if (deleted != true || !context.mounted) {
+    return;
+  }
+
+  try {
+    await ref
+        .read(animalesRepositoryProvider)
+        .eliminarAltaAnimales(alta.id, deleteBajas: hasBajasOrMuertos);
+    invalidateAnimalesInventoryMutationProviders(ref, granjaId);
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          hasBajasOrMuertos
+              ? 'Alta, animales y bajas/muertos eliminados'
+              : 'Alta eliminada',
+        ),
+      ),
+    );
+  } catch (error) {
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('No se pudo eliminar el alta: $error')),
+    );
+  }
 }
 
 // ─── Definición de tabs ──────────────────────────────────────────────────────
@@ -139,6 +221,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                     gruposAsync: gruposAsync,
                     conteosAsync: conteosAsync,
                     noGroupOverviewAsync: noGroupOverviewAsync,
+                    tipos: tipos,
                     expandidos: _expandidos,
                     colapsados: _colapsados,
                     onToggleExpand: _toggleExpand,
@@ -420,6 +503,7 @@ class _GruposTab extends ConsumerWidget {
   final AsyncValue<List<Grupo>> gruposAsync;
   final AsyncValue<Map<String, GrupoConteo>> conteosAsync;
   final AsyncValue<NoGroupOverview> noGroupOverviewAsync;
+  final List<TipoAnimal> tipos;
   final Set<String> expandidos;
   final Set<String> colapsados;
   final ValueChanged<String> onToggleExpand;
@@ -433,6 +517,7 @@ class _GruposTab extends ConsumerWidget {
     required this.gruposAsync,
     required this.conteosAsync,
     required this.noGroupOverviewAsync,
+    required this.tipos,
     required this.expandidos,
     required this.colapsados,
     required this.onToggleExpand,
@@ -458,19 +543,33 @@ class _GruposTab extends ConsumerWidget {
               final gruposFiltrados = tipoFiltro == 'all'
                   ? grupos
                   : grupos.where((g) => g.tipoAnimalId == tipoFiltro).toList();
-              final totalVivos = grupos.fold<int>(
-                0,
-                (s, g) => s + (conteos[g.id]?.vivos ?? 0),
-              );
-              final totalMuertes = grupos.fold<int>(
-                0,
-                (s, g) => s + (conteos[g.id]?.muertes ?? 0),
-              );
+              final noGroupSummaries = noGroupOverview.typeSummaries
+                  .where((summary) {
+                    return tipoFiltro == 'all' ||
+                        summary.tipoAnimalId == tipoFiltro;
+                  })
+                  .toList(growable: false);
 
-              final hasNoGroupCard =
-                  noGroupOverview.activeCount > 0 ||
-                  noGroupOverview.deadCount > 0 ||
-                  noGroupOverview.latestAltas.isNotEmpty;
+              final totalVivos =
+                  gruposFiltrados.fold<int>(
+                    0,
+                    (s, g) => s + (conteos[g.id]?.vivos ?? 0),
+                  ) +
+                  noGroupSummaries.fold<int>(
+                    0,
+                    (sum, summary) => sum + summary.activeCount,
+                  );
+              final totalMuertes =
+                  gruposFiltrados.fold<int>(
+                    0,
+                    (s, g) => s + (conteos[g.id]?.muertes ?? 0),
+                  ) +
+                  noGroupSummaries.fold<int>(
+                    0,
+                    (sum, summary) => sum + summary.deadCount,
+                  );
+
+              final hasNoGroupCard = noGroupSummaries.isNotEmpty;
 
               return CustomScrollView(
                 slivers: [
@@ -508,14 +607,21 @@ class _GruposTab extends ConsumerWidget {
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                         child: _NoGroupCard(
                           overview: noGroupOverview,
+                          tipos: tipos,
+                          granjaId: granjaId,
+                          tipoFiltro: tipoFiltro,
+                          expandidos: expandidos,
+                          colapsados: colapsados,
+                          onToggleExpand: onToggleExpand,
+                          onToggleColapso: onToggleColapso,
                           isDark: isDark,
                         ),
                       ),
                     ),
 
-                  if (gruposFiltrados.isEmpty)
+                  if (gruposFiltrados.isEmpty && !hasNoGroupCard)
                     SliverToBoxAdapter(child: _EmptyState(tipos: tipos))
-                  else
+                  else if (gruposFiltrados.isNotEmpty)
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                       sliver: SliverList(
@@ -540,6 +646,16 @@ class _GruposTab extends ConsumerWidget {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: _GrupoCard(
+                              onTap: () => showModalBottomSheet(
+                                context: context,
+                                backgroundColor: Colors.transparent,
+                                isScrollControlled: true,
+                                builder: (_) => NuevoGrupo(
+                                  isDark: isDark,
+                                  tipoAnimalIdInicial: grupo.tipoAnimalId,
+                                  initialGroup: grupo,
+                                ),
+                              ),
                               onLongPress: () {
                                 ConfirmationDialog.show(
                                   context: context,
@@ -556,12 +672,11 @@ class _GruposTab extends ConsumerWidget {
                                             grupoId: grupo.id,
                                           );
 
-                                      //ref.invalidate(animalesRepositoryProvider);
                                       ref.invalidate(gruposProvider(granjaId));
-                                      ref.invalidate(
-                                        conteosGruposProvider(granjaId),
+                                      invalidateAnimalesInventoryMutationProviders(
+                                        ref,
+                                        granjaId,
                                       );
-                                      print('Error al eliminar granja:');
                                     } catch (e) {
                                       print('Error al eliminar granja: $e');
                                     }
@@ -985,6 +1100,13 @@ class _LotesDeGrupoSliver extends ConsumerWidget {
                     tipoNombre: tipo.nombre,
                     grupoNombre: grupo.nombre,
                     isDark: isDark,
+                    onTap: () => _showAltaEditPlaceholder(context),
+                    onLongPress: () => _showAltaDeleteConfirmation(
+                      context: context,
+                      ref: ref,
+                      granjaId: grupo.granjaId,
+                      alta: l,
+                    ),
                   ),
                 )
                 .toList(),
@@ -1001,12 +1123,16 @@ class _LoteTabCard extends StatelessWidget {
   final String tipoNombre;
   final String grupoNombre;
   final bool isDark;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const _LoteTabCard({
     required this.lote,
     required this.tipoNombre,
     required this.grupoNombre,
     required this.isDark,
+    this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -1016,6 +1142,8 @@ class _LoteTabCard extends StatelessWidget {
     final muertos = lote.muertosCount;
 
     return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
         padding: const EdgeInsets.all(14),
@@ -1111,8 +1239,8 @@ class _LoteTabCard extends StatelessWidget {
             _CardMenu(
               size: 16,
               isDark: isDark,
-              onEdit: () => context.push('/lotes-entrada/${lote.id}/editar'),
-              onDelete: () {},
+              onEdit: () => _showAltaEditPlaceholder(context),
+              onDelete: onLongPress ?? () {},
             ),
           ],
         ),
@@ -1166,6 +1294,12 @@ class _TiposTab extends ConsumerWidget {
         final color = _colorParaTipo(tipo.id, tipos);
 
         return GestureDetector(
+          onTap: () => showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.transparent,
+            isScrollControlled: true,
+            builder: (_) => NuevoAnimal(isDark: isDark, initialTipo: tipo),
+          ),
           onLongPress: () {
             ConfirmationDialog.show(
               context: context,
@@ -1179,9 +1313,9 @@ class _TiposTab extends ConsumerWidget {
                       .read(animalesRepositoryProvider)
                       .deleteTipoAnimal(farmId: granjaId, tipoId: tipo.id);
 
-                  //ref.invalidate(animalesRepositoryProvider);
                   ref.invalidate(tiposAnimalProvider(granjaId));
-                  //ref.invalidate(conteosGruposProvider(granjaId));
+                  ref.invalidate(gruposProvider(granjaId));
+                  invalidateAnimalesInventoryMutationProviders(ref, granjaId);
                 } catch (e) {
                   print('Error al eliminar Tipo: $e');
                 }
@@ -1256,38 +1390,48 @@ class _TiposTab extends ConsumerWidget {
                     ],
                   ),
                 ),
-                /* _CardMenu(
+                _CardMenu(
                   isDark: isDark,
-                  onEdit: () => context.push('/tipos/${tipo.id}/editar'),
-                  onDelete: () => _confirmarEliminar(context, tipo),
-                ), */
+                  onEdit: () => showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    builder: (_) =>
+                        NuevoAnimal(isDark: isDark, initialTipo: tipo),
+                  ),
+                  onDelete: () {
+                    ConfirmationDialog.show(
+                      context: context,
+                      isDark: isDark,
+                      title: 'Eliminar Tipo',
+                      content:
+                          '¿Estás seguro de que deseas eliminar el Tipo "${tipo.nombre}"? Esta acción no se puede deshacer.',
+                      onConfirm: () async {
+                        try {
+                          await ref
+                              .read(animalesRepositoryProvider)
+                              .deleteTipoAnimal(
+                                farmId: granjaId,
+                                tipoId: tipo.id,
+                              );
+                          ref.invalidate(tiposAnimalProvider(granjaId));
+                          ref.invalidate(gruposProvider(granjaId));
+                          invalidateAnimalesInventoryMutationProviders(
+                            ref,
+                            granjaId,
+                          );
+                        } catch (e) {
+                          print('Error al eliminar Tipo: $e');
+                        }
+                      },
+                    );
+                  },
+                ),
               ],
             ),
           ),
         );
       },
-    );
-  }
-
-  void _confirmarEliminar(BuildContext context, TipoAnimal tipo) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Eliminar tipo'),
-        content: Text(
-          '¿Eliminar "${tipo.nombre}"? Se quitarán sus grupos y ejemplares.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context), // TODO: repo.deleteTipo
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1970,126 +2114,397 @@ class _TabPlaceholder extends StatelessWidget {
 // CARD DE GRUPO (igual a antes, se mantiene en tab Grupos)
 // ─────────────────────────────────────────────────────────────────────────────
 class _NoGroupCard extends StatelessWidget {
-  const _NoGroupCard({required this.overview, required this.isDark});
+  const _NoGroupCard({
+    required this.overview,
+    required this.tipos,
+    required this.granjaId,
+    required this.tipoFiltro,
+    required this.expandidos,
+    required this.colapsados,
+    required this.onToggleExpand,
+    required this.onToggleColapso,
+    required this.isDark,
+  });
 
   final NoGroupOverview overview;
+  final List<TipoAnimal> tipos;
+  final String granjaId;
+  final String tipoFiltro;
+  final Set<String> expandidos;
+  final Set<String> colapsados;
+  final ValueChanged<String> onToggleExpand;
+  final ValueChanged<String> onToggleColapso;
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : AppColors.bgLight,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.border1lg : AppColors.border1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final summariesByType = {
+      for (final summary in overview.typeSummaries)
+        summary.tipoAnimalId: summary,
+    };
+
+    final visibleSummaries = [
+      for (final tipo in tipos)
+        if ((tipoFiltro == 'all' || tipo.id == tipoFiltro) &&
+            summariesByType.containsKey(tipo.id))
+          (tipo: tipo, summary: summariesByType[tipo.id]!),
+    ];
+
+    return Column(
+      children: [
+        for (final item in visibleSummaries) ...[
+          _NoGroupTypeCard(
+            granjaId: granjaId,
+            tipo: item.tipo,
+            summary: item.summary,
+            stripColor: _colorParaTipo(item.tipo.id, tipos),
+            expandido: expandidos.contains('no-group-altas-${item.tipo.id}'),
+            colapsado: colapsados.contains('no-group-${item.tipo.id}'),
+            onToggleExpand: () =>
+                onToggleExpand('no-group-altas-${item.tipo.id}'),
+            onToggleColapso: () => onToggleColapso('no-group-${item.tipo.id}'),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+}
+
+class _NoGroupTypeCard extends StatelessWidget {
+  const _NoGroupTypeCard({
+    required this.granjaId,
+    required this.tipo,
+    required this.summary,
+    required this.stripColor,
+    required this.expandido,
+    required this.colapsado,
+    required this.onToggleExpand,
+    required this.onToggleColapso,
+    required this.isDark,
+  });
+
+  final String granjaId;
+  final TipoAnimal tipo;
+  final NoGroupTypeOverview summary;
+  final Color stripColor;
+  final bool expandido;
+  final bool colapsado;
+  final VoidCallback onToggleExpand;
+  final VoidCallback onToggleColapso;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = summary.activeCount + summary.deadCount;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
         children: [
-          Text(
-            'Sin grupo',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.bgCard : AppColors.bgLight,
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _MiniStat(
-                  icon: Icons.egg_outlined,
-                  value: '${overview.activeCount}',
-                  label: 'Activos',
-                  isDark: isDark,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _MiniStat(
-                  icon: Icons.remove_circle_outline,
-                  value: '${overview.deadCount}',
-                  label: 'Bajas',
-                  danger: true,
-                  isDark: isDark,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${overview.activeCount} activos',
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark
-                  ? AppColors.textSecondary
-                  : AppColors.textSecondaryLg,
+            padding: const EdgeInsets.only(
+              top: 16,
+              left: 16,
+              right: 48,
+              bottom: 16,
             ),
-          ),
-          Text(
-            '${overview.deadCount} bajas',
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark
-                  ? AppColors.textSecondary
-                  : AppColors.textSecondaryLg,
-            ),
-          ),
-          if (overview.latestAltas.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(
-              'Últimas altas',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...overview.latestAltas
-                .take(3)
-                .map(
-                  (alta) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.inventory_2_outlined,
-                          size: 16,
-                          color: AppColors.green,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${alta.cantidadAnimales} ${alta.cantidadAnimales == 1 ? 'animal' : 'animales'}',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sin grupo',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
                               color: isDark
                                   ? AppColors.textPrimary
                                   : AppColors.textPrimaryLg,
                             ),
                           ),
+                          if (!colapsado)
+                            Text(
+                              total == 1
+                                  ? '1 animal sin asignar a un grupo'
+                                  : '$total animales sin asignar a un grupo',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textSecondaryLg,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.egg_outlined,
+                          size: 22,
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : AppColors.textPrimaryLg,
                         ),
+                        const SizedBox(width: 4),
                         Text(
-                          DateFormat('dd/MM/yyyy').format(alta.fechaAlta),
+                          '${summary.activeCount}',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
                             color: isDark
-                                ? AppColors.textSecondary
-                                : AppColors.textSecondaryLg,
+                                ? AppColors.textPrimary
+                                : AppColors.textPrimaryLg,
                           ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            colapsado ? Icons.expand_more : Icons.expand_less,
+                            color: isDark
+                                ? AppColors.textPrimary
+                                : AppColors.textPrimaryLg,
+                          ),
+                          onPressed: onToggleColapso,
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
-          ],
+                if (!colapsado) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MiniStat(
+                          icon: Icons.egg_outlined,
+                          value: '${summary.activeCount}',
+                          label: 'Vivos',
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _MiniStat(
+                          icon: Icons.tag,
+                          value: '$total',
+                          label: 'Aves',
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _MiniStat(
+                          icon: Icons.one_x_mobiledata_rounded,
+                          value: '${summary.deadCount}',
+                          label: 'Muertes',
+                          danger: true,
+                          isDark: isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _NoGroupAltasSection(
+                    granjaId: granjaId,
+                    altas: summary.latestAltas,
+                    expandido: expandido,
+                    onToggle: onToggleExpand,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.add,
+                          label: 'Animal',
+                          isDark: isDark,
+                          onTap: () => showModalBottomSheet(
+                            context: context,
+                            backgroundColor: Colors.transparent,
+                            isScrollControlled: true,
+                            builder: (_) => AnimalRegistrationSheet(
+                              granjaId: granjaId,
+                              isDark: isDark,
+                              initialQuantity: 1,
+                              tipoAnimalIdInicial: tipo.id,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.inventory_2_outlined,
+                          label: 'Alta',
+                          isDark: isDark,
+                          onTap: () => showModalBottomSheet(
+                            context: context,
+                            backgroundColor: Colors.transparent,
+                            isScrollControlled: true,
+                            builder: (_) => AnimalRegistrationSheet(
+                              granjaId: granjaId,
+                              isDark: isDark,
+                              initialQuantity: 2,
+                              tipoAnimalIdInicial: tipo.id,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.one_x_mobiledata_rounded,
+                          label: 'Baja',
+                          danger: true,
+                          isDark: isDark,
+                          onTap: () => showModalBottomSheet(
+                            context: context,
+                            backgroundColor: Colors.transparent,
+                            isScrollControlled: true,
+                            builder: (_) => RegistrarBajaSheet(
+                              granjaId: granjaId,
+                              isDark: isDark,
+                              tipoAnimalIdInicial: tipo.id,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 32,
+              color: stripColor,
+              alignment: Alignment.center,
+              child: RotatedBox(
+                quarterTurns: 3,
+                child: Text(
+                  tipo.nombre,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _NoGroupAltasSection extends ConsumerWidget {
+  const _NoGroupAltasSection({
+    required this.granjaId,
+    required this.altas,
+    required this.expandido,
+    required this.onToggle,
+    required this.isDark,
+  });
+
+  final String granjaId;
+  final List<AltaAnimales> altas;
+  final bool expandido;
+  final VoidCallback onToggle;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onToggle,
+          child: Container(
+            height: 36,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isDark ? AppColors.border1lg : AppColors.border1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  expandido ? Icons.expand_less : Icons.chevron_right,
+                  size: 16,
+                  color: isDark ? AppColors.bgInputLg : AppColors.bg,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  expandido
+                      ? 'Ocultar últimas 3 altas'
+                      : 'Ver últimas 3 altas sin grupo',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? AppColors.bgInputLg : AppColors.bg,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (expandido)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: altas.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Aún no hay altas sin grupo.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : Column(
+                    children: altas
+                        .map(
+                          (alta) => _LoteCard(
+                            lote: alta,
+                            isDark: isDark,
+                            onTap: () => _showAltaEditPlaceholder(context),
+                            onLongPress: () => _showAltaDeleteConfirmation(
+                              context: context,
+                              ref: ref,
+                              granjaId: granjaId,
+                              alta: alta,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+          ),
+      ],
     );
   }
 }
@@ -2100,13 +2515,14 @@ class _GrupoCard extends ConsumerWidget {
   final GrupoConteo conteo;
   final Color stripColor;
   final bool expandido, colapsado, isDark;
-  final VoidCallback onToggleExpand, onToggleColapso, onLongPress;
+  final VoidCallback onTap, onToggleExpand, onToggleColapso, onLongPress;
   final String granjaId;
 
   const _GrupoCard({
     required this.grupo,
     required this.tipo,
     required this.conteo,
+    required this.onTap,
     required this.stripColor,
     required this.expandido,
     required this.colapsado,
@@ -2120,7 +2536,7 @@ class _GrupoCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      //onTap: onTap,
+      onTap: onTap,
       onLongPress: onLongPress,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -2144,35 +2560,32 @@ class _GrupoCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => _mostrarDetalle(context),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                grupo.nombre,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? AppColors.textPrimary
-                                      : AppColors.textPrimaryLg,
-                                ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              grupo.nombre,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? AppColors.textPrimary
+                                    : AppColors.textPrimaryLg,
                               ),
-                              if (grupo.descripcion != null && !colapsado)
-                                Text(
-                                  grupo.descripcion!,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: isDark
-                                        ? AppColors.textSecondary
-                                        : AppColors.textSecondaryLg,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                            ),
+                            if (grupo.descripcion != null && !colapsado)
+                              Text(
+                                grupo.descripcion!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark
+                                      ? AppColors.textSecondary
+                                      : AppColors.textSecondaryLg,
                                 ),
-                            ],
-                          ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
                         ),
                       ),
                       Row(
@@ -2204,12 +2617,12 @@ class _GrupoCard extends ConsumerWidget {
                             ),
                             onPressed: onToggleColapso,
                           ),
-                          /* _CardMenu(
-                            onEdit: () =>
-                                context.push('/grupos/${grupo.id}/editar'),
-                            onDelete: () => _confirmarEliminar(context),
+                          _CardMenu(
+                            size: 18,
                             isDark: isDark,
-                          ), */
+                            onEdit: onTap,
+                            onDelete: onLongPress,
+                          ),
                         ],
                       ),
                     ],
@@ -2340,40 +2753,6 @@ class _GrupoCard extends ConsumerWidget {
       ),
     );
   }
-
-  void _mostrarDetalle(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.bgCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) =>
-          _DetalleGrupoSheet(grupo: grupo, tipo: tipo, conteo: conteo),
-    );
-  }
-
-  void _confirmarEliminar(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Eliminar grupo'),
-        content: const Text(
-          '¿Eliminar este grupo? Se quitarán también sus ejemplares.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2458,7 +2837,19 @@ class _LotesSection extends ConsumerWidget {
                       )
                     : Column(
                         children: lotes
-                            .map((l) => _LoteCard(lote: l, isDark: isDark))
+                            .map(
+                              (l) => _LoteCard(
+                                lote: l,
+                                isDark: isDark,
+                                onTap: () => _showAltaEditPlaceholder(context),
+                                onLongPress: () => _showAltaDeleteConfirmation(
+                                  context: context,
+                                  ref: ref,
+                                  granjaId: l.granjaId,
+                                  alta: l,
+                                ),
+                              ),
+                            )
                             .toList(),
                       );
               },
@@ -2475,7 +2866,14 @@ class _LotesSection extends ConsumerWidget {
 class _LoteCard extends StatelessWidget {
   final AltaAnimales lote;
   final bool isDark;
-  const _LoteCard({required this.lote, this.isDark = true});
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  const _LoteCard({
+    required this.lote,
+    this.isDark = true,
+    this.onTap,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2483,87 +2881,101 @@ class _LoteCard extends StatelessWidget {
     final vivos = lote.vivosCount;
     final muertos = lote.muertosCount;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.inventory_2_outlined,
-                size: 16,
-                color: Colors.white54,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fmt.format(lote.fechaAlta),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.bgLight : AppColors.bg,
-                      ),
-                    ),
-                    Text(
-                      [
-                        lote.tipoAdquisicionId,
-                        if (lote.proveedor != null) lote.proveedor!,
-                        if (lote.costoTotal != null)
-                          '\$${lote.costoTotal!.toStringAsFixed(0)}',
-                      ].join(' · '),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isDark
-                            ? AppColors.textMutedLg
-                            : AppColors.textMuted,
-                      ),
-                    ),
-                  ],
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.inventory_2_outlined,
+                  size: 16,
+                  color: Colors.white54,
                 ),
-              ),
-              Expanded(
-                child: Text(
-                  '${_animalCountText(vivos, singular: 'vivo', plural: 'vivos')} · '
-                  '${_animalCountText(muertos, singular: 'muerto', plural: 'muertos')}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textPrimary : AppColors.textMuted,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fmt.format(lote.fechaAlta),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.bgLight : AppColors.bg,
+                        ),
+                      ),
+                      Text(
+                        [
+                          lote.tipoAdquisicionId,
+                          if (lote.proveedor != null) lote.proveedor!,
+                          if (lote.costoTotal != null)
+                            '\$${lote.costoTotal!.toStringAsFixed(0)}',
+                        ].join(' · '),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isDark
+                              ? AppColors.textMutedLg
+                              : AppColors.textMuted,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                Expanded(
+                  child: Text(
+                    '${_animalCountText(vivos, singular: 'vivo', plural: 'vivos')} · '
+                    '${_animalCountText(muertos, singular: 'muerto', plural: 'muertos')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? AppColors.textPrimary
+                          : AppColors.textMuted,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _CardMenu(
+                  size: 18,
+                  isDark: isDark,
+                  onEdit: () => _showAltaEditPlaceholder(context),
+                  onDelete: onLongPress ?? () {},
+                ),
+              ],
+            ),
+            if (lote.brazaletesDetalleSafe.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: lote.brazaletesDetalleSafe
+                    .map(
+                      (b) => _BrazaleteBadge(
+                        numero: b.numero,
+                        activo: b.activo,
+                        isDark: isDark,
+                      ),
+                    )
+                    .toList(),
               ),
             ],
-          ),
-          if (lote.brazaletesDetalleSafe.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: lote.brazaletesDetalleSafe
-                  .map(
-                    (b) => _BrazaleteBadge(
-                      numero: b.numero,
-                      activo: b.activo,
-                      isDark: isDark,
-                    ),
-                  )
-                  .toList(),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -2641,115 +3053,6 @@ String _animalCountText(
   required String plural,
 }) {
   return '$count ${count == 1 ? singular : plural}';
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SHEET DETALLE GRUPO
-// ─────────────────────────────────────────────────────────────────────────────
-class _DetalleGrupoSheet extends StatelessWidget {
-  final Grupo grupo;
-  final TipoAnimal tipo;
-  final GrupoConteo conteo;
-
-  const _DetalleGrupoSheet({
-    required this.grupo,
-    required this.tipo,
-    required this.conteo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = [
-      ('Tipo', tipo.nombre),
-      ('Grupo', grupo.nombre),
-      ('Aves vivas', '${conteo.vivos}'),
-      ('Muertes', '${conteo.muertes}'),
-      ('Descripción', grupo.descripcion ?? '—'),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            grupo.nombre,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            '${tipo.nombre} · ${conteo.vivos} aves vivas',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.5),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...rows.map(
-            (r) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 110,
-                    child: Text(
-                      r.$1,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.45),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      r.$2,
-                      style: const TextStyle(fontSize: 13, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              icon: const Icon(Icons.edit_outlined, size: 16),
-              label: const Text('Editar grupo'),
-              onPressed: () {
-                Navigator.pop(context);
-                context.push('/grupos/${grupo.id}/editar');
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -4,16 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 //import '/features/auth/data/auth_repository.dart';
 //import '/features/settings/presentation/providers/theme_provider.dart';
-import '../../animales/animales_repository.dart';
-import '../../granja/granja_repository.dart';
+import '../../animales/animales_repository.dart'
+    hide animalesRepositoryProvider;
+import '../../animales/animales_provider.dart';
 import '../../granja/granja_provider.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/green_button.dart';
+import 'tipoAnimal.dart';
 
 class NuevoAnimal extends ConsumerStatefulWidget {
   final bool isDark;
+  final TipoAnimal? initialTipo;
 
-  const NuevoAnimal({super.key, required this.isDark});
+  const NuevoAnimal({super.key, required this.isDark, this.initialTipo});
 
   @override
   ConsumerState<NuevoAnimal> createState() => _NuevoAnimalState();
@@ -34,6 +37,13 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl.text = widget.initialTipo?.nombre ?? '';
+    _notesCtrl.text = widget.initialTipo?.descripcion ?? '';
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -42,15 +52,34 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
     });
 
     try {
-      // Llamamos al repositorio para guardar en Supabase
-      await ref.read(animalesRepositoryProvider).addTipoAnimal(
-        granjaId: ref.read(selectedFarmProvider)?.id ?? '',
-        nombre: _nameCtrl.text.trim(),
-        descripcion: _notesCtrl.text.trim(),
-      );
-      
-      // Invalidamos el stream provider para que la lista del Home se refresque automáticamente
-      ref.invalidate(farmsProvider);
+      final granjaId =
+          widget.initialTipo?.granjaId ??
+          ref.read(selectedFarmProvider)?.id ??
+          '';
+      final description = _notesCtrl.text.trim().isEmpty
+          ? null
+          : _notesCtrl.text.trim();
+
+      if (widget.initialTipo case final tipo?) {
+        await ref
+            .read(animalesRepositoryProvider)
+            .updateTipoAnimal(
+              tipoId: tipo.id,
+              granjaId: granjaId,
+              nombre: _nameCtrl.text.trim(),
+              descripcion: description,
+            );
+      } else {
+        await ref
+            .read(animalesRepositoryProvider)
+            .addTipoAnimal(
+              granjaId: granjaId,
+              nombre: _nameCtrl.text.trim(),
+              descripcion: description,
+            );
+      }
+
+      ref.invalidate(tiposAnimalProvider(granjaId));
 
       if (mounted) {
         Navigator.pop(context); // Cerramos el modal tras el éxito
@@ -66,11 +95,15 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
   Widget build(BuildContext context) {
     // Colores adaptativos según el tema actual
     final bgColor = widget.isDark ? AppColors.bg : Colors.white;
-    final titleColor = widget.isDark ? AppColors.textPrimary : const Color(0xFF1A1A2E);
+    final titleColor = widget.isDark
+        ? AppColors.textPrimary
+        : const Color(0xFF1A1A2E);
 
     return Padding(
       // Evita que el teclado móvil tape los inputs de texto
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: bgColor,
@@ -94,7 +127,9 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: widget.isDark ? AppColors.border : Colors.grey.shade300,
+                      color: widget.isDark
+                          ? AppColors.border
+                          : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -118,7 +153,9 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      'Nuevo tipo de animal',
+                      widget.initialTipo == null
+                          ? 'Nuevo tipo de animal'
+                          : 'Editar tipo de animal',
                       style: TextStyle(
                         color: titleColor,
                         fontSize: 20,
@@ -165,7 +202,7 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
                 const SizedBox(height: 20),
 
                 // Campo 3: Notas Adicionales (Opcional)
-                // Usamos AppTextField; si en tu diseño requiere múltiples líneas, 
+                // Usamos AppTextField; si en tu diseño requiere múltiples líneas,
                 // tu TextFormField interno se expandirá naturalmente o puedes asignarle el TextInputAction correspondiente.
                 AppTextField(
                   controller: _notesCtrl,
@@ -178,7 +215,9 @@ class _NuevoAnimalState extends ConsumerState<NuevoAnimal> {
 
                 // Botón de Confirmación Reutilizado
                 GreenButton(
-                  label: 'Crear e ingresar',
+                  label: widget.initialTipo == null
+                      ? 'Crear e ingresar'
+                      : 'Guardar cambios',
                   isLoading: _isLoading,
                   onPressed: _submit,
                 ),

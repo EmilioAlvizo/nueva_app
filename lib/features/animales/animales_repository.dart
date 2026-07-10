@@ -44,6 +44,19 @@ class AnimalesRepository {
     });
   }
 
+  Future<void> updateTipoAnimal({
+    required String tipoId,
+    required String granjaId,
+    required String nombre,
+    String? descripcion,
+  }) async {
+    await _client
+        .from('tipo_animal')
+        .update({'nombre': nombre, 'descripcion': descripcion})
+        .eq('id', tipoId)
+        .eq('granja_id', granjaId);
+  }
+
   /// eliminar tipo de animal
   Future<void> deleteTipoAnimal({
     required String farmId,
@@ -90,6 +103,24 @@ class AnimalesRepository {
     } catch (_) {}
   }
 
+  Future<void> updateGrupo({
+    required String grupoId,
+    required String granjaId,
+    required String tipoAnimalId,
+    required String nombre,
+    String? descripcion,
+  }) async {
+    await _client
+        .from('grupos')
+        .update({
+          'tipo_animal_id': tipoAnimalId,
+          'nombre': nombre,
+          'descripcion': descripcion,
+        })
+        .eq('id', grupoId)
+        .eq('granja_id', granjaId);
+  }
+
   // ── Lotes de entrada con conteos (usa vista existente + join cat) ─────────
   Future<List<AltaAnimales>> vistaAltasAnimales(String grupoId) async {
     final data = await _client
@@ -130,18 +161,10 @@ class AnimalesRepository {
   }
 
   Future<NoGroupOverview> getNoGroupOverview(String granjaId) async {
-    final activeAnimals = await _client
+    final noGroupAnimals = await _client
         .from('animales')
-        .select('id')
+        .select('tipo_animal_id, activo')
         .eq('granja_id', granjaId)
-        .eq('activo', true)
-        .isFilter('grupo_id', null);
-
-    final deadAnimals = await _client
-        .from('animales')
-        .select('id')
-        .eq('granja_id', granjaId)
-        .eq('activo', false)
         .isFilter('grupo_id', null);
 
     final altas = await _client
@@ -149,13 +172,52 @@ class AnimalesRepository {
         .select(_altasSelect)
         .eq('granja_id', granjaId)
         .isFilter('grupo_id', null)
-        .order('fecha_alta', ascending: false)
-        .limit(3);
+        .order('fecha_alta', ascending: false);
+
+    final latestAltas = await _enrichAltas(_mapAltas(altas));
+    final countsByType = <String, ({int active, int dead})>{};
+
+    for (final row in noGroupAnimals as List) {
+      final json = Map<String, dynamic>.from(row as Map);
+      final tipoAnimalId = json['tipo_animal_id'] as String?;
+      if (tipoAnimalId == null) {
+        continue;
+      }
+
+      final current = countsByType[tipoAnimalId] ?? (active: 0, dead: 0);
+      final activo = json['activo'] as bool? ?? true;
+      countsByType[tipoAnimalId] = activo
+          ? (active: current.active + 1, dead: current.dead)
+          : (active: current.active, dead: current.dead + 1);
+    }
+
+    final altasByType = <String, List<AltaAnimales>>{};
+    for (final alta in latestAltas) {
+      final bucket = altasByType.putIfAbsent(alta.tipoAnimalId, () => []);
+      if (bucket.length < 3) {
+        bucket.add(alta);
+      }
+    }
+
+    final tipoIds = {...countsByType.keys, ...altasByType.keys};
+    final typeSummaries = [
+      for (final tipoAnimalId in tipoIds)
+        NoGroupTypeOverview(
+          tipoAnimalId: tipoAnimalId,
+          activeCount: countsByType[tipoAnimalId]?.active ?? 0,
+          deadCount: countsByType[tipoAnimalId]?.dead ?? 0,
+          latestAltas: altasByType[tipoAnimalId] ?? const [],
+        ),
+    ];
 
     return NoGroupOverview(
-      activeCount: (activeAnimals as List).length,
-      deadCount: (deadAnimals as List).length,
-      latestAltas: await _enrichAltas(_mapAltas(altas)),
+      activeCount: countsByType.values.fold(
+        0,
+        (sum, item) => sum + item.active,
+      ),
+      deadCount: countsByType.values.fold(0, (sum, item) => sum + item.dead),
+      latestAltas: latestAltas.take(3).toList(growable: false),
+      typeSummaries: typeSummaries,
     );
   }
 
@@ -340,6 +402,16 @@ class AnimalesRepository {
     await _client
         .rpc('registrar_baja_animales', params: input.toRpcParams())
         .single();
+  }
+
+  Future<void> eliminarAltaAnimales(
+    String altaId, {
+    required bool deleteBajas,
+  }) async {
+    await _client.rpc(
+      'eliminar_alta_animales',
+      params: {'p_alta_id': altaId, 'p_delete_bajas': deleteBajas},
+    );
   }
 
   /// Actualiza los campos editables de un evento de baja ya existente.
@@ -575,8 +647,24 @@ class NoGroupOverview {
     required this.activeCount,
     required this.deadCount,
     required this.latestAltas,
+    required this.typeSummaries,
   });
 
+  final int activeCount;
+  final int deadCount;
+  final List<AltaAnimales> latestAltas;
+  final List<NoGroupTypeOverview> typeSummaries;
+}
+
+class NoGroupTypeOverview {
+  const NoGroupTypeOverview({
+    required this.tipoAnimalId,
+    required this.activeCount,
+    required this.deadCount,
+    required this.latestAltas,
+  });
+
+  final String tipoAnimalId;
   final int activeCount;
   final int deadCount;
   final List<AltaAnimales> latestAltas;

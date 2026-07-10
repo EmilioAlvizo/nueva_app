@@ -7,14 +7,21 @@ import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/green_button.dart';
 import '../../animales/animales_provider.dart';
 import '../../granja/granja_provider.dart';
+import '../grupo/grupo.dart';
 import '../tipoAnimal/tipoAnimal.dart';
 
 class NuevoGrupo extends ConsumerStatefulWidget {
   final bool isDark;
   // Opcional: si se llama desde dentro de un grupo ya filtrado
   final String? tipoAnimalIdInicial;
+  final Grupo? initialGroup;
 
-  const NuevoGrupo({super.key, required this.isDark, this.tipoAnimalIdInicial});
+  const NuevoGrupo({
+    super.key,
+    required this.isDark,
+    this.tipoAnimalIdInicial,
+    this.initialGroup,
+  });
 
   @override
   ConsumerState<NuevoGrupo> createState() => _NuevoGrupoState();
@@ -31,7 +38,10 @@ class _NuevoGrupoState extends ConsumerState<NuevoGrupo> {
   @override
   void initState() {
     super.initState();
-    _tipoSeleccionado = widget.tipoAnimalIdInicial;
+    _tipoSeleccionado =
+        widget.initialGroup?.tipoAnimalId ?? widget.tipoAnimalIdInicial;
+    _nameCtrl.text = widget.initialGroup?.nombre ?? '';
+    _descCtrl.text = widget.initialGroup?.descripcion ?? '';
   }
 
   @override
@@ -54,26 +64,42 @@ class _NuevoGrupoState extends ConsumerState<NuevoGrupo> {
     });
 
     try {
-      final granjaId = ref.read(selectedFarmProvider)?.id ?? '';
-      final userId = supabase.auth.currentUser?.id ?? '';
+      final granjaId =
+          widget.initialGroup?.granjaId ??
+          ref.read(selectedFarmProvider)?.id ??
+          '';
+      final description = _descCtrl.text.trim().isEmpty
+          ? null
+          : _descCtrl.text.trim();
 
-      await supabase.from('grupos').insert({
-        'granja_id': granjaId,
-        'tipo_animal_id': _tipoSeleccionado,
-        'nombre': _nameCtrl.text.trim(),
-        'descripcion': _descCtrl.text.trim().isEmpty
-            ? null
-            : _descCtrl.text.trim(),
-        'created_by': userId,
-      });
+      if (widget.initialGroup case final grupo?) {
+        await ref
+            .read(animalesRepositoryProvider)
+            .updateGrupo(
+              grupoId: grupo.id,
+              granjaId: granjaId,
+              tipoAnimalId: grupo.tipoAnimalId,
+              nombre: _nameCtrl.text.trim(),
+              descripcion: description,
+            );
+      } else {
+        final userId = supabase.auth.currentUser?.id ?? '';
+        await supabase.from('grupos').insert({
+          'granja_id': granjaId,
+          'tipo_animal_id': _tipoSeleccionado,
+          'nombre': _nameCtrl.text.trim(),
+          'descripcion': description,
+          'created_by': userId,
+        });
+      }
 
-      // Refrescar lista de grupos en la pantalla
       ref.invalidate(gruposProvider(granjaId));
+      ref.invalidate(conteosGruposProvider(granjaId));
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error al crear el grupo. Inténtalo de nuevo.';
+        _errorMessage = 'Error al guardar el grupo. Inténtalo de nuevo.';
         _isLoading = false;
       });
     }
@@ -81,7 +107,10 @@ class _NuevoGrupoState extends ConsumerState<NuevoGrupo> {
 
   @override
   Widget build(BuildContext context) {
-    final granjaId = ref.read(selectedFarmProvider)?.id ?? '';
+    final granjaId =
+        widget.initialGroup?.granjaId ??
+        ref.read(selectedFarmProvider)?.id ??
+        '';
     final tiposAsync = ref.watch(tiposAnimalProvider(granjaId));
 
     final bgColor = widget.isDark ? AppColors.bg : Colors.white;
@@ -141,7 +170,9 @@ class _NuevoGrupoState extends ConsumerState<NuevoGrupo> {
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      'Nuevo grupo',
+                      widget.initialGroup == null
+                          ? 'Nuevo grupo'
+                          : 'Editar grupo',
                       style: TextStyle(
                         color: titleColor,
                         fontSize: 20,
@@ -169,7 +200,9 @@ class _NuevoGrupoState extends ConsumerState<NuevoGrupo> {
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Text(
                       _errorMessage!,
@@ -210,8 +243,9 @@ class _NuevoGrupoState extends ConsumerState<NuevoGrupo> {
                         children: tipos.map((t) {
                           final sel = _tipoSeleccionado == t.id;
                           return GestureDetector(
-                            onTap: () =>
-                                setState(() => _tipoSeleccionado = t.id),
+                            onTap: widget.initialGroup == null
+                                ? () => setState(() => _tipoSeleccionado = t.id)
+                                : null,
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(
@@ -249,6 +283,17 @@ class _NuevoGrupoState extends ConsumerState<NuevoGrupo> {
                             fontSize: 13,
                           ),
                         ),
+                      if (widget.initialGroup != null)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: Text(
+                            'El tipo de un grupo existente no se puede cambiar porque ya puede tener animales o altas asociadas.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -283,7 +328,9 @@ class _NuevoGrupoState extends ConsumerState<NuevoGrupo> {
                 const SizedBox(height: 32),
 
                 GreenButton(
-                  label: 'Crear grupo',
+                  label: widget.initialGroup == null
+                      ? 'Crear grupo'
+                      : 'Guardar cambios',
                   isLoading: _isLoading,
                   onPressed: () => tiposAsync.whenData((t) => _submit(t)),
                 ),
