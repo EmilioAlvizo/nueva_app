@@ -337,8 +337,8 @@ class AnimalesRepository {
   Future<void> updateEjemplar({
     required String id,
     required String tipoAnimalId,
-    required String grupoId,
-    required int brazalete,
+    required String? grupoId,
+    required int? brazalete,
     required String propositoId,
     required String tipoAdquisicionId,
     required DateTime fechaAdquisicion,
@@ -362,12 +362,40 @@ class AnimalesRepository {
         .eq('id', id);
   }
 
+  Future<void> actualizarAlta({
+    required String id,
+    required DateTime fechaAlta,
+    String? propositoId,
+    String? tipoAdquisicionId,
+    String? proveedor,
+    double? costoTotal,
+    String? notas,
+  }) async {
+    await _client.rpc(
+      'actualizar_alta_animales',
+      params: {
+        'p_alta_id': id,
+        'p_fecha_alta': _soloFecha(fechaAlta),
+        'p_proposito_id': propositoId,
+        'p_tipo_adquisicion_id': tipoAdquisicionId,
+        'p_proveedor': _normalizeNullableText(proveedor),
+        'p_costo_total': costoTotal,
+        'p_notas': _normalizeNullableText(notas),
+      },
+    );
+  }
+
   Future<void> deleteEjemplar(String id) async {
     await _client.from('animales').delete().eq('id', id);
   }
 
   static String _soloFecha(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  static String? _normalizeNullableText(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
 
   /// Lista las bajas (eventos) de la granja con: tipo, grupo (si aplica),
   /// razón de baja y brazaletes de los animales afectados. Usa la vista

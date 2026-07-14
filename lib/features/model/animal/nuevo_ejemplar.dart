@@ -59,7 +59,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
       _grupoId = ej.grupoId;
       _propositoId = ej.propositoId;
       _tipoAdquisicionId = ej.tipoAdquisicionId;
-      _brazaleteCtrl.text = ej.brazalete.toString();
+      _brazaleteCtrl.text = ej.brazalete?.toString() ?? '';
       _costoCtrl.text = ej.costoAdquisicion?.toString() ?? '';
       _notasCtrl.text = ej.notas ?? '';
       _fecha = ej.fechaAdquisicion;
@@ -92,7 +92,6 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
     if (!formOk) return;
 
     if (_tipoAnimalId == null ||
-        _grupoId == null ||
         _propositoId == null ||
         _tipoAdquisicionId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,14 +108,18 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
     final notas = _notasCtrl.text.trim().isEmpty
         ? null
         : _notasCtrl.text.trim();
+    final brazaleteText = _brazaleteCtrl.text.trim();
+    final brazalete = brazaleteText.isEmpty
+        ? null
+        : int.tryParse(brazaleteText);
 
     try {
       if (_esEdicion) {
         await repo.updateEjemplar(
           id: widget.ejemplar!.id,
           tipoAnimalId: _tipoAnimalId!,
-          grupoId: _grupoId!,
-          brazalete: int.parse(_brazaleteCtrl.text.trim()),
+          grupoId: _grupoId,
+          brazalete: brazalete,
           propositoId: _propositoId!,
           tipoAdquisicionId: _tipoAdquisicionId!,
           fechaAdquisicion: _fecha,
@@ -128,8 +131,8 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
         await repo.addAnimal(
           granjaId: widget.granjaId,
           tipoAnimalId: _tipoAnimalId!,
-          grupoId: _grupoId!,
-          brazalete: int.parse(_brazaleteCtrl.text.trim()),
+          grupoId: _grupoId,
+          brazalete: brazalete!,
           propositoId: _propositoId!,
           tipoAdquisicionId: _tipoAdquisicionId!,
           fechaAdquisicion: _fecha,
@@ -138,15 +141,15 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
         );
       }
 
-      ref.invalidate(animalesProvider(widget.granjaId));
-      ref.invalidate(conteosGruposProvider(widget.granjaId));
+      invalidateAnimalesInventoryMutationProviders(ref, widget.granjaId);
+      ref.invalidate(availableBraceletsProvider);
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo guardar: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('No se pudo guardar: $e')));
       }
     } finally {
       if (mounted) setState(() => _guardando = false);
@@ -167,13 +170,33 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
     final grupos = _tipoAnimalId == null
         ? <Grupo>[]
         : gruposTodos.where((g) => g.tipoAnimalId == _tipoAnimalId).toList();
-
-    // Si cambiamos de tipo y el grupo elegido ya no aplica, lo limpiamos.
-    if (_grupoId != null && !grupos.any((g) => g.id == _grupoId)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _grupoId = null);
-      });
-    }
+    final hasTipoSeleccionado =
+        _tipoAnimalId != null && tipos.any((tipo) => tipo.id == _tipoAnimalId);
+    final shouldHoldTipoDropdown =
+        _esEdicion && _tipoAnimalId != null && !tiposAsync.hasValue;
+    final shouldShowUnavailableTipo =
+        _esEdicion &&
+        _tipoAnimalId != null &&
+        tiposAsync.hasValue &&
+        !hasTipoSeleccionado;
+    final tipoFieldValue = hasTipoSeleccionado ? _tipoAnimalId : null;
+    final hasGrupoSeleccionado =
+        _grupoId == null || grupos.any((grupo) => grupo.id == _grupoId);
+    final shouldHoldGrupoDropdown = _esEdicion && !gruposAsync.hasValue;
+    final shouldShowUnavailableGrupo =
+        _grupoId != null && gruposAsync.hasValue && !hasGrupoSeleccionado;
+    final grupoItems = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('Sin grupo')),
+      ...grupos.map(
+        (grupo) => DropdownMenuItem<String?>(
+          value: grupo.id,
+          child: Text(grupo.nombre),
+        ),
+      ),
+    ];
+    final grupoFieldValue = _grupoId != null && hasGrupoSeleccionado
+        ? _grupoId
+        : null;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
@@ -184,9 +207,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.bgCard : Colors.white,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Form(
             key: _formKey,
@@ -219,49 +240,83 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
 
                 // ── Tipo de animal ──────────────────────────────────────
                 _Label('Tipo de animal', isDark),
-                DropdownButtonFormField<String>(
-                  initialValue: _tipoAnimalId,
-                  items: tipos
-                      .map(
-                        (t) => DropdownMenuItem(
-                          value: t.id,
-                          child: Text(t.nombre),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() {
-                    _tipoAnimalId = v;
-                    _grupoId = null;
-                  }),
-                  validator: (v) => v == null ? 'Selecciona un tipo' : null,
-                  decoration: const InputDecoration(
-                    hintText: 'Selecciona un tipo',
+                if (shouldHoldTipoDropdown)
+                  _CatalogStatusField(
+                    valueText:
+                        widget.ejemplar?.tipoNombre ?? 'Cargando tipo...',
+                    helperText:
+                        'Cargando el catálogo para conservar el tipo guardado antes de habilitar la edición.',
+                    isLoading: true,
+                  )
+                else if (shouldShowUnavailableTipo)
+                  _CatalogStatusField(
+                    valueText:
+                        widget.ejemplar?.tipoNombre ??
+                        'Tipo actual no disponible',
+                    helperText:
+                        'El tipo guardado ya no está disponible en el catálogo actual.',
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: tipoFieldValue,
+                    items: tipos
+                        .map(
+                          (t) => DropdownMenuItem(
+                            value: t.id,
+                            child: Text(t.nombre),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() {
+                      _tipoAnimalId = v;
+                      _grupoId = null;
+                    }),
+                    validator: (v) => v == null ? 'Selecciona un tipo' : null,
+                    decoration: const InputDecoration(
+                      hintText: 'Selecciona un tipo',
+                    ),
                   ),
-                ),
                 const SizedBox(height: 14),
 
                 // ── Grupo ────────────────────────────────────────────────
                 _Label('Grupo', isDark),
-                DropdownButtonFormField<String>(
-                  initialValue: _grupoId,
-                  items: grupos
-                      .map(
-                        (g) => DropdownMenuItem(
-                          value: g.id,
-                          child: Text(g.nombre),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: _tipoAnimalId == null
-                      ? null
-                      : (v) => setState(() => _grupoId = v),
-                  validator: (v) => v == null ? 'Selecciona un grupo' : null,
-                  decoration: InputDecoration(
-                    hintText: _tipoAnimalId == null
-                        ? 'Elige primero un tipo'
-                        : 'Selecciona un grupo',
+                if (shouldHoldGrupoDropdown)
+                  _CatalogStatusField(
+                    valueText: _grupoId == null
+                        ? 'Sin grupo'
+                        : widget.ejemplar?.grupoNombre ?? 'Grupo actual',
+                    helperText: _grupoId == null
+                        ? 'El animal no tiene grupo asignado.'
+                        : 'Cargando grupos para mostrar el valor guardado antes de habilitar cambios.',
+                    isLoading: _grupoId != null,
+                  )
+                else ...[
+                  if (shouldShowUnavailableGrupo) ...[
+                    _CatalogStatusField(
+                      valueText:
+                          widget.ejemplar?.grupoNombre ??
+                          'Grupo actual no disponible',
+                      helperText:
+                          'El grupo guardado ya no está disponible en el catálogo, pero se conserva hasta que guardes.',
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  DropdownButtonFormField<String?>(
+                    initialValue: grupoFieldValue,
+                    items: grupoItems,
+                    onChanged: _tipoAnimalId == null
+                        ? null
+                        : (v) => setState(() => _grupoId = v),
+                    decoration: InputDecoration(
+                      hintText: _tipoAnimalId == null
+                          ? 'Elige primero un tipo'
+                          : 'Selecciona un grupo o deja Sin grupo',
+                      helperText: shouldShowUnavailableGrupo
+                          ? 'Selecciona un nuevo grupo si quieres reemplazar el valor guardado.'
+                          : null,
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 14),
 
                 // ── Brazalete ────────────────────────────────────────────
@@ -269,9 +324,15 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                 TextFormField(
                   controller: _brazaleteCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(hintText: 'Ej. 24'),
+                  decoration: InputDecoration(
+                    hintText: _esEdicion ? 'Opcional' : 'Ej. 24',
+                  ),
                   validator: (v) {
-                    final n = int.tryParse((v ?? '').trim());
+                    final text = (v ?? '').trim();
+                    if (_esEdicion && text.isEmpty) {
+                      return null;
+                    }
+                    final n = int.tryParse(text);
                     if (n == null || n <= 0) return 'Ingresa un número válido';
                     return null;
                   },
@@ -319,7 +380,8 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                         )
                         .toList(),
                     onChanged: (v) => setState(() => _tipoAdquisicionId = v),
-                    validator: (v) => v == null ? 'Selecciona una opción' : null,
+                    validator: (v) =>
+                        v == null ? 'Selecciona una opción' : null,
                     decoration: const InputDecoration(
                       hintText: 'Selecciona una opción',
                     ),
@@ -381,9 +443,7 @@ class _NuevoEjemplarState extends ConsumerState<NuevoEjemplar> {
                 TextFormField(
                   controller: _notasCtrl,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: 'Observaciones…',
-                  ),
+                  decoration: const InputDecoration(hintText: 'Observaciones…'),
                 ),
 
                 if (_esEdicion) ...[
@@ -459,6 +519,35 @@ class _Label extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLg,
         ),
+      ),
+    );
+  }
+}
+
+class _CatalogStatusField extends StatelessWidget {
+  const _CatalogStatusField({
+    required this.valueText,
+    required this.helperText,
+    this.isLoading = false,
+  });
+
+  final String valueText;
+  final String helperText;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: InputDecoration(helperText: helperText),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(valueText),
+          if (isLoading) ...[
+            const SizedBox(height: 10),
+            const LinearProgressIndicator(),
+          ],
+        ],
       ),
     );
   }

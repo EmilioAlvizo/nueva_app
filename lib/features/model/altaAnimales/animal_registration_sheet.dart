@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:nueva_app/features/animales/animales_provider.dart';
+import 'package:nueva_app/features/model/altaAnimales/altaAnimales.dart';
 import 'package:nueva_app/features/model/altaAnimales/bracelet_assignment.dart';
 import 'package:nueva_app/features/model/altaAnimales/registrar_alta_animales_input.dart';
 
@@ -17,12 +18,14 @@ class AnimalRegistrationSheet extends ConsumerStatefulWidget {
     required this.isDark,
     this.initialQuantity = 1,
     this.tipoAnimalIdInicial,
+    this.initialAlta,
   });
 
   final String granjaId;
   final bool isDark;
   final int initialQuantity;
   final String? tipoAnimalIdInicial;
+  final AltaAnimales? initialAlta;
 
   @override
   ConsumerState<AnimalRegistrationSheet> createState() =>
@@ -51,14 +54,24 @@ class _AnimalRegistrationSheetState
   String? _errorText;
   BraceletAssignment? _assignment;
 
+  bool get _isEditMode => widget.initialAlta != null;
   bool get _isSingleMode => _quantity == 1;
 
   @override
   void initState() {
     super.initState();
-    _quantity = widget.initialQuantity < 1 ? 1 : widget.initialQuantity;
-    _date = DateTime.now();
-    _tipoAnimalId = widget.tipoAnimalIdInicial;
+    final initialAlta = widget.initialAlta;
+    _quantity =
+        initialAlta?.cantidadAnimales ??
+        (widget.initialQuantity < 1 ? 1 : widget.initialQuantity);
+    _date = initialAlta?.fechaAlta ?? DateTime.now();
+    _tipoAnimalId = initialAlta?.tipoAnimalId ?? widget.tipoAnimalIdInicial;
+    _grupoId = initialAlta?.grupoId;
+    _propositoId = initialAlta?.propositoId;
+    _tipoAdquisicionId = initialAlta?.tipoAdquisicionId;
+    _providerController.text = initialAlta?.proveedor ?? '';
+    _costController.text = initialAlta?.costoTotal?.toString() ?? '';
+    _notesController.text = initialAlta?.notas ?? '';
   }
 
   @override
@@ -92,26 +105,49 @@ class _AnimalRegistrationSheetState
             ),
           );
 
+    final tipos = tiposAsync.value ?? const [];
     final grupos = (gruposAsync.value ?? [])
         .where(
           (grupo) =>
               _tipoAnimalId == null || grupo.tipoAnimalId == _tipoAnimalId,
         )
         .toList();
-
-    final tipos = tiposAsync.value ?? const [];
+    final hasTipoSeleccionado =
+        _tipoAnimalId != null && tipos.any((tipo) => tipo.id == _tipoAnimalId);
+    final tipoFieldValue = hasTipoSeleccionado ? _tipoAnimalId : null;
+    final shouldHoldTipoDropdown =
+        _isEditMode && _tipoAnimalId != null && !tiposAsync.hasValue;
+    final selectedTipoName = hasTipoSeleccionado
+        ? tipos.firstWhere((tipo) => tipo.id == _tipoAnimalId).nombre
+        : tiposAsync.hasValue
+        ? 'Tipo actual no disponible'
+        : 'Cargando tipo...';
+    final hasGrupoSeleccionado =
+        _grupoId == null || grupos.any((grupo) => grupo.id == _grupoId);
+    final shouldHoldGrupoDropdown = _isEditMode && !gruposAsync.hasValue;
+    final selectedGrupoName = _grupoId == null
+        ? 'Sin grupo'
+        : hasGrupoSeleccionado
+        ? grupos.firstWhere((grupo) => grupo.id == _grupoId).nombre
+        : gruposAsync.hasValue
+        ? 'Grupo actual no disponible'
+        : 'Cargando grupo...';
+    final grupoItems = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('Sin grupo')),
+      ...grupos.map(
+        (grupo) => DropdownMenuItem<String?>(
+          value: grupo.id,
+          child: Text(grupo.nombre),
+        ),
+      ),
+    ];
+    final grupoFieldValue = _grupoId != null && hasGrupoSeleccionado
+        ? _grupoId
+        : null;
     if (_tipoAnimalId == null && tipos.length == 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _tipoAnimalId == null) {
           setState(() => _tipoAnimalId = tipos.single.id);
-        }
-      });
-    }
-
-    if (_grupoId != null && !grupos.any((grupo) => grupo.id == _grupoId)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() => _grupoId = null);
         }
       });
     }
@@ -147,7 +183,9 @@ class _AnimalRegistrationSheetState
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  _isSingleMode
+                  _isEditMode
+                      ? 'Editar alta'
+                      : _isSingleMode
                       ? 'Nueva alta de animal'
                       : 'Nueva alta múltiple',
                   style: TextStyle(
@@ -160,7 +198,9 @@ class _AnimalRegistrationSheetState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Registra el alta primero y luego los animales vinculados.',
+                  _isEditMode
+                      ? 'Puedes actualizar el alta; los campos compartidos se sincronizan con los animales vinculados.'
+                      : 'Registra el alta primero y luego los animales vinculados.',
                   style: TextStyle(
                     fontSize: 13,
                     color: widget.isDark
@@ -173,52 +213,75 @@ class _AnimalRegistrationSheetState
                   _ErrorBanner(message: _errorText!),
                 ],
                 const SizedBox(height: 18),
-                tiposAsync.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (error, _) => Text('Error: $error'),
-                  data: (tipos) => DropdownButtonFormField<String>(
-                    initialValue: _tipoAnimalId,
-                    items: tipos
-                        .map(
-                          (tipo) => DropdownMenuItem(
-                            value: tipo.id,
-                            child: Text(tipo.nombre),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _tipoAnimalId = value;
-                        _assignment = null;
-                      });
-                    },
-                    validator: (value) =>
-                        value == null ? 'Selecciona un tipo' : null,
-                    decoration: const InputDecoration(
-                      labelText: 'Tipo de animal',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<String?>(
-                  initialValue: _grupoId,
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Sin grupo'),
-                    ),
-                    ...grupos.map(
-                      (grupo) => DropdownMenuItem<String?>(
-                        value: grupo.id,
-                        child: Text(grupo.nombre),
+                if (_isEditMode)
+                  _CatalogStatusField(
+                    labelText: 'Tipo de animal',
+                    valueText: selectedTipoName,
+                    helperText:
+                        'Bloqueado para evitar inconsistencias con los animales existentes.',
+                    isLoading: shouldHoldTipoDropdown,
+                  )
+                else
+                  tiposAsync.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (error, _) => Text('Error: $error'),
+                    data: (tipos) => DropdownButtonFormField<String>(
+                      initialValue: tipoFieldValue,
+                      items: tipos
+                          .map(
+                            (tipo) => DropdownMenuItem(
+                              value: tipo.id,
+                              child: Text(tipo.nombre),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: _isEditMode
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _tipoAnimalId = value;
+                                _grupoId = null;
+                                _assignment = null;
+                              });
+                            },
+                      validator: (value) =>
+                          value == null ? 'Selecciona un tipo' : null,
+                      decoration: InputDecoration(
+                        labelText: 'Tipo de animal',
+                        helperText: _isEditMode
+                            ? 'Bloqueado para evitar inconsistencias con los animales existentes.'
+                            : null,
                       ),
                     ),
-                  ],
-                  onChanged: _tipoAnimalId == null
-                      ? null
-                      : (value) => setState(() => _grupoId = value),
-                  decoration: const InputDecoration(labelText: 'Grupo'),
-                ),
+                  ),
+                const SizedBox(height: 14),
+                if (_isEditMode)
+                  _CatalogStatusField(
+                    labelText: 'Grupo',
+                    valueText: selectedGrupoName,
+                    helperText: _grupoId == null
+                        ? 'Esta alta quedó registrada sin grupo.'
+                        : 'Editar el grupo desde el alta no es seguro porque no mueve los animales vinculados.',
+                    isLoading: shouldHoldGrupoDropdown && _grupoId != null,
+                  )
+                else
+                  DropdownButtonFormField<String?>(
+                    initialValue: grupoFieldValue,
+                    items: grupoItems,
+                    onChanged: _tipoAnimalId == null || _isEditMode
+                        ? null
+                        : (value) => setState(() => _grupoId = value),
+                    decoration: InputDecoration(
+                      labelText: 'Grupo',
+                      helperText: _isEditMode
+                          ? 'Editar el grupo desde el alta no es seguro porque no mueve los animales vinculados.'
+                          : _grupoId != null &&
+                                !hasGrupoSeleccionado &&
+                                gruposAsync.hasValue
+                          ? 'El grupo actual ya no está disponible en el catálogo, pero se conserva hasta que guardes.'
+                          : null,
+                    ),
+                  ),
                 const SizedBox(height: 14),
                 propositosAsync.when(
                   loading: () => const LinearProgressIndicator(),
@@ -265,10 +328,17 @@ class _AnimalRegistrationSheetState
                 const SizedBox(height: 14),
                 _QuantityField(
                   quantity: _quantity,
-                  onDecrement: _quantity > 1
+                  onDecrement: _isEditMode
+                      ? null
+                      : _quantity > 1
                       ? () => _setQuantity(_quantity - 1)
                       : null,
-                  onIncrement: () => _setQuantity(_quantity + 1),
+                  onIncrement: _isEditMode
+                      ? null
+                      : () => _setQuantity(_quantity + 1),
+                  helperText: _isEditMode
+                      ? 'La cantidad no se puede editar aquí porque cambiaría los animales ya creados.'
+                      : null,
                 ),
                 const SizedBox(height: 14),
                 _DateField(
@@ -277,11 +347,23 @@ class _AnimalRegistrationSheetState
                   onTap: _pickDate,
                 ),
                 const SizedBox(height: 18),
-                availableAsync.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (error, _) => Text('Error: $error'),
-                  data: (available) => _buildBraceletSection(available),
-                ),
+                if (_isEditMode)
+                  _LockedAltaFieldCard(
+                    isDark: widget.isDark,
+                    title: 'Brazaletes y animales vinculados',
+                    message:
+                        'Los brazaletes, la cantidad y el tipo de animal permanecen bloqueados en la edición del alta para no desalinear los ejemplares ya registrados.',
+                    details: [
+                      'Tipo: $selectedTipoName',
+                      'Grupo: $selectedGrupoName',
+                    ],
+                  )
+                else
+                  availableAsync.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (error, _) => Text('Error: $error'),
+                    data: (available) => _buildBraceletSection(available),
+                  ),
                 const SizedBox(height: 18),
                 TextFormField(
                   controller: _providerController,
@@ -326,7 +408,9 @@ class _AnimalRegistrationSheetState
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          _isSingleMode
+                          _isEditMode
+                              ? 'Guardar cambios'
+                              : _isSingleMode
                               ? 'Registrar alta'
                               : 'Registrar alta múltiple',
                         ),
@@ -742,31 +826,37 @@ class _AnimalRegistrationSheetState
           ? null
           : _providerController.text.trim();
 
-      await ref
-          .read(animalesRepositoryProvider)
-          .registrarAltaAnimales(
-            RegistrarAltaAnimalesInput(
-              granjaId: widget.granjaId,
-              tipoAnimalId: _tipoAnimalId!,
-              grupoId: _grupoId,
-              propositoId: _propositoId,
-              tipoAdquisicionId: _tipoAdquisicionId,
-              fechaAlta: _date,
-              cantidad: _quantity,
-              bracelets: bracelets.isEmpty ? null : bracelets,
-              proveedor: provider,
-              costoTotal: cost,
-              notas: notes,
-            ),
-          );
+      final repository = ref.read(animalesRepositoryProvider);
+      if (_isEditMode) {
+        await repository.actualizarAlta(
+          id: widget.initialAlta!.id,
+          fechaAlta: _date,
+          propositoId: _propositoId,
+          tipoAdquisicionId: _tipoAdquisicionId,
+          proveedor: provider,
+          costoTotal: cost,
+          notas: notes,
+        );
+      } else {
+        await repository.registrarAltaAnimales(
+          RegistrarAltaAnimalesInput(
+            granjaId: widget.granjaId,
+            tipoAnimalId: _tipoAnimalId!,
+            grupoId: _grupoId,
+            propositoId: _propositoId,
+            tipoAdquisicionId: _tipoAdquisicionId,
+            fechaAlta: _date,
+            cantidad: _quantity,
+            bracelets: bracelets.isEmpty ? null : bracelets,
+            proveedor: provider,
+            costoTotal: cost,
+            notas: notes,
+          ),
+        );
+      }
 
-      ref.invalidate(animalesProvider(widget.granjaId));
-      ref.invalidate(conteosGruposProvider(widget.granjaId));
-      ref.invalidate(noGroupOverviewProvider(widget.granjaId));
-      ref.invalidate(
-        altasByFarmProvider(AltasQuery(granjaId: widget.granjaId)),
-      );
-      if (_tipoAnimalId != null) {
+      invalidateAnimalesInventoryMutationProviders(ref, widget.granjaId);
+      if (!_isEditMode && _tipoAnimalId != null) {
         ref.invalidate(
           availableBraceletsProvider(
             BraceletAvailabilityQuery(
@@ -781,7 +871,11 @@ class _AnimalRegistrationSheetState
         Navigator.of(context).pop();
       }
     } catch (error) {
-      setState(() => _errorText = 'No se pudo registrar el alta: $error');
+      setState(
+        () => _errorText = _isEditMode
+            ? 'No se pudo actualizar el alta: $error'
+            : 'No se pudo registrar el alta: $error',
+      );
       print(error);
     } finally {
       if (mounted) {
@@ -1075,16 +1169,21 @@ class _QuantityField extends StatelessWidget {
     required this.quantity,
     required this.onIncrement,
     required this.onDecrement,
+    this.helperText,
   });
 
   final int quantity;
-  final VoidCallback onIncrement;
+  final VoidCallback? onIncrement;
   final VoidCallback? onDecrement;
+  final String? helperText;
 
   @override
   Widget build(BuildContext context) {
     return InputDecorator(
-      decoration: const InputDecoration(labelText: 'Cantidad'),
+      decoration: InputDecoration(
+        labelText: 'Cantidad',
+        helperText: helperText,
+      ),
       child: Row(
         children: [
           IconButton(
@@ -1099,6 +1198,107 @@ class _QuantityField extends StatelessWidget {
             onPressed: onIncrement,
             icon: const Icon(Icons.add_circle_outline),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LockedAltaFieldCard extends StatelessWidget {
+  const _LockedAltaFieldCard({
+    required this.isDark,
+    required this.title,
+    required this.message,
+    this.details = const [],
+  });
+
+  final bool isDark;
+  final String title;
+  final String message;
+  final List<String> details;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgCardLg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.border1lg : AppColors.border1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.45,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLg,
+            ),
+          ),
+          if (details.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            for (final detail in details)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  detail,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimaryLg,
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CatalogStatusField extends StatelessWidget {
+  const _CatalogStatusField({
+    required this.labelText,
+    required this.valueText,
+    required this.helperText,
+    this.isLoading = false,
+  });
+
+  final String labelText;
+  final String valueText;
+  final String helperText;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: InputDecoration(labelText: labelText, helperText: helperText),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(valueText),
+          if (isLoading) ...[
+            const SizedBox(height: 10),
+            const LinearProgressIndicator(),
+          ],
         ],
       ),
     );

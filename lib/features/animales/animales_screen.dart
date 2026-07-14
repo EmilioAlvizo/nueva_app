@@ -12,6 +12,7 @@ import '../model/altaAnimales/animal_registration_sheet.dart';
 import '../model/grupo/nuevo_grupo.dart';
 import '../model/tipoAnimal/nuevo_tipoAnimal.dart';
 import '../model/animal/animal.dart';
+import '../model/animal/nuevo_ejemplar.dart';
 import '../model/bajaAnimal/baja_animal.dart';
 import 'animales_provider.dart';
 import 'animales_repository.dart' show NoGroupOverview, NoGroupTypeOverview;
@@ -27,10 +28,22 @@ Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
   return AppColors.tipoColor[(idx < 0 ? 0 : idx) % AppColors.tipoColor.length];
 }
 
-void _showAltaEditPlaceholder(BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('La edición de altas todavía está pendiente.'),
+Future<void> _showAltaEditor({
+  required BuildContext context,
+  required String granjaId,
+  required bool isDark,
+  required AltaAnimales alta,
+}) {
+  return showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => AnimalRegistrationSheet(
+      granjaId: granjaId,
+      isDark: isDark,
+      initialQuantity: alta.cantidadAnimales,
+      tipoAnimalIdInicial: alta.tipoAnimalId,
+      initialAlta: alta,
     ),
   );
 }
@@ -745,10 +758,10 @@ class _EjemplaresTabState extends ConsumerState<_EjemplaresTab> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => AnimalRegistrationSheet(
+      builder: (_) => NuevoEjemplar(
         granjaId: widget.granjaId,
         isDark: widget.isDark,
-        initialQuantity: 1,
+        ejemplar: ejemplar,
         tipoAnimalIdInicial: widget.tipoFiltro == 'all'
             ? null
             : widget.tipoFiltro,
@@ -1100,7 +1113,12 @@ class _LotesDeGrupoSliver extends ConsumerWidget {
                     tipoNombre: tipo.nombre,
                     grupoNombre: grupo.nombre,
                     isDark: isDark,
-                    onTap: () => _showAltaEditPlaceholder(context),
+                    onTap: () => _showAltaEditor(
+                      context: context,
+                      granjaId: grupo.granjaId,
+                      isDark: isDark,
+                      alta: l,
+                    ),
                     onLongPress: () => _showAltaDeleteConfirmation(
                       context: context,
                       ref: ref,
@@ -1239,7 +1257,7 @@ class _LoteTabCard extends StatelessWidget {
             _CardMenu(
               size: 16,
               isDark: isDark,
-              onEdit: () => _showAltaEditPlaceholder(context),
+              onEdit: onTap ?? () {},
               onDelete: onLongPress ?? () {},
             ),
           ],
@@ -2492,7 +2510,12 @@ class _NoGroupAltasSection extends ConsumerWidget {
                           (alta) => _LoteCard(
                             lote: alta,
                             isDark: isDark,
-                            onTap: () => _showAltaEditPlaceholder(context),
+                            onTap: () => _showAltaEditor(
+                              context: context,
+                              granjaId: granjaId,
+                              isDark: isDark,
+                              alta: alta,
+                            ),
                             onLongPress: () => _showAltaDeleteConfirmation(
                               context: context,
                               ref: ref,
@@ -2841,7 +2864,12 @@ class _LotesSection extends ConsumerWidget {
                               (l) => _LoteCard(
                                 lote: l,
                                 isDark: isDark,
-                                onTap: () => _showAltaEditPlaceholder(context),
+                                onTap: () => _showAltaEditor(
+                                  context: context,
+                                  granjaId: l.granjaId,
+                                  isDark: isDark,
+                                  alta: l,
+                                ),
                                 onLongPress: () => _showAltaDeleteConfirmation(
                                   context: context,
                                   ref: ref,
@@ -2953,7 +2981,7 @@ class _LoteCard extends StatelessWidget {
                 _CardMenu(
                   size: 18,
                   isDark: isDark,
-                  onEdit: () => _showAltaEditPlaceholder(context),
+                  onEdit: onTap ?? () {},
                   onDelete: onLongPress ?? () {},
                 ),
               ],
