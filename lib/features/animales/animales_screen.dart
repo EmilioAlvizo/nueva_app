@@ -1254,12 +1254,12 @@ class _LoteTabCard extends StatelessWidget {
                 ),
               ],
             ),
-            _CardMenu(
+            /* _CardMenu(
               size: 16,
               isDark: isDark,
               onEdit: onTap ?? () {},
               onDelete: onLongPress ?? () {},
-            ),
+            ), */
           ],
         ),
       ),
@@ -1408,7 +1408,7 @@ class _TiposTab extends ConsumerWidget {
                     ],
                   ),
                 ),
-                _CardMenu(
+                /* _CardMenu(
                   isDark: isDark,
                   onEdit: () => showModalBottomSheet(
                     context: context,
@@ -1444,7 +1444,7 @@ class _TiposTab extends ConsumerWidget {
                       },
                     );
                   },
-                ),
+                ), */
               ],
             ),
           ),
@@ -1871,62 +1871,6 @@ class _BajaEventoCard extends StatelessWidget {
   }
 }
 
-class _BajaCardActionButton extends StatelessWidget {
-  const _BajaCardActionButton({
-    required this.icon,
-    required this.label,
-    required this.isDark,
-    required this.onTap,
-    this.color,
-    this.onLongPress,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isDark;
-  final VoidCallback onTap;
-  final Color? color;
-  final VoidCallback? onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    final foregroundColor =
-        color ?? (isDark ? AppColors.textPrimary : AppColors.textPrimaryLg);
-    final backgroundColor = foregroundColor.withValues(alpha: 0.1);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: foregroundColor),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: foregroundColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Pequeña etiqueta de razón de baja (Muerte / Sacrificio / etc.)
 class _RazonTag extends StatelessWidget {
   final String label;
@@ -1956,65 +1900,6 @@ class _RazonTag extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENTES COMPARTIDOS: buscador y toggle segmentado
 // ─────────────────────────────────────────────────────────────────────────────
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final bool isDark;
-  final ValueChanged<String> onChanged;
-
-  const _SearchField({
-    required this.controller,
-    required this.hint,
-    required this.isDark,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : AppColors.bgLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.border1lg : AppColors.border1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.search,
-            size: 18,
-            color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLg,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              style: TextStyle(
-                fontSize: 13,
-                color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                hintText: hint,
-                hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: isDark
-                      ? AppColors.textSecondary
-                      : AppColors.textSecondaryLg,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _SegmentedToggle extends StatelessWidget {
   final List<String> options;
@@ -2640,12 +2525,12 @@ class _GrupoCard extends ConsumerWidget {
                             ),
                             onPressed: onToggleColapso,
                           ),
-                          _CardMenu(
+                          /* _CardMenu(
                             size: 18,
                             isDark: isDark,
                             onEdit: onTap,
                             onDelete: onLongPress,
-                          ),
+                          ), */
                         ],
                       ),
                     ],
@@ -2978,12 +2863,12 @@ class _LoteCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _CardMenu(
+                /* _CardMenu(
                   size: 18,
                   isDark: isDark,
                   onEdit: onTap ?? () {},
                   onDelete: onLongPress ?? () {},
-                ),
+                ), */
               ],
             ),
             if (lote.brazaletesDetalleSafe.isNotEmpty) ...[
@@ -3232,7 +3117,7 @@ class _ActionButton extends StatelessWidget {
   );
 }
 
-class _CardMenu extends StatelessWidget {
+/* class _CardMenu extends StatelessWidget {
   final VoidCallback onEdit, onDelete;
   final double size;
   final bool isDark;
@@ -3264,7 +3149,7 @@ class _CardMenu extends StatelessWidget {
       ),
     ],
   );
-}
+} */
 
 class _ContextualFabAction {
   const _ContextualFabAction({
