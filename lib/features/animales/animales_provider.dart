@@ -27,7 +27,7 @@ Future<List<TipoAnimal>> tiposAnimal(Ref ref, String granjaId) =>
 Future<List<Grupo>> grupos(Ref ref, String granjaId) =>
     ref.watch(animalesRepositoryProvider).getGrupos(granjaId);
 
-// ── Conteos por grupo (vivos / muertes / total) ───────────────────────────────
+// ── Conteos por grupo (activos / bajas / total) ───────────────────────────────
 @riverpod
 Future<Map<String, GrupoConteo>> conteosGrupos(Ref ref, String granjaId) async {
   final repo = ref.watch(animalesRepositoryProvider);
@@ -35,18 +35,18 @@ Future<Map<String, GrupoConteo>> conteosGrupos(Ref ref, String granjaId) async {
   return raw.map(
     (k, v) => MapEntry(
       k,
-      GrupoConteo(vivos: v.vivos, muertes: v.muertes, total: v.total),
+      GrupoConteo(vivos: v.vivos, bajas: v.bajas, total: v.total),
     ),
   );
 }
 
 class GrupoConteo {
   final int vivos;
-  final int muertes;
+  final int bajas;
   final int total;
   const GrupoConteo({
     required this.vivos,
-    required this.muertes,
+    required this.bajas,
     required this.total,
   });
 }
@@ -101,6 +101,13 @@ Future<List<AltaAnimales>> altasByFarm(Ref ref, AltasQuery query) {
 }
 
 @riverpod
+Future<List<AltaDistribution>> altaDistributions(Ref ref, String granjaId) {
+  return ref
+      .watch(animalesRepositoryProvider)
+      .getAltaDistributions(granjaId);
+}
+
+@riverpod
 Future<NoGroupOverview> noGroupOverview(Ref ref, String granjaId) {
   return ref.watch(animalesRepositoryProvider).getNoGroupOverview(granjaId);
 }
@@ -145,4 +152,5 @@ void invalidateAnimalesInventoryMutationProviders(
   ref.invalidate(noGroupOverviewProvider(granjaId));
   ref.invalidate(lotesDeGrupoProvider);
   ref.invalidate(altasByFarmProvider);
+  ref.invalidate(altaDistributionsProvider);
 }

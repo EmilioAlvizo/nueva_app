@@ -264,7 +264,7 @@ final class ConteosGruposProvider
   }
 }
 
-String _$conteosGruposHash() => r'0a7eca93c633fe96ca24005c393ef1d870546d23';
+String _$conteosGruposHash() => r'76d7cd9ee00d0b2e17cf4efbf32e06bec3927b69';
 
 final class ConteosGruposFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Map<String, GrupoConteo>>, String> {
@@ -436,6 +436,83 @@ final class AltasByFarmFamily extends $Family
 
   @override
   String toString() => r'altasByFarmProvider';
+}
+
+@ProviderFor(altaDistributions)
+final altaDistributionsProvider = AltaDistributionsFamily._();
+
+final class AltaDistributionsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<AltaDistribution>>,
+          List<AltaDistribution>,
+          FutureOr<List<AltaDistribution>>
+        >
+    with
+        $FutureModifier<List<AltaDistribution>>,
+        $FutureProvider<List<AltaDistribution>> {
+  AltaDistributionsProvider._({
+    required AltaDistributionsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'altaDistributionsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$altaDistributionsHash();
+
+  @override
+  String toString() {
+    return r'altaDistributionsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AltaDistribution>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AltaDistribution>> create(Ref ref) {
+    final argument = this.argument as String;
+    return altaDistributions(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AltaDistributionsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$altaDistributionsHash() => r'af09f9574646a627307ccf0c469719143e552383';
+
+final class AltaDistributionsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AltaDistribution>>, String> {
+  AltaDistributionsFamily._()
+    : super(
+        retry: null,
+        name: r'altaDistributionsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  AltaDistributionsProvider call(String granjaId) =>
+      AltaDistributionsProvider._(argument: granjaId, from: this);
+
+  @override
+  String toString() => r'altaDistributionsProvider';
 }
 
 @ProviderFor(noGroupOverview)

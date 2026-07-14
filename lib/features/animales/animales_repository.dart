@@ -160,6 +160,59 @@ class AnimalesRepository {
     return _enrichAltas(_mapAltas(data));
   }
 
+  /// Reads every alta event together with its animals' current locations in one
+  /// query. `altas_animales.grupo_id` remains historical; segments always use
+  /// `animales.grupo_id` as the operational location.
+  Future<List<AltaDistribution>> getAltaDistributions(String granjaId) async {
+    final data = await _client
+        .from('altas_animales')
+        .select('''
+          id,
+          granja_id,
+          grupo_id,
+          tipo_animal_id,
+          proposito_id,
+          tipo_adquisicion_id,
+          fecha_alta,
+          proveedor,
+          costo_total,
+          cantidad_animales,
+          created_by,
+          created_at,
+          notas,
+          animales(
+            grupo_id,
+            brazalete,
+            activo,
+            baja_id
+          )
+        ''')
+        .eq('granja_id', granjaId);
+
+    final builders = <String, _AltaDistributionBuilder>{};
+    for (final row in data as List) {
+      final altaData = Map<String, dynamic>.from(row as Map);
+      final alta = AltaAnimales.fromJson(altaData);
+      final builder = _AltaDistributionBuilder(alta);
+      builders[alta.id] = builder;
+
+      for (final animalRow in altaData['animales'] as List? ?? const []) {
+        final animal = Map<String, dynamic>.from(animalRow as Map);
+        builder.addAnimal(
+          grupoId: animal['grupo_id'] as String?,
+          brazalete: (animal['brazalete'] as num?)?.toInt(),
+          activo: animal['activo'] as bool? ?? true,
+          hasBaja: animal['baja_id'] != null,
+        );
+      }
+    }
+
+    final distributions = [
+      for (final builder in builders.values) builder.build(),
+    ]..sort((a, b) => b.alta.fechaAlta.compareTo(a.alta.fechaAlta));
+    return distributions;
+  }
+
   Future<NoGroupOverview> getNoGroupOverview(String granjaId) async {
     final noGroupAnimals = await _client
         .from('animales')
@@ -167,15 +220,7 @@ class AnimalesRepository {
         .eq('granja_id', granjaId)
         .isFilter('grupo_id', null);
 
-    final altas = await _client
-        .from('vista_altas_animales')
-        .select(_altasSelect)
-        .eq('granja_id', granjaId)
-        .isFilter('grupo_id', null)
-        .order('fecha_alta', ascending: false);
-
-    final latestAltas = await _enrichAltas(_mapAltas(altas));
-    final countsByType = <String, ({int active, int dead})>{};
+    final countsByType = <String, ({int active, int inactive})>{};
 
     for (final row in noGroupAnimals as List) {
       final json = Map<String, dynamic>.from(row as Map);
@@ -184,29 +229,21 @@ class AnimalesRepository {
         continue;
       }
 
-      final current = countsByType[tipoAnimalId] ?? (active: 0, dead: 0);
+      final current = countsByType[tipoAnimalId] ?? (active: 0, inactive: 0);
       final activo = json['activo'] as bool? ?? true;
       countsByType[tipoAnimalId] = activo
-          ? (active: current.active + 1, dead: current.dead)
-          : (active: current.active, dead: current.dead + 1);
+          ? (active: current.active + 1, inactive: current.inactive)
+          : (active: current.active, inactive: current.inactive + 1);
     }
 
-    final altasByType = <String, List<AltaAnimales>>{};
-    for (final alta in latestAltas) {
-      final bucket = altasByType.putIfAbsent(alta.tipoAnimalId, () => []);
-      if (bucket.length < 3) {
-        bucket.add(alta);
-      }
-    }
-
-    final tipoIds = {...countsByType.keys, ...altasByType.keys};
+    final tipoIds = countsByType.keys;
     final typeSummaries = [
       for (final tipoAnimalId in tipoIds)
         NoGroupTypeOverview(
           tipoAnimalId: tipoAnimalId,
           activeCount: countsByType[tipoAnimalId]?.active ?? 0,
-          deadCount: countsByType[tipoAnimalId]?.dead ?? 0,
-          latestAltas: altasByType[tipoAnimalId] ?? const [],
+          inactiveCount: countsByType[tipoAnimalId]?.inactive ?? 0,
+          latestAltas: const [],
         ),
     ];
 
@@ -215,8 +252,11 @@ class AnimalesRepository {
         0,
         (sum, item) => sum + item.active,
       ),
-      deadCount: countsByType.values.fold(0, (sum, item) => sum + item.dead),
-      latestAltas: latestAltas.take(3).toList(growable: false),
+      inactiveCount: countsByType.values.fold<int>(
+        0,
+        (sum, item) => sum + item.inactive,
+      ),
+      latestAltas: const [],
       typeSummaries: typeSummaries,
     );
   }
@@ -478,7 +518,7 @@ class AnimalesRepository {
     await _client.from('bajas_animales').delete().eq('id', bajaId);
   }
 
-  // ── Conteos de vivos/muertes por grupo ────────────────────────────────────
+  // ── Conteos de activos/bajas por grupo ────────────────────────────────────
   Future<Map<String, ConteoGrupo>> getConteosGrupos(String granjaId) async {
     // vivos
     final vivosData = await _client
@@ -487,8 +527,7 @@ class AnimalesRepository {
         .eq('granja_id', granjaId)
         .eq('activo', true);
 
-    // muertos (activo=false, lo manejamos contando bajas)
-    final muertosData = await _client
+    final bajasData = await _client
         .from('animales')
         .select('grupo_id')
         .eq('granja_id', granjaId)
@@ -509,11 +548,11 @@ class AnimalesRepository {
       result[gId]!.vivos++;
     }
 
-    for (final e in muertosData as List) {
+    for (final e in bajasData as List) {
       final gId = e['grupo_id'] as String?;
       if (gId == null) continue;
       result.putIfAbsent(gId, () => ConteoGrupo());
-      result[gId]!.muertes++;
+      result[gId]!.bajas++;
     }
 
     for (final e in totalData as List) {
@@ -553,7 +592,7 @@ class AnimalesRepository {
       if (isActive) {
         stats.vivos++;
       } else {
-        stats.muertos++;
+        stats.inactivos++;
       }
 
       final bracelet = (json['brazalete'] as num?)?.toInt();
@@ -571,11 +610,11 @@ class AnimalesRepository {
             ],
             brazaletesDetalle: stats.brazaletes,
             cantidadVivos: stats.vivos,
-            cantidadMuertos: stats.muertos,
+            cantidadInactivos: stats.inactivos,
           ),
           null => alta.copyWith(
             cantidadVivos: alta.cantidadAnimales,
-            cantidadMuertos: 0,
+            cantidadInactivos: 0,
           ),
         },
     ];
@@ -584,8 +623,144 @@ class AnimalesRepository {
 
 class _AltaEnrichment {
   int vivos = 0;
-  int muertos = 0;
+  int inactivos = 0;
   final List<AltaBrazalete> brazaletes = [];
+}
+
+class AltaDistribution {
+  const AltaDistribution({required this.alta, required this.segments});
+
+  final AltaAnimales alta;
+  final List<AltaGroupSegment> segments;
+
+  int get currentAnimalCount =>
+      segments.fold(0, (sum, segment) => sum + segment.cantidadAqui);
+
+  int get vivosCount =>
+      segments.fold(0, (sum, segment) => sum + segment.vivosAqui);
+
+  int get inactivosCount =>
+      segments.fold(0, (sum, segment) => sum + segment.inactivosAqui);
+
+  int get bajasCount =>
+      segments.fold(0, (sum, segment) => sum + segment.bajasAqui);
+
+  bool get hasBajas => bajasCount > 0;
+
+  bool get requiresBajasDeletion => hasBajas || inactivosCount > 0;
+
+  bool get isDistributed => segments.length > 1;
+}
+
+class AltaGroupSegment {
+  const AltaGroupSegment({
+    required this.alta,
+    required this.grupoId,
+    required this.cantidadAqui,
+    required this.vivosAqui,
+    required this.inactivosAqui,
+    required this.bajasAqui,
+    required this.brazaletes,
+    required this.isDistributed,
+    required this.requiresBajasDeletion,
+  });
+
+  final AltaAnimales alta;
+  final String? grupoId;
+  final int cantidadAqui;
+  final int vivosAqui;
+  final int inactivosAqui;
+  final int bajasAqui;
+  final List<AltaBrazalete> brazaletes;
+  final bool isDistributed;
+  final bool requiresBajasDeletion;
+}
+
+class _AltaDistributionBuilder {
+  _AltaDistributionBuilder(this.alta);
+
+  static const _noGroupKey = '__no_group__';
+
+  final AltaAnimales alta;
+  final segments = <String, _AltaGroupSegmentBuilder>{};
+
+  void addAnimal({
+    required String? grupoId,
+    required int? brazalete,
+    required bool activo,
+    required bool hasBaja,
+  }) {
+    final key = grupoId ?? _noGroupKey;
+    final segment = segments.putIfAbsent(
+      key,
+      () => _AltaGroupSegmentBuilder(grupoId),
+    );
+    segment.addAnimal(brazalete: brazalete, activo: activo, hasBaja: hasBaja);
+  }
+
+  AltaDistribution build() {
+    final isDistributed = segments.length > 1;
+    final requiresBajasDeletion =
+        segments.values.any((segment) => segment.bajasAqui > 0) ||
+        segments.values.any((segment) => segment.inactivosAqui > 0);
+    return AltaDistribution(
+      alta: alta,
+      segments: [
+        for (final segment in segments.values)
+          segment.build(
+            alta: alta,
+            isDistributed: isDistributed,
+            requiresBajasDeletion: requiresBajasDeletion,
+          ),
+      ],
+    );
+  }
+}
+
+class _AltaGroupSegmentBuilder {
+  _AltaGroupSegmentBuilder(this.grupoId);
+
+  final String? grupoId;
+  var cantidadAqui = 0;
+  var vivosAqui = 0;
+  var inactivosAqui = 0;
+  var bajasAqui = 0;
+  final brazaletes = <AltaBrazalete>[];
+
+  void addAnimal({
+    required int? brazalete,
+    required bool activo,
+    required bool hasBaja,
+  }) {
+    cantidadAqui++;
+    if (activo) {
+      vivosAqui++;
+    } else {
+      inactivosAqui++;
+    }
+    if (hasBaja) {
+      bajasAqui++;
+    }
+    if (brazalete != null) {
+      brazaletes.add(AltaBrazalete(numero: brazalete, activo: activo));
+    }
+  }
+
+  AltaGroupSegment build({
+    required AltaAnimales alta,
+    required bool isDistributed,
+    required bool requiresBajasDeletion,
+  }) => AltaGroupSegment(
+    alta: alta,
+    grupoId: grupoId,
+    cantidadAqui: cantidadAqui,
+    vivosAqui: vivosAqui,
+    inactivosAqui: inactivosAqui,
+    bajasAqui: bajasAqui,
+    brazaletes: brazaletes,
+    isDistributed: isDistributed,
+    requiresBajasDeletion: requiresBajasDeletion,
+  );
 }
 
 List<AltaAnimales> _mapAltas(dynamic data) => (data as List)
@@ -673,34 +848,38 @@ brazaletes
 class NoGroupOverview {
   const NoGroupOverview({
     required this.activeCount,
-    required this.deadCount,
+    int? inactiveCount,
+    int? deadCount,
     required this.latestAltas,
-    required this.typeSummaries,
-  });
+    this.typeSummaries = const [],
+  }) : inactiveCount = inactiveCount ?? deadCount ?? 0;
 
   final int activeCount;
-  final int deadCount;
+  final int inactiveCount;
   final List<AltaAnimales> latestAltas;
   final List<NoGroupTypeOverview> typeSummaries;
+
+  @Deprecated('Use inactiveCount. Not every baja represents a death.')
+  int get deadCount => inactiveCount;
 }
 
 class NoGroupTypeOverview {
   const NoGroupTypeOverview({
     required this.tipoAnimalId,
     required this.activeCount,
-    required this.deadCount,
+    required this.inactiveCount,
     required this.latestAltas,
   });
 
   final String tipoAnimalId;
   final int activeCount;
-  final int deadCount;
+  final int inactiveCount;
   final List<AltaAnimales> latestAltas;
 }
 
 class ConteoGrupo {
   int vivos = 0;
-  int muertes = 0;
+  int bajas = 0;
   int total = 0;
 }
 

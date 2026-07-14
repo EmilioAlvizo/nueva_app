@@ -31,7 +31,7 @@ class AltaAnimales {
   // Vista enriquecida desde `animales`: conserva si el ejemplar sigue activo.
   final List<AltaBrazalete>? brazaletesDetalle;
   final int? cantidadVivos;
-  final int? cantidadMuertos;
+  final int? cantidadInactivos;
 
   const AltaAnimales({
     required this.id,
@@ -50,7 +50,7 @@ class AltaAnimales {
     this.brazaletes,
     this.brazaletesDetalle,
     this.cantidadVivos,
-    this.cantidadMuertos,
+    this.cantidadInactivos,
   });
 
   factory AltaAnimales.fromJson(Map<String, dynamic> j) => AltaAnimales(
@@ -78,12 +78,12 @@ class AltaAnimales {
         )
         .toList(),
     cantidadVivos: (j['cantidad_vivos'] as num?)?.toInt(),
-    cantidadMuertos: (j['cantidad_muertos'] as num?)?.toInt(),
+    cantidadInactivos: (j['cantidad_muertos'] as num?)?.toInt(),
   );
 
   int get vivosCount => cantidadVivos ?? cantidadAnimales;
 
-  int get muertosCount => cantidadMuertos ?? 0;
+  int get inactivosCount => cantidadInactivos ?? 0;
 
   List<AltaBrazalete> get brazaletesDetalleSafe {
     final detalle = brazaletesDetalle;
@@ -101,7 +101,7 @@ class AltaAnimales {
     List<int>? brazaletes,
     List<AltaBrazalete>? brazaletesDetalle,
     int? cantidadVivos,
-    int? cantidadMuertos,
+    int? cantidadInactivos,
   }) => AltaAnimales(
     id: id,
     granjaId: granjaId,
@@ -119,6 +119,6 @@ class AltaAnimales {
     brazaletes: brazaletes ?? this.brazaletes,
     brazaletesDetalle: brazaletesDetalle ?? this.brazaletesDetalle,
     cantidadVivos: cantidadVivos ?? this.cantidadVivos,
-    cantidadMuertos: cantidadMuertos ?? this.cantidadMuertos,
+    cantidadInactivos: cantidadInactivos ?? this.cantidadInactivos,
   );
 }

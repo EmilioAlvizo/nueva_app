@@ -15,7 +15,12 @@ import '../model/animal/animal.dart';
 import '../model/animal/nuevo_ejemplar.dart';
 import '../model/bajaAnimal/baja_animal.dart';
 import 'animales_provider.dart';
-import 'animales_repository.dart' show NoGroupOverview, NoGroupTypeOverview;
+import 'animales_repository.dart'
+    show
+        AltaDistribution,
+        AltaGroupSegment,
+        NoGroupOverview,
+        NoGroupTypeOverview;
 import 'tipo_filtro.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
@@ -52,20 +57,18 @@ Future<void> _showAltaDeleteConfirmation({
   required BuildContext context,
   required WidgetRef ref,
   required String granjaId,
-  required AltaAnimales alta,
+  required String altaId,
+  required bool requiresBajasDeletion,
 }) async {
-  final hasBajasOrMuertos =
-      alta.muertosCount > 0 ||
-      alta.brazaletesDetalleSafe.any((item) => !item.activo);
   final deleted = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: Text(
-        hasBajasOrMuertos ? 'Eliminar alta con bajas/muertos' : 'Eliminar alta',
+        requiresBajasDeletion ? 'Eliminar alta con bajas' : 'Eliminar alta',
       ),
       content: Text(
-        hasBajasOrMuertos
-            ? 'Esta alta incluye animales muertos o en baja. Para eliminarla de forma segura también se deben borrar esas bajas/muertos asociados. ¿Deseas continuar?'
+        requiresBajasDeletion
+            ? 'Esta alta incluye animales en baja o inactivos. Para eliminarla de forma segura también se eliminarán sus bajas asociadas. ¿Deseas continuar?'
             : 'Se eliminará esta alta y sus animales asociados. Esta acción no se puede deshacer.',
       ),
       actions: [
@@ -75,16 +78,14 @@ Future<void> _showAltaDeleteConfirmation({
         ),
         FilledButton(
           style: FilledButton.styleFrom(
-            backgroundColor: hasBajasOrMuertos
+            backgroundColor: requiresBajasDeletion
                 ? const Color(0xFFC94F6D)
                 : AppColors.green,
             foregroundColor: Colors.white,
           ),
           onPressed: () => Navigator.of(dialogContext).pop(true),
           child: Text(
-            hasBajasOrMuertos
-                ? 'Eliminar alta y bajas/muertos'
-                : 'Eliminar alta',
+            requiresBajasDeletion ? 'Eliminar alta y bajas' : 'Eliminar alta',
           ),
         ),
       ],
@@ -98,7 +99,7 @@ Future<void> _showAltaDeleteConfirmation({
   try {
     await ref
         .read(animalesRepositoryProvider)
-        .eliminarAltaAnimales(alta.id, deleteBajas: hasBajasOrMuertos);
+        .eliminarAltaAnimales(altaId, deleteBajas: requiresBajasDeletion);
     invalidateAnimalesInventoryMutationProviders(ref, granjaId);
     if (!context.mounted) {
       return;
@@ -106,8 +107,8 @@ Future<void> _showAltaDeleteConfirmation({
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          hasBajasOrMuertos
-              ? 'Alta, animales y bajas/muertos eliminados'
+          requiresBajasDeletion
+              ? 'Alta, animales y bajas eliminados'
               : 'Alta eliminada',
         ),
       ),
@@ -201,6 +202,9 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
     final noGroupOverviewAsync = ref.watch(
       noGroupOverviewProvider(widget.granjaId),
     );
+    final altaDistributionsAsync = ref.watch(
+      altaDistributionsProvider(widget.granjaId),
+    );
 
     final tipos = tiposAsync.value ?? [];
     final grupos = gruposAsync.value ?? [];
@@ -234,6 +238,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                     gruposAsync: gruposAsync,
                     conteosAsync: conteosAsync,
                     noGroupOverviewAsync: noGroupOverviewAsync,
+                    altaDistributionsAsync: altaDistributionsAsync,
                     tipos: tipos,
                     expandidos: _expandidos,
                     colapsados: _colapsados,
@@ -249,7 +254,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                     isDark: isDark,
                   ),
                   // ── Altas ───────────────────────────────────────────
-                  _LotesTab(
+                  _AltasTab(
                     granjaId: widget.granjaId,
                     tipoFiltro: tipoFiltro,
                     tipos: tipos,
@@ -266,7 +271,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
                   // ── Tipos ───────────────────────────────────────────
                   _TiposTab(
                     granjaId: widget.granjaId,
-                    tipos: tipos,
+                    tiposAsync: tiposAsync,
                     grupos: grupos,
                     conteos: conteosAsync.value ?? {},
                     isDark: isDark,
@@ -516,6 +521,7 @@ class _GruposTab extends ConsumerWidget {
   final AsyncValue<List<Grupo>> gruposAsync;
   final AsyncValue<Map<String, GrupoConteo>> conteosAsync;
   final AsyncValue<NoGroupOverview> noGroupOverviewAsync;
+  final AsyncValue<List<AltaDistribution>> altaDistributionsAsync;
   final List<TipoAnimal> tipos;
   final Set<String> expandidos;
   final Set<String> colapsados;
@@ -530,6 +536,7 @@ class _GruposTab extends ConsumerWidget {
     required this.gruposAsync,
     required this.conteosAsync,
     required this.noGroupOverviewAsync,
+    required this.altaDistributionsAsync,
     required this.tipos,
     required this.expandidos,
     required this.colapsados,
@@ -552,169 +559,189 @@ class _GruposTab extends ConsumerWidget {
           data: (conteos) => noGroupOverviewAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error 4: $e')),
-            data: (noGroupOverview) {
-              final gruposFiltrados = tipoFiltro == 'all'
-                  ? grupos
-                  : grupos.where((g) => g.tipoAnimalId == tipoFiltro).toList();
-              final noGroupSummaries = noGroupOverview.typeSummaries
-                  .where((summary) {
-                    return tipoFiltro == 'all' ||
-                        summary.tipoAnimalId == tipoFiltro;
-                  })
-                  .toList(growable: false);
+            data: (noGroupOverview) => altaDistributionsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Center(
+                child: Text(
+                  'No se pudo cargar la distribución de altas: $error',
+                ),
+              ),
+              data: (distributions) {
+                final gruposFiltrados = tipoFiltro == 'all'
+                    ? grupos
+                    : grupos
+                          .where((g) => g.tipoAnimalId == tipoFiltro)
+                          .toList();
+                final noGroupSummaries = noGroupOverview.typeSummaries
+                    .where((summary) {
+                      return tipoFiltro == 'all' ||
+                          summary.tipoAnimalId == tipoFiltro;
+                    })
+                    .toList(growable: false);
 
-              final totalVivos =
-                  gruposFiltrados.fold<int>(
-                    0,
-                    (s, g) => s + (conteos[g.id]?.vivos ?? 0),
-                  ) +
-                  noGroupSummaries.fold<int>(
-                    0,
-                    (sum, summary) => sum + summary.activeCount,
-                  );
-              final totalMuertes =
-                  gruposFiltrados.fold<int>(
-                    0,
-                    (s, g) => s + (conteos[g.id]?.muertes ?? 0),
-                  ) +
-                  noGroupSummaries.fold<int>(
-                    0,
-                    (sum, summary) => sum + summary.deadCount,
-                  );
+                final totalVivos =
+                    gruposFiltrados.fold<int>(
+                      0,
+                      (s, g) => s + (conteos[g.id]?.vivos ?? 0),
+                    ) +
+                    noGroupSummaries.fold<int>(
+                      0,
+                      (sum, summary) => sum + summary.activeCount,
+                    );
+                final totalBajas =
+                    gruposFiltrados.fold<int>(
+                      0,
+                      (s, g) => s + (conteos[g.id]?.bajas ?? 0),
+                    ) +
+                    noGroupSummaries.fold<int>(
+                      0,
+                      (sum, summary) => sum + summary.inactiveCount,
+                    );
 
-              final hasNoGroupCard = noGroupSummaries.isNotEmpty;
+                final hasNoGroupCard = noGroupSummaries.isNotEmpty;
 
-              return CustomScrollView(
-                slivers: [
-                  // Stats
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Row(
-                        children: [
-                          _StatTile(
-                            value: '$totalVivos',
-                            label: 'Aves vivas',
-                            color: AppColors.green,
-                          ),
-                          const SizedBox(width: 10),
-                          _StatTile(
-                            value: '${gruposFiltrados.length}',
-                            label: 'Grupos',
-                            color: const Color(0xFF4B5563),
-                          ),
-                          const SizedBox(width: 10),
-                          _StatTile(
-                            value: '$totalMuertes',
-                            label: 'Muertes',
-                            color: const Color(0xFF7C3F2B),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  if (hasNoGroupCard)
+                return CustomScrollView(
+                  slivers: [
+                    // Stats
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                        child: _NoGroupCard(
-                          overview: noGroupOverview,
-                          tipos: tipos,
-                          granjaId: granjaId,
-                          tipoFiltro: tipoFiltro,
-                          expandidos: expandidos,
-                          colapsados: colapsados,
-                          onToggleExpand: onToggleExpand,
-                          onToggleColapso: onToggleColapso,
-                          isDark: isDark,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: Row(
+                          children: [
+                            _StatTile(
+                              value: '$totalVivos',
+                              label: 'Aves vivas',
+                              color: AppColors.green,
+                            ),
+                            const SizedBox(width: 10),
+                            _StatTile(
+                              value: '${gruposFiltrados.length}',
+                              label: 'Grupos',
+                              color: const Color(0xFF4B5563),
+                            ),
+                            const SizedBox(width: 10),
+                            _StatTile(
+                              value: '$totalBajas',
+                              label: 'Bajas',
+                              color: const Color(0xFF7C3F2B),
+                            ),
+                          ],
                         ),
                       ),
                     ),
 
-                  if (gruposFiltrados.isEmpty && !hasNoGroupCard)
-                    SliverToBoxAdapter(child: _EmptyState(tipos: tipos))
-                  else if (gruposFiltrados.isNotEmpty)
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, i) {
-                          final grupo = gruposFiltrados[i];
-                          final conteo =
-                              conteos[grupo.id] ??
-                              const GrupoConteo(vivos: 0, muertes: 0, total: 0);
-                          final color = _colorParaTipo(
-                            grupo.tipoAnimalId,
-                            tipos,
-                          );
-                          final tipo = tipos.firstWhere(
-                            (t) => t.id == grupo.tipoAnimalId,
-                            orElse: () => TipoAnimal(
-                              id: '',
-                              granjaId: '',
-                              nombre: '',
-                              createdBy: '',
-                            ),
-                          );
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _GrupoCard(
-                              onTap: () => showModalBottomSheet(
-                                context: context,
-                                backgroundColor: Colors.transparent,
-                                isScrollControlled: true,
-                                builder: (_) => NuevoGrupo(
-                                  isDark: isDark,
-                                  tipoAnimalIdInicial: grupo.tipoAnimalId,
-                                  initialGroup: grupo,
-                                ),
-                              ),
-                              onLongPress: () {
-                                ConfirmationDialog.show(
-                                  context: context,
-                                  isDark: isDark,
-                                  title: 'Eliminar Grupo',
-                                  content:
-                                      '¿Estás seguro de que deseas eliminar el grupo "${grupo.nombre}"? Esta acción no se puede deshacer.',
-                                  onConfirm: () async {
-                                    try {
-                                      await ref
-                                          .read(animalesRepositoryProvider)
-                                          .deleteGrupo(
-                                            farmId: granjaId,
-                                            grupoId: grupo.id,
-                                          );
-
-                                      ref.invalidate(gruposProvider(granjaId));
-                                      invalidateAnimalesInventoryMutationProviders(
-                                        ref,
-                                        granjaId,
-                                      );
-                                    } catch (e) {
-                                      print('Error al eliminar granja: $e');
-                                    }
-                                  },
-                                );
-                              },
-
-                              grupo: grupo,
-                              tipo: tipo,
-                              conteo: conteo,
-                              stripColor: color,
-                              expandido: expandidos.contains(grupo.id),
-                              colapsado: colapsados.contains(grupo.id),
-                              onToggleExpand: () => onToggleExpand(grupo.id),
-                              onToggleColapso: () => onToggleColapso(grupo.id),
-                              granjaId: granjaId,
-                              isDark: isDark,
-                            ),
-                          );
-                        }, childCount: gruposFiltrados.length),
+                    if (hasNoGroupCard)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: _NoGroupCard(
+                            overview: noGroupOverview,
+                            distributions: distributions,
+                            tipos: tipos,
+                            granjaId: granjaId,
+                            tipoFiltro: tipoFiltro,
+                            expandidos: expandidos,
+                            colapsados: colapsados,
+                            onToggleExpand: onToggleExpand,
+                            onToggleColapso: onToggleColapso,
+                            isDark: isDark,
+                          ),
+                        ),
                       ),
-                    ),
-                ],
-              );
-            },
+
+                    if (gruposFiltrados.isEmpty && !hasNoGroupCard)
+                      SliverToBoxAdapter(child: _EmptyState(tipos: tipos))
+                    else if (gruposFiltrados.isNotEmpty)
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate((context, i) {
+                            final grupo = gruposFiltrados[i];
+                            final conteo =
+                                conteos[grupo.id] ??
+                                const GrupoConteo(vivos: 0, bajas: 0, total: 0);
+                            final color = _colorParaTipo(
+                              grupo.tipoAnimalId,
+                              tipos,
+                            );
+                            final tipo = tipos.firstWhere(
+                              (t) => t.id == grupo.tipoAnimalId,
+                              orElse: () => TipoAnimal(
+                                id: '',
+                                granjaId: '',
+                                nombre: '',
+                                createdBy: '',
+                              ),
+                            );
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _GrupoCard(
+                                onTap: () => showModalBottomSheet(
+                                  context: context,
+                                  backgroundColor: Colors.transparent,
+                                  isScrollControlled: true,
+                                  builder: (_) => NuevoGrupo(
+                                    isDark: isDark,
+                                    tipoAnimalIdInicial: grupo.tipoAnimalId,
+                                    initialGroup: grupo,
+                                  ),
+                                ),
+                                onLongPress: () {
+                                  ConfirmationDialog.show(
+                                    context: context,
+                                    isDark: isDark,
+                                    title: 'Eliminar Grupo',
+                                    content:
+                                        '¿Estás seguro de que deseas eliminar el grupo "${grupo.nombre}"? Esta acción no se puede deshacer.',
+                                    onConfirm: () async {
+                                      try {
+                                        await ref
+                                            .read(animalesRepositoryProvider)
+                                            .deleteGrupo(
+                                              farmId: granjaId,
+                                              grupoId: grupo.id,
+                                            );
+
+                                        ref.invalidate(
+                                          gruposProvider(granjaId),
+                                        );
+                                        invalidateAnimalesInventoryMutationProviders(
+                                          ref,
+                                          granjaId,
+                                        );
+                                      } catch (e) {
+                                        print('Error al eliminar granja: $e');
+                                      }
+                                    },
+                                  );
+                                },
+
+                                grupo: grupo,
+                                tipo: tipo,
+                                conteo: conteo,
+                                altaSegments: [
+                                  for (final distribution in distributions)
+                                    ...distribution.segments.where(
+                                      (segment) => segment.grupoId == grupo.id,
+                                    ),
+                                ],
+                                stripColor: color,
+                                expandido: expandidos.contains(grupo.id),
+                                colapsado: colapsados.contains(grupo.id),
+                                onToggleExpand: () => onToggleExpand(grupo.id),
+                                onToggleColapso: () =>
+                                    onToggleColapso(grupo.id),
+                                granjaId: granjaId,
+                                isDark: isDark,
+                              ),
+                            );
+                          }, childCount: gruposFiltrados.length),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -995,6 +1022,276 @@ class _EstadoBadge extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // TAB 3: LOTES
 // ─────────────────────────────────────────────────────────────────────────────
+class _AltasTab extends ConsumerWidget {
+  const _AltasTab({
+    required this.granjaId,
+    required this.tipoFiltro,
+    required this.tipos,
+    required this.grupos,
+    required this.isDark,
+  });
+
+  final String granjaId;
+  final String tipoFiltro;
+  final List<TipoAnimal> tipos;
+  final List<Grupo> grupos;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final distributionsAsync = ref.watch(altaDistributionsProvider(granjaId));
+    final groupNames = {for (final group in grupos) group.id: group.nombre};
+
+    return distributionsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) =>
+          Center(child: Text('No se pudieron cargar las altas: $error')),
+      data: (allDistributions) {
+        final distributions = tipoFiltro == 'all'
+            ? allDistributions
+            : allDistributions
+                  .where(
+                    (distribution) =>
+                        distribution.alta.tipoAnimalId == tipoFiltro,
+                  )
+                  .toList(growable: false);
+
+        if (distributions.isEmpty) {
+          return _TabPlaceholder(
+            icon: Icons.inventory_2_outlined,
+            titulo: 'Sin altas',
+            subtitulo: 'Las altas registradas aparecerán aquí',
+            isDark: isDark,
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          itemCount: distributions.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final distribution = distributions[index];
+            final matchingTypes = tipos
+                .where((tipo) => tipo.id == distribution.alta.tipoAnimalId)
+                .toList(growable: false);
+            return _AltaDistributionCard(
+              distribution: distribution,
+              tipoNombre: matchingTypes.isEmpty
+                  ? 'Tipo de animal'
+                  : matchingTypes.first.nombre,
+              groupNames: groupNames,
+              isDark: isDark,
+              onTap: () => _showAltaEditor(
+                context: context,
+                granjaId: granjaId,
+                isDark: isDark,
+                alta: distribution.alta,
+              ),
+              onLongPress: () => _showAltaDeleteConfirmation(
+                context: context,
+                ref: ref,
+                granjaId: granjaId,
+                altaId: distribution.alta.id,
+                requiresBajasDeletion: distribution.requiresBajasDeletion,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _AltaDistributionCard extends StatelessWidget {
+  const _AltaDistributionCard({
+    required this.distribution,
+    required this.tipoNombre,
+    required this.groupNames,
+    required this.isDark,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final AltaDistribution distribution;
+  final String tipoNombre;
+  final Map<String, String> groupNames;
+  final bool isDark;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final alta = distribution.alta;
+    final primaryText = isDark
+        ? AppColors.textPrimary
+        : AppColors.textPrimaryLg;
+    final secondaryText = isDark
+        ? AppColors.textSecondary
+        : AppColors.textSecondaryLg;
+
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.bgCard : AppColors.bgLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? AppColors.border1lg : AppColors.border1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.inventory_2_outlined,
+                  size: 18,
+                  color: AppColors.green,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$tipoNombre · ${DateFormat("d 'de' MMMM yyyy").format(alta.fechaAlta)}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: primaryText,
+                    ),
+                  ),
+                ),
+                if (distribution.isDistributed)
+                  _DistributedBadge(isDark: isDark),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _AltaMetricChip(
+                  label: 'Cantidad original',
+                  value: '${alta.cantidadAnimales}',
+                  isDark: isDark,
+                ),
+                _AltaMetricChip(
+                  label: 'Activos actuales',
+                  value: '${distribution.vivosCount}',
+                  isDark: isDark,
+                ),
+                _AltaMetricChip(
+                  label: 'Bajas actuales',
+                  value: '${distribution.inactivosCount}',
+                  isDark: isDark,
+                  danger: true,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Distribución actual',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: secondaryText,
+              ),
+            ),
+            const SizedBox(height: 6),
+            if (distribution.segments.isEmpty)
+              Text(
+                'Sin animales actuales',
+                style: TextStyle(fontSize: 12, color: secondaryText),
+              )
+            else
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final segment in distribution.segments)
+                    _DistributionChip(
+                      label: groupNames[segment.grupoId] ?? 'Sin grupo',
+                      count: segment.cantidadAqui,
+                      isDark: isDark,
+                    ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AltaMetricChip extends StatelessWidget {
+  const _AltaMetricChip({
+    required this.label,
+    required this.value,
+    required this.isDark,
+    this.danger = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isDark;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? Colors.redAccent : AppColors.green;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.16 : 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: danger
+              ? Colors.redAccent
+              : (isDark ? AppColors.textPrimary : AppColors.textPrimaryLg),
+        ),
+      ),
+    );
+  }
+}
+
+class _DistributionChip extends StatelessWidget {
+  const _DistributionChip({
+    required this.label,
+    required this.count,
+    required this.isDark,
+  });
+
+  final String label;
+  final int count;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: isDark ? AppColors.bgCard2 : AppColors.bgCardLg,
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(
+        color: isDark ? AppColors.border1lg : AppColors.border1,
+      ),
+    ),
+    child: Text(
+      '$label · $count',
+      style: TextStyle(
+        fontSize: 11,
+        color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+      ),
+    ),
+  );
+}
+
 class _LotesTab extends ConsumerWidget {
   final String granjaId;
   final String tipoFiltro;
@@ -1101,8 +1398,14 @@ class _LotesDeGrupoSliver extends ConsumerWidget {
 
     return SliverToBoxAdapter(
       child: lotesAsync.when(
-        loading: () => const SizedBox.shrink(),
-        error: (_, __) => const SizedBox.shrink(),
+        loading: () => const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        error: (error, _) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('No se pudieron cargar las altas: $error'),
+        ),
         data: (lotes) {
           if (lotes.isEmpty) return const SizedBox.shrink();
           return Column(
@@ -1119,12 +1422,7 @@ class _LotesDeGrupoSliver extends ConsumerWidget {
                       isDark: isDark,
                       alta: l,
                     ),
-                    onLongPress: () => _showAltaDeleteConfirmation(
-                      context: context,
-                      ref: ref,
-                      granjaId: grupo.granjaId,
-                      alta: l,
-                    ),
+                    onLongPress: null,
                   ),
                 )
                 .toList(),
@@ -1157,7 +1455,7 @@ class _LoteTabCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fmt = DateFormat("d 'de' MMMM yyyy");
     final vivos = lote.vivosCount;
-    final muertos = lote.muertosCount;
+    final bajas = lote.inactivosCount;
 
     return InkWell(
       onTap: onTap,
@@ -1240,11 +1538,7 @@ class _LoteTabCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  _animalCountText(
-                    muertos,
-                    singular: 'muerto',
-                    plural: 'muertos',
-                  ),
+                  _animalCountText(bajas, singular: 'baja', plural: 'bajas'),
                   style: TextStyle(
                     fontSize: 10,
                     color: isDark
@@ -1272,14 +1566,14 @@ class _LoteTabCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _TiposTab extends ConsumerWidget {
   final String granjaId;
-  final List<TipoAnimal> tipos;
+  final AsyncValue<List<TipoAnimal>> tiposAsync;
   final List<Grupo> grupos;
   final Map<String, GrupoConteo> conteos;
   final bool isDark;
 
   const _TiposTab({
     required this.granjaId,
-    required this.tipos,
+    required this.tiposAsync,
     required this.grupos,
     required this.conteos,
     required this.isDark,
@@ -1287,167 +1581,140 @@ class _TiposTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (tipos.isEmpty) {
-      return _TabPlaceholder(
-        icon: Icons.layers_outlined,
-        titulo: 'Sin tipos',
-        subtitulo: 'Crea el primer tipo de animal con el botón +',
-        isDark: isDark,
-      );
-    }
+    return tiposAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) =>
+          Center(child: Text('No se pudieron cargar los tipos: $error')),
+      data: (tipos) {
+        if (tipos.isEmpty) {
+          return _TabPlaceholder(
+            icon: Icons.layers_outlined,
+            titulo: 'Sin tipos',
+            subtitulo: 'Crea el primer tipo de animal con el botón +',
+            isDark: isDark,
+          );
+        }
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-      itemCount: tipos.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, i) {
-        final tipo = tipos[i];
-        final gruposDeTipo = grupos
-            .where((g) => g.tipoAnimalId == tipo.id)
-            .toList();
-        final vivos = gruposDeTipo.fold<int>(
-          0,
-          (s, g) => s + (conteos[g.id]?.vivos ?? 0),
-        );
-        final color = _colorParaTipo(tipo.id, tipos);
-
-        return GestureDetector(
-          onTap: () => showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.transparent,
-            isScrollControlled: true,
-            builder: (_) => NuevoAnimal(isDark: isDark, initialTipo: tipo),
-          ),
-          onLongPress: () {
-            ConfirmationDialog.show(
-              context: context,
-              isDark: isDark,
-              title: 'Eliminar Tipo',
-              content:
-                  '¿Estás seguro de que deseas eliminar el Tipo "${tipo.nombre}"? Esta acción no se puede deshacer.',
-              onConfirm: () async {
-                try {
-                  await ref
-                      .read(animalesRepositoryProvider)
-                      .deleteTipoAnimal(farmId: granjaId, tipoId: tipo.id);
-
-                  ref.invalidate(tiposAnimalProvider(granjaId));
-                  ref.invalidate(gruposProvider(granjaId));
-                  invalidateAnimalesInventoryMutationProviders(ref, granjaId);
-                } catch (e) {
-                  print('Error al eliminar Tipo: $e');
-                }
-              },
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          itemCount: tipos.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, i) {
+            final tipo = tipos[i];
+            final gruposDeTipo = grupos
+                .where((g) => g.tipoAnimalId == tipo.id)
+                .toList();
+            final vivos = gruposDeTipo.fold<int>(
+              0,
+              (s, g) => s + (conteos[g.id]?.vivos ?? 0),
             );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.bgCard : AppColors.bgLight,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isDark ? AppColors.border1lg : AppColors.border1,
+            final color = _colorParaTipo(tipo.id, tipos);
+
+            return GestureDetector(
+              onTap: () => showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                isScrollControlled: true,
+                builder: (_) => NuevoAnimal(isDark: isDark, initialTipo: tipo),
               ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
+              onLongPress: () {
+                ConfirmationDialog.show(
+                  context: context,
+                  isDark: isDark,
+                  title: 'Eliminar Tipo',
+                  content:
+                      '¿Estás seguro de que deseas eliminar el Tipo "${tipo.nombre}"? Esta acción no se puede deshacer.',
+                  onConfirm: () async {
+                    try {
+                      await ref
+                          .read(animalesRepositoryProvider)
+                          .deleteTipoAnimal(farmId: granjaId, tipoId: tipo.id);
+
+                      ref.invalidate(tiposAnimalProvider(granjaId));
+                      ref.invalidate(gruposProvider(granjaId));
+                      invalidateAnimalesInventoryMutationProviders(
+                        ref,
+                        granjaId,
+                      );
+                    } catch (e) {
+                      print('Error al eliminar Tipo: $e');
+                    }
+                  },
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.bgCard : AppColors.bgLight,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? AppColors.border1lg : AppColors.border1,
                   ),
-                  child: Center(
-                    child: Container(
-                      width: 14,
-                      height: 14,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
-                        color: color,
+                        color: color.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        tipo.nombre,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? AppColors.textPrimary
-                              : AppColors.textPrimaryLg,
-                        ),
-                      ),
-                      Text(
-                        '${gruposDeTipo.length} grupos · $vivos vivos',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark
-                              ? AppColors.textSecondary
-                              : AppColors.textSecondaryLg,
-                        ),
-                      ),
-                      if (tipo.descripcion != null)
-                        Text(
-                          tipo.descripcion!,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isDark
-                                ? AppColors.textSecondary
-                                : AppColors.textSecondaryLg,
+                      child: Center(
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tipo.nombre,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? AppColors.textPrimary
+                                  : AppColors.textPrimaryLg,
+                            ),
+                          ),
+                          Text(
+                            '${gruposDeTipo.length} grupos · $vivos vivos',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : AppColors.textSecondaryLg,
+                            ),
+                          ),
+                          if (tipo.descripcion != null)
+                            Text(
+                              tipo.descripcion!,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textSecondaryLg,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                /* _CardMenu(
-                  isDark: isDark,
-                  onEdit: () => showModalBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    builder: (_) =>
-                        NuevoAnimal(isDark: isDark, initialTipo: tipo),
-                  ),
-                  onDelete: () {
-                    ConfirmationDialog.show(
-                      context: context,
-                      isDark: isDark,
-                      title: 'Eliminar Tipo',
-                      content:
-                          '¿Estás seguro de que deseas eliminar el Tipo "${tipo.nombre}"? Esta acción no se puede deshacer.',
-                      onConfirm: () async {
-                        try {
-                          await ref
-                              .read(animalesRepositoryProvider)
-                              .deleteTipoAnimal(
-                                farmId: granjaId,
-                                tipoId: tipo.id,
-                              );
-                          ref.invalidate(tiposAnimalProvider(granjaId));
-                          ref.invalidate(gruposProvider(granjaId));
-                          invalidateAnimalesInventoryMutationProviders(
-                            ref,
-                            granjaId,
-                          );
-                        } catch (e) {
-                          print('Error al eliminar Tipo: $e');
-                        }
-                      },
-                    );
-                  },
-                ), */
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -2019,6 +2286,7 @@ class _TabPlaceholder extends StatelessWidget {
 class _NoGroupCard extends StatelessWidget {
   const _NoGroupCard({
     required this.overview,
+    required this.distributions,
     required this.tipos,
     required this.granjaId,
     required this.tipoFiltro,
@@ -2030,6 +2298,7 @@ class _NoGroupCard extends StatelessWidget {
   });
 
   final NoGroupOverview overview;
+  final List<AltaDistribution> distributions;
   final List<TipoAnimal> tipos;
   final String granjaId;
   final String tipoFiltro;
@@ -2060,6 +2329,14 @@ class _NoGroupCard extends StatelessWidget {
             granjaId: granjaId,
             tipo: item.tipo,
             summary: item.summary,
+            altas: [
+              for (final distribution in distributions)
+                ...distribution.segments.where(
+                  (segment) =>
+                      segment.grupoId == null &&
+                      segment.alta.tipoAnimalId == item.tipo.id,
+                ),
+            ].take(3).toList(growable: false),
             stripColor: _colorParaTipo(item.tipo.id, tipos),
             expandido: expandidos.contains('no-group-altas-${item.tipo.id}'),
             colapsado: colapsados.contains('no-group-${item.tipo.id}'),
@@ -2080,6 +2357,7 @@ class _NoGroupTypeCard extends StatelessWidget {
     required this.granjaId,
     required this.tipo,
     required this.summary,
+    required this.altas,
     required this.stripColor,
     required this.expandido,
     required this.colapsado,
@@ -2091,6 +2369,7 @@ class _NoGroupTypeCard extends StatelessWidget {
   final String granjaId;
   final TipoAnimal tipo;
   final NoGroupTypeOverview summary;
+  final List<AltaGroupSegment> altas;
   final Color stripColor;
   final bool expandido;
   final bool colapsado;
@@ -2100,7 +2379,7 @@ class _NoGroupTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = summary.activeCount + summary.deadCount;
+    final total = summary.activeCount + summary.inactiveCount;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -2210,8 +2489,8 @@ class _NoGroupTypeCard extends StatelessWidget {
                       Expanded(
                         child: _MiniStat(
                           icon: Icons.one_x_mobiledata_rounded,
-                          value: '${summary.deadCount}',
-                          label: 'Muertes',
+                          value: '${summary.inactiveCount}',
+                          label: 'Bajas',
                           danger: true,
                           isDark: isDark,
                         ),
@@ -2221,7 +2500,7 @@ class _NoGroupTypeCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   _NoGroupAltasSection(
                     granjaId: granjaId,
-                    altas: summary.latestAltas,
+                    altas: altas,
                     expandido: expandido,
                     onToggle: onToggleExpand,
                     isDark: isDark,
@@ -2330,7 +2609,7 @@ class _NoGroupAltasSection extends ConsumerWidget {
   });
 
   final String granjaId;
-  final List<AltaAnimales> altas;
+  final List<AltaGroupSegment> altas;
   final bool expandido;
   final VoidCallback onToggle;
   final bool isDark;
@@ -2360,9 +2639,7 @@ class _NoGroupAltasSection extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  expandido
-                      ? 'Ocultar últimas 3 altas'
-                      : 'Ver últimas 3 altas sin grupo',
+                  expandido ? 'Ocultar altas' : 'Ver altas',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.bgInputLg : AppColors.bg,
@@ -2379,7 +2656,7 @@ class _NoGroupAltasSection extends ConsumerWidget {
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'Aún no hay altas sin grupo.',
+                      'Aún no hay altas con animales actualmente sin grupo.',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark
@@ -2392,20 +2669,22 @@ class _NoGroupAltasSection extends ConsumerWidget {
                 : Column(
                     children: altas
                         .map(
-                          (alta) => _LoteCard(
-                            lote: alta,
+                          (segment) => _LoteCard(
+                            segment: segment,
                             isDark: isDark,
                             onTap: () => _showAltaEditor(
                               context: context,
                               granjaId: granjaId,
                               isDark: isDark,
-                              alta: alta,
+                              alta: segment.alta,
                             ),
                             onLongPress: () => _showAltaDeleteConfirmation(
                               context: context,
                               ref: ref,
                               granjaId: granjaId,
-                              alta: alta,
+                              altaId: segment.alta.id,
+                              requiresBajasDeletion:
+                                  segment.requiresBajasDeletion,
                             ),
                           ),
                         )
@@ -2421,6 +2700,7 @@ class _GrupoCard extends ConsumerWidget {
   final Grupo grupo;
   final TipoAnimal tipo;
   final GrupoConteo conteo;
+  final List<AltaGroupSegment> altaSegments;
   final Color stripColor;
   final bool expandido, colapsado, isDark;
   final VoidCallback onTap, onToggleExpand, onToggleColapso, onLongPress;
@@ -2430,6 +2710,7 @@ class _GrupoCard extends ConsumerWidget {
     required this.grupo,
     required this.tipo,
     required this.conteo,
+    required this.altaSegments,
     required this.onTap,
     required this.stripColor,
     required this.expandido,
@@ -2560,8 +2841,8 @@ class _GrupoCard extends ConsumerWidget {
                         Expanded(
                           child: _MiniStat(
                             icon: Icons.one_x_mobiledata_rounded,
-                            value: '${conteo.muertes}',
-                            label: 'Muertes',
+                            value: '${conteo.bajas}',
+                            label: 'Bajas',
                             danger: true,
                             isDark: isDark,
                           ),
@@ -2570,7 +2851,7 @@ class _GrupoCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     _LotesSection(
-                      grupoId: grupo.id,
+                      segmentos: altaSegments,
                       expandido: expandido,
                       onToggle: onToggleExpand,
                       isDark: isDark,
@@ -2667,12 +2948,12 @@ class _GrupoCard extends ConsumerWidget {
 // SECCIÓN DE LOTES dentro de la card de grupo
 // ─────────────────────────────────────────────────────────────────────────────
 class _LotesSection extends ConsumerWidget {
-  final String grupoId;
+  final List<AltaGroupSegment> segmentos;
   final bool expandido, isDark;
   final VoidCallback onToggle;
 
   const _LotesSection({
-    required this.grupoId,
+    required this.segmentos,
     required this.expandido,
     required this.onToggle,
     required this.isDark,
@@ -2680,10 +2961,6 @@ class _LotesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lotesAsync = expandido
-        ? ref.watch(lotesDeGrupoProvider(grupoId))
-        : null;
-
     return Column(
       children: [
         GestureDetector(
@@ -2707,7 +2984,7 @@ class _LotesSection extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  expandido ? 'Ocultar altas' : 'Ver altas de animales',
+                  expandido ? 'Ocultar altas' : 'Ver altas',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.bgInputLg : AppColors.bg,
@@ -2717,56 +2994,47 @@ class _LotesSection extends ConsumerWidget {
             ),
           ),
         ),
-        if (expandido && lotesAsync != null)
+        if (expandido)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: lotesAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              error: (e, stackTrace) {
-                debugPrint('❌ ERROR EN LOTES: $e');
-                debugPrint('📌 STACKTRACE:\n$stackTrace');
-                return Text(
-                  '$lotesAsync Error: $e',
-                  style: const TextStyle(color: Colors.red),
-                );
-              },
-              data: (lotes) {
-                debugPrint('Contenido de los lotes: $lotes');
-                return lotes.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          'Aún no hay altas.',
-                          style: TextStyle(fontSize: 12, color: Colors.white38),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : Column(
-                        children: lotes
-                            .map(
-                              (l) => _LoteCard(
-                                lote: l,
-                                isDark: isDark,
-                                onTap: () => _showAltaEditor(
-                                  context: context,
-                                  granjaId: l.granjaId,
-                                  isDark: isDark,
-                                  alta: l,
-                                ),
-                                onLongPress: () => _showAltaDeleteConfirmation(
-                                  context: context,
-                                  ref: ref,
-                                  granjaId: l.granjaId,
-                                  alta: l,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      );
-              },
-            ),
+            child: segmentos.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Aún no hay altas con animales actualmente en este grupo.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : Column(
+                    children: segmentos
+                        .map(
+                          (segment) => _LoteCard(
+                            segment: segment,
+                            isDark: isDark,
+                            onTap: () => _showAltaEditor(
+                              context: context,
+                              granjaId: segment.alta.granjaId,
+                              isDark: isDark,
+                              alta: segment.alta,
+                            ),
+                            onLongPress: () => _showAltaDeleteConfirmation(
+                              context: context,
+                              ref: ref,
+                              granjaId: segment.alta.granjaId,
+                              altaId: segment.alta.id,
+                              requiresBajasDeletion:
+                                  segment.requiresBajasDeletion,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
           ),
       ],
     );
@@ -2777,12 +3045,12 @@ class _LotesSection extends ConsumerWidget {
 // CARD DE LOTE (dentro de grupo expandido)
 // ─────────────────────────────────────────────────────────────────────────────
 class _LoteCard extends StatelessWidget {
-  final AltaAnimales lote;
+  final AltaGroupSegment segment;
   final bool isDark;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   const _LoteCard({
-    required this.lote,
+    required this.segment,
     this.isDark = true,
     this.onTap,
     this.onLongPress,
@@ -2790,9 +3058,10 @@ class _LoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lote = segment.alta;
     final fmt = DateFormat("d 'de' MMMM yyyy");
-    final vivos = lote.vivosCount;
-    final muertos = lote.muertosCount;
+    final vivos = segment.vivosAqui;
+    final bajas = segment.inactivosAqui;
 
     return InkWell(
       onTap: onTap,
@@ -2848,8 +3117,7 @@ class _LoteCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    '${_animalCountText(vivos, singular: 'vivo', plural: 'vivos')} · '
-                    '${_animalCountText(muertos, singular: 'muerto', plural: 'muertos')}',
+                    '${segment.cantidadAqui} de ${lote.cantidadAnimales} aquí',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.end,
@@ -2862,6 +3130,10 @@ class _LoteCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (segment.isDistributed) ...[
+                  const SizedBox(width: 6),
+                  _DistributedBadge(isDark: isDark),
+                ],
                 const SizedBox(width: 8),
                 /* _CardMenu(
                   size: 18,
@@ -2871,12 +3143,23 @@ class _LoteCard extends StatelessWidget {
                 ), */
               ],
             ),
-            if (lote.brazaletesDetalleSafe.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${_animalCountText(vivos, singular: 'vivo', plural: 'vivos')} · '
+              '${_animalCountText(bajas, singular: 'baja', plural: 'bajas')}',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLg,
+              ),
+            ),
+            if (segment.brazaletes.isNotEmpty) ...[
               const SizedBox(height: 8),
               Wrap(
                 spacing: 4,
                 runSpacing: 4,
-                children: lote.brazaletesDetalleSafe
+                children: segment.brazaletes
                     .map(
                       (b) => _BrazaleteBadge(
                         numero: b.numero,
@@ -2892,6 +3175,29 @@ class _LoteCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DistributedBadge extends StatelessWidget {
+  const _DistributedBadge({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+    decoration: BoxDecoration(
+      color: AppColors.naranjao.withValues(alpha: isDark ? 0.2 : 0.14),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: const Text(
+      'Distribuida',
+      style: TextStyle(
+        fontSize: 9,
+        fontWeight: FontWeight.w700,
+        color: AppColors.naranjao,
+      ),
+    ),
+  );
 }
 
 class _BrazaleteBadge extends StatelessWidget {
@@ -2921,7 +3227,7 @@ class _BrazaleteBadge extends StatelessWidget {
         : const Color(0xFFFF8A8E);
 
     return Tooltip(
-      message: activo ? 'Ejemplar vivo' : 'Ejemplar muerto',
+      message: activo ? 'Ejemplar activo' : 'Ejemplar en baja',
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
