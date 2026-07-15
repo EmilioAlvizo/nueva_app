@@ -155,7 +155,7 @@ class Cycle {
   final String id;
   final String farmId;
   final String animalTypeId;
-  final String productId;
+  final String? productId;
   final String productCode;
   final String productName;
   final String animalTypeName;
@@ -176,7 +176,7 @@ class Cycle {
       id: json['id'] as String,
       farmId: json['granja_id'] as String,
       animalTypeId: json['tipo_animal_id'] as String,
-      productId: json['producto_id'] as String,
+      productId: json['producto_id'] as String?,
       productCode:
           product?['codigo'] as String? ?? json['tipo_produccion'] as String,
       productName:
