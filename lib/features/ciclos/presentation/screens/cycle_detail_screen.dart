@@ -14,11 +14,11 @@ class CycleDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(cycleDetailProvider(cycleId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Cycle details')),
+      appBar: AppBar(title: const Text('Detalles del ciclo')),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) =>
-            Center(child: Text('Could not load cycle: $error')),
+            Center(child: Text('No se pudo cargar el ciclo: $error')),
         data: (value) => _CycleDetailBody(detail: value),
       ),
     );
@@ -57,26 +57,25 @@ class _CycleDetailBody extends ConsumerWidget {
                 const SizedBox(height: 16),
                 _AccessNotice(access: access, isActive: cycle.isActive),
                 const SizedBox(height: 16),
-                Text(
-                  'Economics',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
+                Text('Economía', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 economics.when(
                   loading: () => const LinearProgressIndicator(),
-                  error: (error, _) => Text('Economics unavailable: $error'),
+                  error: (error, _) => Text('Economía no disponible: $error'),
                   data: (value) => value == null
-                      ? const Text('Economics are unavailable for this cycle.')
+                      ? const Text(
+                          'La información económica no está disponible para este ciclo.',
+                        )
                       : _EconomicsCard(economics: value),
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Explicit members (${activeMembers.length})',
+                  'Integrantes explícitos (${activeMembers.length})',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
                 if (detail.members.isEmpty)
-                  const Text('No members were found.')
+                  const Text('No se encontraron integrantes.')
                 else
                   ...detail.members.map(
                     (member) => ListTile(
@@ -87,8 +86,8 @@ class _CycleDetailBody extends ConsumerWidget {
                             : Icons.person_remove_outlined,
                       ),
                       title: Text(member.label),
-                      subtitle: Text(member.groupName ?? 'No current group'),
-                      trailing: Text(member.isActive ? 'Active' : 'Removed'),
+                      subtitle: Text(member.groupName ?? 'Sin grupo actual'),
+                      trailing: Text(member.isActive ? 'Activo' : 'Retirado'),
                     ),
                   ),
                 access.when(
@@ -108,20 +107,23 @@ class _CycleDetailBody extends ConsumerWidget {
                                 ),
                               ),
                               icon: const Icon(Icons.group_outlined),
-                              label: const Text('Edit members'),
+                              label: const Text('Editar integrantes'),
                             ),
                           ),
                         )
                       : const SizedBox.shrink(),
                 ),
                 const SizedBox(height: 24),
-                Text('Timeline', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Cronología',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 8),
                 timeline.when(
                   loading: () => const LinearProgressIndicator(),
-                  error: (error, _) => Text('Timeline unavailable: $error'),
+                  error: (error, _) => Text('Cronología no disponible: $error'),
                   data: (items) => items.isEmpty
-                      ? const Text('No timeline items yet.')
+                      ? const Text('Aún no hay elementos en la cronología.')
                       : Column(
                           children: [
                             for (final item in items) _TimelineItem(item: item),
@@ -170,7 +172,7 @@ class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
         .where((id) => !_selectedMemberIds.contains(id))
         .toList(growable: false);
     if (additions.isEmpty && removals.isEmpty) {
-      setState(() => _error = 'Select at least one membership change.');
+      setState(() => _error = 'Selecciona al menos un cambio de integrantes.');
       return;
     }
 
@@ -230,19 +232,19 @@ class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
           child: Column(
             children: [
               Text(
-                'Edit explicit members',
+                'Editar integrantes explícitos',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
               const Text(
-                'Changes use the displayed cycle version. Refresh if another editor has changed this cycle.',
+                'Los cambios usan la versión mostrada del ciclo. Actualiza si otra persona editó este ciclo.',
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: ListView(
                   children: [
                     Text(
-                      'Current members',
+                      'Integrantes actuales',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     for (final member in widget.activeMembers)
@@ -250,7 +252,7 @@ class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
                         contentPadding: EdgeInsets.zero,
                         value: _selectedMemberIds.contains(member.animalId),
                         title: Text(member.label),
-                        subtitle: Text(member.groupName ?? 'No current group'),
+                        subtitle: Text(member.groupName ?? 'Sin grupo actual'),
                         onChanged: _submitting
                             ? null
                             : (selected) => setState(() {
@@ -263,7 +265,7 @@ class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
                       ),
                     const Divider(),
                     Text(
-                      'Available animals',
+                      'Animales disponibles',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     if (candidates.isLoading)
@@ -275,13 +277,13 @@ class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Text(
-                          'Available animals could not load: ${candidates.error}',
+                          'No se pudieron cargar los animales disponibles: ${candidates.error}',
                         ),
                       )
                     else if (eligibleCandidates.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text('No unassigned animals are available.'),
+                        child: Text('No hay animales sin asignar disponibles.'),
                       )
                     else
                       for (final candidate in eligibleCandidates)
@@ -289,7 +291,7 @@ class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
                           contentPadding: EdgeInsets.zero,
                           value: _selectedMemberIds.contains(candidate.id),
                           title: Text(candidate.label),
-                          subtitle: Text(candidate.groupName ?? 'No group'),
+                          subtitle: Text(candidate.groupName ?? 'Sin grupo'),
                           onChanged: _submitting
                               ? null
                               : (selected) => setState(() {
@@ -318,7 +320,7 @@ class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
                     onPressed: _submitting
                         ? null
                         : () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: const Text('Cancelar'),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
@@ -328,7 +330,7 @@ class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
                             dimension: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Save members'),
+                        : const Text('Guardar integrantes'),
                   ),
                 ],
               ),
@@ -360,14 +362,14 @@ class _CycleHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
               ),
-              Chip(label: Text(cycle.isActive ? 'Active' : 'Closed')),
+              Chip(label: Text(cycle.isActive ? 'Activo' : 'Cerrado')),
             ],
           ),
           Text('${cycle.productName} · ${cycle.animalTypeName}'),
           const SizedBox(height: 8),
-          Text('Started ${DateFormat.yMMMd().format(cycle.startedAt)}'),
+          Text('Iniciado el ${DateFormat.yMMMd().format(cycle.startedAt)}'),
           if (cycle.endedAt != null)
-            Text('Closed ${DateFormat.yMMMd().format(cycle.endedAt!)}'),
+            Text('Cerrado el ${DateFormat.yMMMd().format(cycle.endedAt!)}'),
           if (cycle.notes?.isNotEmpty == true) ...[
             const SizedBox(height: 8),
             Text(cycle.notes!),
@@ -387,13 +389,14 @@ class _AccessNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) => access.when(
     loading: () => const SizedBox.shrink(),
-    error: (_, _) => const Text('Action availability could not be determined.'),
+    error: (_, _) =>
+        const Text('No se pudo determinar la disponibilidad de acciones.'),
     data: (value) {
       final message = !isActive
-          ? 'This cycle is closed. Its history is read-only.'
+          ? 'Este ciclo está cerrado. Su historial es de solo lectura.'
           : !value.canEdit
-          ? 'You have Viewer access. Cycle actions are unavailable.'
-          : 'You have ${value.role.label} access. Mutation forms arrive in the next cycle phase.';
+          ? 'Tienes acceso de visualización. Las acciones del ciclo no están disponibles.'
+          : 'Tienes acceso de ${value.role.label}. Los formularios de cambios llegarán en la siguiente fase del ciclo.';
       return Card(
         color: !isActive || !value.canEdit
             ? Theme.of(context).colorScheme.surfaceContainerHighest
@@ -417,15 +420,15 @@ class _EconomicsCard extends StatelessWidget {
         spacing: 24,
         runSpacing: 16,
         children: [
-          _EconomicValue(label: 'Cost', value: economics.totalCost),
-          _EconomicValue(label: 'Revenue', value: economics.totalRevenue),
-          _EconomicValue(label: 'Profit', value: economics.profit),
+          _EconomicValue(label: 'Costo', value: economics.totalCost),
+          _EconomicValue(label: 'Ingresos', value: economics.totalRevenue),
+          _EconomicValue(label: 'Ganancia', value: economics.profit),
           _EconomicValue(
             label: 'ROI',
             value: economics.roiPercent,
             suffix: '%',
           ),
-          _EconomicValue(label: 'Unit cost', value: economics.unitCost),
+          _EconomicValue(label: 'Costo unitario', value: economics.unitCost),
         ],
       ),
     ),
@@ -452,7 +455,9 @@ class _EconomicValue extends StatelessWidget {
         Text(label, style: Theme.of(context).textTheme.labelMedium),
         const SizedBox(height: 4),
         Text(
-          value == null ? 'Unavailable' : '${value!.toStringAsFixed(2)}$suffix',
+          value == null
+              ? 'No disponible'
+              : '${value!.toStringAsFixed(2)}$suffix',
           style: Theme.of(context).textTheme.titleMedium,
         ),
       ],

@@ -58,7 +58,9 @@ class CycleMutations extends _$CycleMutations {
     return switch (result) {
       AsyncData(:final value) => _complete(value),
       AsyncError(:final error, :final stackTrace) => _fail(error, stackTrace),
-      AsyncLoading() => throw StateError('Cycle creation did not complete.'),
+      AsyncLoading() => throw StateError(
+        'No se completó la creación del ciclo.',
+      ),
     };
   }
 

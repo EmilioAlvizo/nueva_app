@@ -56,7 +56,7 @@ class CycleSupabaseRepository implements CycleRepository {
     ]);
     final cycleData = results[0] as Map<String, dynamic>?;
     if (cycleData == null) {
-      throw StateError('Cycle not found or unavailable.');
+      throw StateError('El ciclo no se encontró o no está disponible.');
     }
     return CycleDetail(
       cycle: Cycle.fromJson(cycleData),
@@ -88,7 +88,7 @@ class CycleSupabaseRepository implements CycleRepository {
     final events = await _client
         .from('eventos_produccion')
         .select(
-          'id,fecha,notas,created_at,evento_mediciones(valor,cat_metricas_producto(nombre,rol))',
+          'id,fecha,notas,created_at,evento_mediciones(valor,cat_metricas_producto(codigo,nombre,rol))',
         )
         .eq('ciclo_id', cycleId)
         .order('fecha');
@@ -99,7 +99,7 @@ class CycleSupabaseRepository implements CycleRepository {
           id: 'start-${cycle['id']}',
           kind: CycleTimelineKind.started,
           occurredAt: DateTime.parse(cycle['fecha_inicio'] as String),
-          title: 'Cycle started',
+          title: 'Ciclo iniciado',
         ),
       );
     }
@@ -107,13 +107,13 @@ class CycleSupabaseRepository implements CycleRepository {
       final animal = row['animales'] as Map?;
       final label = animal?['brazalete'] == null
           ? 'Animal ${row['animal_id']}'
-          : 'Bracelet ${animal!['brazalete']}';
+          : 'Brazalete ${animal!['brazalete']}';
       items.add(
         CycleTimelineItem(
           id: 'joined-${row['id']}',
           kind: CycleTimelineKind.memberJoined,
           occurredAt: DateTime.parse(row['joined_at'] as String),
-          title: '$label joined',
+          title: '$label se incorporó',
         ),
       );
       final leftAt = row['left_at'];
@@ -123,7 +123,7 @@ class CycleSupabaseRepository implements CycleRepository {
             id: 'left-${row['id']}',
             kind: CycleTimelineKind.memberLeft,
             occurredAt: DateTime.parse(leftAt as String),
-            title: '$label left',
+            title: '$label se retiró',
           ),
         );
       }
@@ -133,7 +133,9 @@ class CycleSupabaseRepository implements CycleRepository {
       final detail = measurements
           .map((measurement) {
             final metric = measurement['cat_metricas_producto'] as Map?;
-            return '${metric?['nombre'] ?? 'Metric'}: ${measurement['valor']}';
+            final code = metric?['codigo'] as String?;
+            final name = metric?['nombre'] as String? ?? 'Métrica';
+            return '${code == null ? name : localizedCycleMetricName(code: code, name: name)}: ${measurement['valor']}';
           })
           .join(' · ');
       items.add(
@@ -141,7 +143,7 @@ class CycleSupabaseRepository implements CycleRepository {
           id: 'event-${row['id']}',
           kind: CycleTimelineKind.production,
           occurredAt: DateTime.parse(row['fecha'] as String),
-          title: 'Production event',
+          title: 'Evento de producción',
           detail: detail.isEmpty ? row['notas'] as String? : detail,
         ),
       );
@@ -243,7 +245,7 @@ class CycleSupabaseRepository implements CycleRepository {
         if (!removalIds.contains(animalId)) animalId,
     ];
     if (additions.isEmpty && removals.isEmpty) {
-      throw ArgumentError('Select at least one membership change.');
+      throw ArgumentError('Selecciona al menos un cambio de integrantes.');
     }
 
     final data = await _client.rpc<Map<String, dynamic>>(

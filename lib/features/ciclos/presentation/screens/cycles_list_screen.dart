@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/cycle_models.dart';
 import '../providers/cycle_providers.dart';
-import 'cycle_create_screen.dart';
-import 'cycle_detail_screen.dart';
 
 class CyclesListScreen extends ConsumerStatefulWidget {
   const CyclesListScreen({super.key, required this.farmId});
@@ -26,7 +25,7 @@ class _CyclesListScreenState extends ConsumerState<CyclesListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cycles'),
+        title: const Text('Ciclos'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(52),
           child: Padding(
@@ -34,13 +33,13 @@ class _CyclesListScreenState extends ConsumerState<CyclesListScreen> {
             child: Row(
               children: [
                 ChoiceChip(
-                  label: const Text('Active'),
+                  label: const Text('Activos'),
                   selected: !_showClosed,
                   onSelected: (_) => setState(() => _showClosed = false),
                 ),
                 const SizedBox(width: 8),
                 ChoiceChip(
-                  label: const Text('Closed'),
+                  label: const Text('Cerrados'),
                   selected: _showClosed,
                   onSelected: (_) => setState(() => _showClosed = true),
                 ),
@@ -71,12 +70,7 @@ class _CyclesListScreenState extends ConsumerState<CyclesListScreen> {
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) => _CycleCard(
                 cycle: filtered[index],
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        CycleDetailScreen(cycleId: filtered[index].id),
-                  ),
-                ),
+                onTap: () => context.push('/ciclos/${filtered[index].id}'),
               ),
             ),
           );
@@ -87,13 +81,9 @@ class _CyclesListScreenState extends ConsumerState<CyclesListScreen> {
         error: (_, _) => null,
         data: (value) => value.canEdit
             ? FloatingActionButton.extended(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => CycleCreateScreen(farmId: widget.farmId),
-                  ),
-                ),
+                onPressed: () => context.push('/ciclos/nuevo'),
                 icon: const Icon(Icons.add),
-                label: const Text('New cycle'),
+                label: const Text('Nuevo ciclo'),
               )
             : null,
       ),
@@ -141,7 +131,7 @@ class _CycleCard extends StatelessWidget {
                     Text('${cycle.productName} · ${cycle.animalTypeName}'),
                     const SizedBox(height: 4),
                     Text(
-                      'Started ${DateFormat.yMMMd().format(cycle.startedAt)}',
+                      'Iniciado el ${DateFormat.yMMMd().format(cycle.startedAt)}',
                     ),
                   ],
                 ),
@@ -162,7 +152,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Chip(
-    label: Text(isActive ? 'Active' : 'Closed'),
+    label: Text(isActive ? 'Activo' : 'Cerrado'),
     visualDensity: VisualDensity.compact,
   );
 }
@@ -184,7 +174,11 @@ class _EmptyCycles extends StatelessWidget {
             size: 48,
           ),
           const SizedBox(height: 12),
-          Text(showClosed ? 'No closed cycles yet.' : 'No active cycles yet.'),
+          Text(
+            showClosed
+                ? 'Aún no hay ciclos cerrados.'
+                : 'Aún no hay ciclos activos.',
+          ),
         ],
       ),
     ),
@@ -208,7 +202,7 @@ class _LoadError extends StatelessWidget {
           const SizedBox(height: 12),
           Text(message, textAlign: TextAlign.center),
           const SizedBox(height: 12),
-          OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
+          OutlinedButton(onPressed: onRetry, child: const Text('Reintentar')),
         ],
       ),
     ),

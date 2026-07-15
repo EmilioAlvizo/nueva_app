@@ -10,9 +10,9 @@ enum CycleRole {
   };
 
   String get label => switch (this) {
-    CycleRole.owner => 'Owner',
+    CycleRole.owner => 'Propietario',
     CycleRole.editor => 'Editor',
-    CycleRole.viewer => 'Viewer',
+    CycleRole.viewer => 'Visualizador',
   };
 }
 
@@ -42,7 +42,10 @@ class CycleProduct {
     return CycleProduct(
       id: json['id'] as String,
       code: json['codigo'] as String,
-      name: json['nombre'] as String,
+      name: localizedCycleProductName(
+        code: json['codigo'] as String,
+        name: json['nombre'] as String,
+      ),
       defaultUnit: unit?['nombre'] as String? ?? '',
     );
   }
@@ -71,7 +74,10 @@ class CycleMetric {
       id: json['id'] as String,
       productId: json['producto_id'] as String,
       code: json['codigo'] as String,
-      name: json['nombre'] as String,
+      name: localizedCycleMetricName(
+        code: json['codigo'] as String,
+        name: json['nombre'] as String,
+      ),
       role: json['rol'] as String,
       unit: unit?['nombre'] as String? ?? '',
     );
@@ -127,8 +133,8 @@ class CycleMemberCandidate {
     return CycleMemberCandidate(
       id: json['id'] as String,
       animalTypeId: json['tipo_animal_id'] as String,
-      animalTypeName: animalType?['nombre'] as String? ?? 'Animal type',
-      label: bracelet == null ? 'Animal ${json['id']}' : 'Bracelet $bracelet',
+      animalTypeName: animalType?['nombre'] as String? ?? 'Tipo de animal',
+      label: bracelet == null ? 'Animal ${json['id']}' : 'Brazalete $bracelet',
       groupId: json['grupo_id'] as String?,
       groupName: group?['nombre'] as String?,
     );
@@ -172,15 +178,18 @@ class Cycle {
   factory Cycle.fromJson(Map<String, dynamic> json) {
     final product = json['cat_productos'] as Map?;
     final animalType = json['tipo_animal'] as Map?;
+    final productCode =
+        product?['codigo'] as String? ?? json['tipo_produccion'] as String;
     return Cycle(
       id: json['id'] as String,
       farmId: json['granja_id'] as String,
       animalTypeId: json['tipo_animal_id'] as String,
       productId: json['producto_id'] as String?,
-      productCode:
-          product?['codigo'] as String? ?? json['tipo_produccion'] as String,
-      productName:
-          product?['nombre'] as String? ?? json['tipo_produccion'] as String,
+      productCode: productCode,
+      productName: localizedCycleProductName(
+        code: productCode,
+        name: product?['nombre'] as String? ?? productCode,
+      ),
       animalTypeName: animalType?['nombre'] as String? ?? '',
       startedAt: DateTime.parse(json['fecha_inicio'] as String),
       endedAt: json['fecha_fin'] == null
@@ -222,7 +231,7 @@ class CycleMember {
       animalId: json['animal_id'] as String,
       label: bracelet == null
           ? 'Animal ${json['animal_id']}'
-          : 'Bracelet $bracelet',
+          : 'Brazalete $bracelet',
       joinedAt: DateTime.parse(json['joined_at'] as String),
       leftAt: json['left_at'] == null
           ? null
@@ -231,6 +240,27 @@ class CycleMember {
     );
   }
 }
+
+String localizedCycleProductName({
+  required String code,
+  required String name,
+}) => switch (code) {
+  'huevo' => 'Huevos',
+  'carne' => 'Carne',
+  _ => name,
+};
+
+String localizedCycleMetricName({required String code, required String name}) =>
+    switch (code) {
+      'huevos_buenos' => 'Huevos buenos',
+      'huevos_rotos' => 'Huevos rotos',
+      'venta_huevos' => 'Ingresos por venta de huevos',
+      'peso' => 'Peso',
+      'produccion_carne' => 'Producción de carne',
+      'venta_carne' => 'Ingresos por venta de carne',
+      'precio_venta' => 'Precio de venta',
+      _ => name,
+    };
 
 class CycleDetail {
   const CycleDetail({required this.cycle, required this.members});

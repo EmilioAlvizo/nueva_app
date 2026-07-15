@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/cycle_models.dart';
@@ -20,12 +21,14 @@ class CycleCreateScreen extends ConsumerWidget {
     final loadError =
         access.error ?? catalogs.error ?? groups.error ?? candidates.error;
     return Scaffold(
-      appBar: AppBar(title: const Text('New cycle')),
+      appBar: AppBar(title: const Text('Nuevo ciclo')),
       body: loadError != null
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Could not load cycle setup: $loadError'),
+                child: Text(
+                  'No se pudo cargar la configuración del ciclo: $loadError',
+                ),
               ),
             )
           : access.isLoading ||
@@ -88,8 +91,8 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
   Future<void> _submit() async {
     if (_productCode == null || _animalTypeId == null || _memberIds.isEmpty) {
       setState(
-        () =>
-            _error = 'Choose a product, animal type, and at least one member.',
+        () => _error =
+            'Elige un producto, un tipo de animal y al menos un integrante.',
       );
       return;
     }
@@ -113,7 +116,7 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
           );
       ref.invalidate(cyclesProvider(widget.farmId));
       if (mounted) {
-        Navigator.of(context).pop();
+        context.pop();
       }
     } catch (error) {
       if (mounted) {
@@ -144,21 +147,21 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'Set up the cycle and confirm its explicit members.',
+                'Configura el ciclo y confirma sus integrantes explícitos.',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 20),
               TextField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Cycle name (optional)',
-                  hintText: 'e.g. Spring layers',
+                  labelText: 'Nombre del ciclo (opcional)',
+                  hintText: 'Ej. Ponedoras de primavera',
                 ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _productCode,
-                decoration: const InputDecoration(labelText: 'Product'),
+                decoration: const InputDecoration(labelText: 'Producto'),
                 items: [
                   for (final product in widget.catalogs.products)
                     DropdownMenuItem(
@@ -173,7 +176,7 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _animalTypeId,
-                decoration: const InputDecoration(labelText: 'Animal type'),
+                decoration: const InputDecoration(labelText: 'Tipo de animal'),
                 items: [
                   for (final entry in animalTypes.entries)
                     DropdownMenuItem(
@@ -193,7 +196,7 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
               DropdownButtonFormField<String>(
                 initialValue: _groupId,
                 decoration: const InputDecoration(
-                  labelText: 'Seed members from a group (optional)',
+                  labelText: 'Incluir integrantes desde un grupo (opcional)',
                 ),
                 items: [
                   for (final group in groups)
@@ -214,7 +217,7 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
               const SizedBox(height: 20),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Start date'),
+                title: const Text('Fecha de inicio'),
                 subtitle: Text(DateFormat.yMMMd().format(_startedAt)),
                 trailing: const Icon(Icons.calendar_today_outlined),
                 onTap: _submitting
@@ -233,25 +236,27 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
               ),
               const Divider(),
               Text(
-                'Members (${_memberIds.length})',
+                'Integrantes (${_memberIds.length})',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 4),
               const Text(
-                'Group members are only a starting point. Edit this list before creating the cycle.',
+                'Los integrantes del grupo son solo un punto de partida. Edita esta lista antes de crear el ciclo.',
               ),
               const SizedBox(height: 8),
               if (_animalTypeId == null)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Text(
-                    'Choose an animal type to see available members.',
+                    'Elige un tipo de animal para ver los integrantes disponibles.',
                   ),
                 )
               else if (_filteredCandidates.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('No active animals are available for this type.'),
+                  child: Text(
+                    'No hay animales activos disponibles para este tipo.',
+                  ),
                 )
               else
                 ..._filteredCandidates.map(
@@ -259,7 +264,7 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
                     contentPadding: EdgeInsets.zero,
                     value: _memberIds.contains(candidate.id),
                     title: Text(candidate.label),
-                    subtitle: Text(candidate.groupName ?? 'No group'),
+                    subtitle: Text(candidate.groupName ?? 'Sin grupo'),
                     onChanged: _submitting
                         ? null
                         : (selected) => setState(() {
@@ -275,7 +280,7 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
               TextField(
                 controller: _notesController,
                 decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
+                  labelText: 'Notas (opcional)',
                   alignLabelWithHint: true,
                 ),
                 minLines: 2,
@@ -297,7 +302,7 @@ class _CycleCreateFormState extends ConsumerState<_CycleCreateForm> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.add),
-                label: const Text('Create cycle'),
+                label: const Text('Crear ciclo'),
               ),
             ],
           ),
@@ -314,7 +319,9 @@ class _ReadOnlyCreate extends StatelessWidget {
   Widget build(BuildContext context) => const Center(
     child: Padding(
       padding: EdgeInsets.all(24),
-      child: Text('Viewers can read cycles but cannot create them.'),
+      child: Text(
+        'Los usuarios con acceso de visualización pueden consultar los ciclos, pero no crearlos.',
+      ),
     ),
   );
 }

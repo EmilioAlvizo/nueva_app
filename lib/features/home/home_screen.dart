@@ -87,7 +87,7 @@ class _AppBar extends ConsumerWidget {
     //    y cuando hay una granja seleccionada con tipos registrados.
     final selectedFarm = ref.watch(selectedFarmProvider);
     //final isAnimalesTab = navigationShell.currentIndex == _animalesTabIndex;
-    final isAnimalesTab = [1,2,3].contains(navigationShell.currentIndex);
+    final isAnimalesTab = navigationShell.currentIndex == 1;
     final puedeFiltrar = isAnimalesTab && selectedFarm != null;
 
     final tiposAsync = puedeFiltrar
@@ -205,7 +205,7 @@ class GranjasTab extends ConsumerWidget {
         return ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: farms.length + 1,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             if (index == farms.length) {
               return _NewFarmButton(isDark: isDark);
@@ -221,12 +221,7 @@ class GranjasTab extends ConsumerWidget {
               hasImage: true,
               onTap: () {
                 ref.read(selectedFarmProvider.notifier).updateFarm(farm);
-                print('granja seleccionada: ${farm.nombre}');
-
-                // OPCIONAL: Podrías hacer que al seleccionar una granja
-                // salte automáticamente a la pestaña de animales (índice 1):
-                // GoRouterState.of(context).... o simplemente:
-                // (widget.navigationShell).goBranch(1);
+                context.go('/ciclos');
               },
               onLongPress: () {
                 ConfirmationDialog.show(
@@ -245,13 +240,11 @@ class GranjasTab extends ConsumerWidget {
                       }
                       ref.invalidate(farmsProvider);
                     } catch (e) {
-                      print('Error al eliminar granja: $e');
+                      debugPrint('Error al eliminar granja: $e');
                     }
                   },
                 );
-
               },
-              
             );
           },
         );
@@ -319,8 +312,7 @@ class _BottomBar extends StatelessWidget {
   static const _icons = [
     Icons.home_rounded,
     Icons.circle_outlined,
-    Icons.egg_outlined,
-    Icons.grass_outlined,
+    Icons.auto_graph_outlined,
     Icons.show_chart_rounded,
   ];
 

@@ -6,9 +6,10 @@ import '../../features/auth/presentation/providers/auth_session_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/model/miembro_granja/collaborators_screen.dart';
-import '../../features/huevos/huevos_screen.dart';
-import '../../features/comida/comida_screen.dart';
 import '../../features/animales/animales_screen.dart';
+import '../../features/ciclos/presentation/screens/cycle_create_screen.dart';
+import '../../features/ciclos/presentation/screens/cycle_detail_screen.dart';
+import '../../features/ciclos/presentation/screens/cycles_list_screen.dart';
 import '../../features/granja/granja_provider.dart';
 import '../../features/home/home_screen.dart';
 
@@ -20,6 +21,8 @@ abstract final class AppRoutes {
   // Rutas base dentro del Shell de Navegación
   static const home = '/granjas';
   static const animales = '/animales';
+  static const ciclos = '/ciclos';
+  static const ciclosNew = '/ciclos/nuevo';
   static const huevos = '/huevos';
   static const comida = '/comida';
   static const grafica = '/grafica';
@@ -48,10 +51,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
+      GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: AppRoutes.register,
-        builder: (_, __) => const RegisterScreen(),
+        builder: (_, _) => const RegisterScreen(),
       ),
 
       // ─── SHELL DE NAVEGACIÓN (Mantiene HomeScreen como contenedor) ───
@@ -76,36 +79,40 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.animales,
-                builder: (context, state) => AnimalesTabContainer(
+                builder: (context, state) => SelectedFarmTabContainer(
                   screenBuilder: (granjaId) =>
                       AnimalesScreen(granjaId: granjaId),
                 ),
               ),
             ],
           ),
-          // Pestaña 2: Huevos
+          // Pestaña 2: Ciclos productivos
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.huevos,
-                builder: (context, state) => AnimalesTabContainer(
-                  screenBuilder: (granjaId) => HuevosScreen(granjaId: granjaId),
+                path: AppRoutes.ciclos,
+                builder: (context, state) => SelectedFarmTabContainer(
+                  screenBuilder: (granjaId) =>
+                      CyclesListScreen(farmId: granjaId),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'nuevo',
+                    builder: (context, state) => SelectedFarmTabContainer(
+                      screenBuilder: (granjaId) =>
+                          CycleCreateScreen(farmId: granjaId),
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) =>
+                        CycleDetailScreen(cycleId: state.pathParameters['id']!),
+                  ),
+                ],
               ),
             ],
           ),
-          // Pestaña 3: Comida
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.comida,
-                builder: (context, state) => AnimalesTabContainer(
-                  screenBuilder: (granjaId) => ComidaScreen(granjaId: granjaId),
-                ),
-              ),
-            ],
-          ),
-          // Pestaña 4: Gráfica
+          // Pestaña 3: Gráfica
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -116,6 +123,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+
+      // Exact legacy destinations redirect to the canonical Cycles route.
+      GoRoute(
+        path: AppRoutes.huevos,
+        redirect: (_, _) => AppRoutes.ciclos,
+        builder: (_, _) => const SizedBox.shrink(),
+      ),
+      GoRoute(
+        path: AppRoutes.comida,
+        redirect: (_, _) => AppRoutes.ciclos,
+        builder: (_, _) => const SizedBox.shrink(),
       ),
 
       // Rutas secundarias detalladas que se empujan encima de todo el cascarón (Full Screen)
@@ -136,18 +155,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
 class _AuthStateListenable extends ChangeNotifier {
   _AuthStateListenable(Ref ref) {
-    ref.listen(authSessionProvider, (_, __) => notifyListeners());
+    ref.listen(authSessionProvider, (_, _) => notifyListeners());
   }
 }
 
-// ─── CONTROLADOR INTERMEDIO DE ANIMALES ──────────────────────────────────────
+// ─── CONTROLADOR INTERMEDIO DE GRANJA SELECCIONADA ────────────────────────────
 /// Este widget evalúa si hay una granja seleccionada en el estado de Riverpod.
-/// Si hay, renderiza `AnimalesScreen(granjaId)`, si no, te pide seleccionar una.
-class AnimalesTabContainer extends ConsumerWidget {
+/// Si hay, renderiza la pantalla que recibe su ID; si no, pide seleccionarla.
+class SelectedFarmTabContainer extends ConsumerWidget {
   // 1. Cambiamos el tipo a una función que recibe un String y devuelve un Widget
   final Widget Function(String granjaId) screenBuilder;
 
-  const AnimalesTabContainer({
+  const SelectedFarmTabContainer({
     super.key,
     required this.screenBuilder, // 2. Actualizamos el constructor
   });
