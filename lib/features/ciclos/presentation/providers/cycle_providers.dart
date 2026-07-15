@@ -62,6 +62,18 @@ class CycleMutations extends _$CycleMutations {
     };
   }
 
+  Future<Cycle> editMembers(CycleMembershipEditInput input) async {
+    state = const AsyncLoading();
+    final result = await AsyncValue.guard(
+      () => ref.read(cycleRepositoryProvider).editMembers(input),
+    );
+    return switch (result) {
+      AsyncData(:final value) => _complete(value),
+      AsyncError(:final error, :final stackTrace) => _fail(error, stackTrace),
+      AsyncLoading() => throw StateError('Membership edit did not complete.'),
+    };
+  }
+
   Cycle _complete(Cycle cycle) {
     if (ref.mounted) {
       state = const AsyncData(null);

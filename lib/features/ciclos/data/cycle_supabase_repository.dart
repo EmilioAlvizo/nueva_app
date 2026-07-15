@@ -162,7 +162,7 @@ class CycleSupabaseRepository implements CycleRepository {
 
   @override
   Future<List<CycleMemberCandidate>> getMemberCandidates(String farmId) async {
-    final data = await _client
+    final candidatesRequest = _client
         .from('animales')
         .select(
           'id,tipo_animal_id,grupo_id,brazalete,tipo_animal(nombre),grupos(nombre)',
@@ -170,7 +170,28 @@ class CycleSupabaseRepository implements CycleRepository {
         .eq('granja_id', farmId)
         .eq('activo', true)
         .order('brazalete');
-    return _rows(data).map(CycleMemberCandidate.fromJson).toList();
+    final cyclesRequest = getCycles(farmId);
+    final data = await candidatesRequest;
+    final activeCycleIds = (await cyclesRequest)
+        .where((cycle) => cycle.isActive)
+        .map((cycle) => cycle.id)
+        .toList(growable: false);
+    if (activeCycleIds.isEmpty) {
+      return _rows(data).map(CycleMemberCandidate.fromJson).toList();
+    }
+
+    final memberships = await _client
+        .from('ciclo_miembros')
+        .select('animal_id')
+        .isFilter('left_at', null)
+        .inFilter('ciclo_id', activeCycleIds);
+    final assignedAnimalIds = _rows(
+      memberships,
+    ).map((row) => row['animal_id'] as String).toSet();
+    return [
+      for (final candidate in _rows(data).map(CycleMemberCandidate.fromJson))
+        if (!assignedAnimalIds.contains(candidate.id)) candidate,
+    ];
   }
 
   @override
@@ -213,6 +234,30 @@ class CycleSupabaseRepository implements CycleRepository {
     return Cycle.fromJson(data);
   }
 
+  @override
+  Future<Cycle> editMembers(CycleMembershipEditInput input) async {
+    final removals = _normalizedMemberIds(input.removals);
+    final removalIds = removals.toSet();
+    final additions = [
+      for (final animalId in _normalizedMemberIds(input.additions))
+        if (!removalIds.contains(animalId)) animalId,
+    ];
+    if (additions.isEmpty && removals.isEmpty) {
+      throw ArgumentError('Select at least one membership change.');
+    }
+
+    final data = await _client.rpc<Map<String, dynamic>>(
+      'editar_miembros_ciclo',
+      params: {
+        'p_ciclo_id': input.cycleId,
+        'p_version': input.version,
+        'p_agregar': additions,
+        'p_retirar': removals,
+      },
+    );
+    return Cycle.fromJson(data);
+  }
+
   static List<Map<String, dynamic>> _rows(Object? value) => [
     for (final row in value as List? ?? const [])
       Map<String, dynamic>.from(row as Map),
@@ -225,6 +270,11 @@ class CycleSupabaseRepository implements CycleRepository {
     final normalized = value?.trim();
     return normalized == null || normalized.isEmpty ? null : normalized;
   }
+
+  static List<String> _normalizedMemberIds(Iterable<String> values) => [
+    for (final value in values.map((value) => value.trim()).toSet())
+      if (value.isNotEmpty) value,
+  ];
 }
 
 const _cycleSelect = '''

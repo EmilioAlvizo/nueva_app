@@ -10,4 +10,5 @@ abstract interface class CycleRepository {
   Future<List<CycleMemberCandidate>> getMemberCandidates(String farmId);
   Future<CycleAccess> getAccess(String farmId);
   Future<Cycle> createCycle(CycleCreationInput input);
+  Future<Cycle> editMembers(CycleMembershipEditInput input);
 }

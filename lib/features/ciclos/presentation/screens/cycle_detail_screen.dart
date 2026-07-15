@@ -91,6 +91,29 @@ class _CycleDetailBody extends ConsumerWidget {
                       trailing: Text(member.isActive ? 'Active' : 'Removed'),
                     ),
                   ),
+                access.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (value) => cycle.isActive && value.canEdit
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              onPressed: () => showDialog<void>(
+                                context: context,
+                                builder: (_) => _MembershipEditor(
+                                  cycle: cycle,
+                                  activeMembers: activeMembers,
+                                ),
+                              ),
+                              icon: const Icon(Icons.group_outlined),
+                              label: const Text('Edit members'),
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
                 const SizedBox(height: 24),
                 Text('Timeline', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
@@ -107,6 +130,209 @@ class _CycleDetailBody extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MembershipEditor extends ConsumerStatefulWidget {
+  const _MembershipEditor({required this.cycle, required this.activeMembers});
+
+  final Cycle cycle;
+  final List<CycleMember> activeMembers;
+
+  @override
+  ConsumerState<_MembershipEditor> createState() => _MembershipEditorState();
+}
+
+class _MembershipEditorState extends ConsumerState<_MembershipEditor> {
+  late final Set<String> _initialMemberIds;
+  late final Set<String> _selectedMemberIds;
+  String? _error;
+  var _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialMemberIds = {
+      for (final member in widget.activeMembers) member.animalId,
+    };
+    _selectedMemberIds = {..._initialMemberIds};
+  }
+
+  Future<void> _submit() async {
+    final additions = _selectedMemberIds
+        .where((id) => !_initialMemberIds.contains(id))
+        .toList(growable: false);
+    final removals = _initialMemberIds
+        .where((id) => !_selectedMemberIds.contains(id))
+        .toList(growable: false);
+    if (additions.isEmpty && removals.isEmpty) {
+      setState(() => _error = 'Select at least one membership change.');
+      return;
+    }
+
+    setState(() {
+      _error = null;
+      _submitting = true;
+    });
+    try {
+      await ref
+          .read(cycleMutationsProvider.notifier)
+          .editMembers(
+            CycleMembershipEditInput(
+              cycleId: widget.cycle.id,
+              version: widget.cycle.version,
+              additions: additions,
+              removals: removals,
+            ),
+          );
+      ref.invalidate(cyclesProvider(widget.cycle.farmId));
+      ref.invalidate(cycleDetailProvider(widget.cycle.id));
+      ref.invalidate(cycleEconomicsProvider(widget.cycle.id));
+      ref.invalidate(cycleTimelineProvider(widget.cycle.id));
+      ref.invalidate(eligibleCycleMembersProvider(widget.cycle.farmId));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = '$error';
+          _submitting = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final candidates = ref.watch(
+      eligibleCycleMembersProvider(widget.cycle.farmId),
+    );
+    final eligibleCandidates = switch (candidates) {
+      AsyncData(:final value) =>
+        value
+            .where(
+              (candidate) =>
+                  candidate.animalTypeId == widget.cycle.animalTypeId,
+            )
+            .toList(),
+      _ => const <CycleMemberCandidate>[],
+    };
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 720),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Text(
+                'Edit explicit members',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Changes use the displayed cycle version. Refresh if another editor has changed this cycle.',
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  children: [
+                    Text(
+                      'Current members',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    for (final member in widget.activeMembers)
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _selectedMemberIds.contains(member.animalId),
+                        title: Text(member.label),
+                        subtitle: Text(member.groupName ?? 'No current group'),
+                        onChanged: _submitting
+                            ? null
+                            : (selected) => setState(() {
+                                if (selected ?? false) {
+                                  _selectedMemberIds.add(member.animalId);
+                                } else {
+                                  _selectedMemberIds.remove(member.animalId);
+                                }
+                              }),
+                      ),
+                    const Divider(),
+                    Text(
+                      'Available animals',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    if (candidates.isLoading)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (candidates.hasError)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'Available animals could not load: ${candidates.error}',
+                        ),
+                      )
+                    else if (eligibleCandidates.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Text('No unassigned animals are available.'),
+                      )
+                    else
+                      for (final candidate in eligibleCandidates)
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: _selectedMemberIds.contains(candidate.id),
+                          title: Text(candidate.label),
+                          subtitle: Text(candidate.groupName ?? 'No group'),
+                          onChanged: _submitting
+                              ? null
+                              : (selected) => setState(() {
+                                  if (selected ?? false) {
+                                    _selectedMemberIds.add(candidate.id);
+                                  } else {
+                                    _selectedMemberIds.remove(candidate.id);
+                                  }
+                                }),
+                        ),
+                  ],
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: _submitting ? null : _submit,
+                    child: _submitting
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save members'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

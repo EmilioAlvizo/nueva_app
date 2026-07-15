@@ -318,3 +318,17 @@ class CycleCreationInput {
   final String? name;
   final String? notes;
 }
+
+class CycleMembershipEditInput {
+  const CycleMembershipEditInput({
+    required this.cycleId,
+    required this.version,
+    required this.additions,
+    required this.removals,
+  });
+
+  final String cycleId;
+  final int version;
+  final List<String> additions;
+  final List<String> removals;
+}
