@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../comida_models.dart';
 import '../comida_provider.dart';
+import '/features/settings/presentation/providers/theme_provider.dart';
+import '../../../core/theme/app_theme.dart';
 
 class CategoryFormSheet extends ConsumerStatefulWidget {
   const CategoryFormSheet({super.key, required this.farmId, this.category});
@@ -36,13 +38,15 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
     final mutation = ref.watch(foodMutationsProvider);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return AnimatedPadding(
       duration: const Duration(milliseconds: 200),
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Material(
-        color: AppColors.bgCard2,
+        color: isDark ? AppColors.bg : AppColors.bgLight,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
@@ -61,8 +65,8 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
                       Expanded(
                         child: Text(
                           _isEditing ? 'Editar categoría' : 'Nueva categoría',
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: isDark ? AppColors.textPrimary:AppColors.textPrimaryLg,
                             fontSize: 21,
                             fontWeight: FontWeight.w800,
                           ),
@@ -84,7 +88,7 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
                     textCapitalization: TextCapitalization.sentences,
                     maxLength: 80,
                     validator: FoodValidation.categoryName,
-                    decoration: _decoration('Nombre', Icons.sell_outlined),
+                    decoration: AppTheme.customDecoration(context: context,label:'Nombre', icon: Icons.sell_outlined),
                   ),
                   const SizedBox(height: 18),
                   FilledButton(
@@ -151,21 +155,6 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
     _ => 'No se pudo guardar la categoría.',
   };
 }
-
-InputDecoration _decoration(String label, IconData icon) => InputDecoration(
-  labelText: label,
-  prefixIcon: Icon(icon),
-  filled: true,
-  fillColor: AppColors.bgCard,
-  border: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(16),
-    borderSide: BorderSide.none,
-  ),
-  enabledBorder: OutlineInputBorder(
-    borderRadius: BorderRadius.circular(16),
-    borderSide: BorderSide.none,
-  ),
-);
 
 class _DragHandle extends StatelessWidget {
   const _DragHandle();

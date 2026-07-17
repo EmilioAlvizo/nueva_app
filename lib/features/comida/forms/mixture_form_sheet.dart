@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../comida_models.dart';
 import '../comida_provider.dart';
+import '/features/settings/presentation/providers/theme_provider.dart';
+import '../../../core/theme/app_theme.dart';
 
 class MixtureFormSheet extends ConsumerStatefulWidget {
   const MixtureFormSheet({
@@ -94,14 +96,17 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == AppThemeMode.dark;
     final mutation = ref.watch(foodMutationsProvider);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final height = MediaQuery.sizeOf(context).height * 0.92;
+
     return AnimatedPadding(
       duration: const Duration(milliseconds: 200),
       padding: EdgeInsets.only(bottom: keyboard),
       child: Material(
-        color: AppColors.bgCard2,
+        color: isDark ? AppColors.bg : AppColors.bgLight,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
@@ -170,9 +175,9 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
           initialValue: _groupId,
           isExpanded: true,
           dropdownColor: AppColors.bgCard,
-          decoration: _decoration(
+          decoration:AppTheme.customDecoration(context: context,label:
             'Selecciona un grupo',
-            Icons.groups_2_outlined,
+            icon: Icons.groups_2_outlined,
           ),
           items: [
             for (final group in widget.groups)
@@ -186,7 +191,7 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
         TextFormField(
           controller: _countController,
           keyboardType: TextInputType.number,
-          decoration: _decoration('Ej. 3', Icons.format_list_numbered_rounded),
+          decoration: AppTheme.customDecoration(context: context,label:'Ej. 3',icon: Icons.format_list_numbered_rounded),
           validator: (value) => FoodValidation.ingredientCount(
             value,
             maximum: _selectableCategories.length,
@@ -260,7 +265,7 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
           TextFormField(
             controller: _quantityController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: _decoration('0.00', Icons.scale_outlined, suffix: 'kg'),
+            decoration: AppTheme.customDecoration(context: context,label:'0.00', icon:Icons.scale_outlined, suffix: 'kg'),
             validator: (value) {
               final quantity = FoodValidation.decimal(value ?? '');
               return quantity == null || !quantity.isFinite || quantity <= 0
