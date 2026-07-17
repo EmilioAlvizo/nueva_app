@@ -9,55 +9,101 @@ part of 'comida_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(lotesAlimento)
-final lotesAlimentoProvider = LotesAlimentoFamily._();
+@ProviderFor(comidaRepository)
+final comidaRepositoryProvider = ComidaRepositoryProvider._();
 
-final class LotesAlimentoProvider
+final class ComidaRepositoryProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<LoteAlimento>>,
-          List<LoteAlimento>,
-          FutureOr<List<LoteAlimento>>
+          ComidaRepository,
+          ComidaRepository,
+          ComidaRepository
+        >
+    with $Provider<ComidaRepository> {
+  ComidaRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'comidaRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$comidaRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ComidaRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ComidaRepository create(Ref ref) {
+    return comidaRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ComidaRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ComidaRepository>(value),
+    );
+  }
+}
+
+String _$comidaRepositoryHash() => r'f2b9052313d7da481d698b70d5fcc879c57f5d00';
+
+@ProviderFor(foodMixtures)
+final foodMixturesProvider = FoodMixturesFamily._();
+
+final class FoodMixturesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<FoodMixture>>,
+          List<FoodMixture>,
+          FutureOr<List<FoodMixture>>
         >
     with
-        $FutureModifier<List<LoteAlimento>>,
-        $FutureProvider<List<LoteAlimento>> {
-  LotesAlimentoProvider._({
-    required LotesAlimentoFamily super.from,
+        $FutureModifier<List<FoodMixture>>,
+        $FutureProvider<List<FoodMixture>> {
+  FoodMixturesProvider._({
+    required FoodMixturesFamily super.from,
     required String super.argument,
   }) : super(
-         retry: null,
-         name: r'lotesAlimentoProvider',
+         retry: _noRetry,
+         name: r'foodMixturesProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$lotesAlimentoHash();
+  String debugGetCreateSourceHash() => _$foodMixturesHash();
 
   @override
   String toString() {
-    return r'lotesAlimentoProvider'
+    return r'foodMixturesProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  $FutureProviderElement<List<LoteAlimento>> $createElement(
+  $FutureProviderElement<List<FoodMixture>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<LoteAlimento>> create(Ref ref) {
+  FutureOr<List<FoodMixture>> create(Ref ref) {
     final argument = this.argument as String;
-    return lotesAlimento(ref, argument);
+    return foodMixtures(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is LotesAlimentoProvider && other.argument == argument;
+    return other is FoodMixturesProvider && other.argument == argument;
   }
 
   @override
@@ -66,75 +112,75 @@ final class LotesAlimentoProvider
   }
 }
 
-String _$lotesAlimentoHash() => r'5dc8b435269901bf4146e0dc993467f5066970f0';
+String _$foodMixturesHash() => r'536ab6a16f81c2e56f3a52afd5b7d889105c8061';
 
-final class LotesAlimentoFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<LoteAlimento>>, String> {
-  LotesAlimentoFamily._()
+final class FoodMixturesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<FoodMixture>>, String> {
+  FoodMixturesFamily._()
     : super(
-        retry: null,
-        name: r'lotesAlimentoProvider',
+        retry: _noRetry,
+        name: r'foodMixturesProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  LotesAlimentoProvider call(String granjaId) =>
-      LotesAlimentoProvider._(argument: granjaId, from: this);
+  FoodMixturesProvider call(String farmId) =>
+      FoodMixturesProvider._(argument: farmId, from: this);
 
   @override
-  String toString() => r'lotesAlimentoProvider';
+  String toString() => r'foodMixturesProvider';
 }
 
-@ProviderFor(periodosAlimento)
-final periodosAlimentoProvider = PeriodosAlimentoFamily._();
+@ProviderFor(foodCategories)
+final foodCategoriesProvider = FoodCategoriesFamily._();
 
-final class PeriodosAlimentoProvider
+final class FoodCategoriesProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<PeriodoAlimento>>,
-          List<PeriodoAlimento>,
-          FutureOr<List<PeriodoAlimento>>
+          AsyncValue<List<FoodCategory>>,
+          List<FoodCategory>,
+          FutureOr<List<FoodCategory>>
         >
     with
-        $FutureModifier<List<PeriodoAlimento>>,
-        $FutureProvider<List<PeriodoAlimento>> {
-  PeriodosAlimentoProvider._({
-    required PeriodosAlimentoFamily super.from,
+        $FutureModifier<List<FoodCategory>>,
+        $FutureProvider<List<FoodCategory>> {
+  FoodCategoriesProvider._({
+    required FoodCategoriesFamily super.from,
     required String super.argument,
   }) : super(
-         retry: null,
-         name: r'periodosAlimentoProvider',
+         retry: _noRetry,
+         name: r'foodCategoriesProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$periodosAlimentoHash();
+  String debugGetCreateSourceHash() => _$foodCategoriesHash();
 
   @override
   String toString() {
-    return r'periodosAlimentoProvider'
+    return r'foodCategoriesProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  $FutureProviderElement<List<PeriodoAlimento>> $createElement(
+  $FutureProviderElement<List<FoodCategory>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<PeriodoAlimento>> create(Ref ref) {
+  FutureOr<List<FoodCategory>> create(Ref ref) {
     final argument = this.argument as String;
-    return periodosAlimento(ref, argument);
+    return foodCategories(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is PeriodosAlimentoProvider && other.argument == argument;
+    return other is FoodCategoriesProvider && other.argument == argument;
   }
 
   @override
@@ -143,73 +189,73 @@ final class PeriodosAlimentoProvider
   }
 }
 
-String _$periodosAlimentoHash() => r'd1c3b1fce05b2b104c87f7f6a762c388f35b7165';
+String _$foodCategoriesHash() => r'298f5cff3acc3a0790d4561321874368f5af8c87';
 
-final class PeriodosAlimentoFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<PeriodoAlimento>>, String> {
-  PeriodosAlimentoFamily._()
+final class FoodCategoriesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<FoodCategory>>, String> {
+  FoodCategoriesFamily._()
     : super(
-        retry: null,
-        name: r'periodosAlimentoProvider',
+        retry: _noRetry,
+        name: r'foodCategoriesProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  PeriodosAlimentoProvider call(String granjaId) =>
-      PeriodosAlimentoProvider._(argument: granjaId, from: this);
+  FoodCategoriesProvider call(String farmId) =>
+      FoodCategoriesProvider._(argument: farmId, from: this);
 
   @override
-  String toString() => r'periodosAlimentoProvider';
+  String toString() => r'foodCategoriesProvider';
 }
 
-@ProviderFor(comidaStats)
-final comidaStatsProvider = ComidaStatsFamily._();
+@ProviderFor(foodGroups)
+final foodGroupsProvider = FoodGroupsFamily._();
 
-final class ComidaStatsProvider
+final class FoodGroupsProvider
     extends
         $FunctionalProvider<
-          AsyncValue<ComidaStats>,
-          ComidaStats,
-          FutureOr<ComidaStats>
+          AsyncValue<List<FoodGroup>>,
+          List<FoodGroup>,
+          FutureOr<List<FoodGroup>>
         >
-    with $FutureModifier<ComidaStats>, $FutureProvider<ComidaStats> {
-  ComidaStatsProvider._({
-    required ComidaStatsFamily super.from,
+    with $FutureModifier<List<FoodGroup>>, $FutureProvider<List<FoodGroup>> {
+  FoodGroupsProvider._({
+    required FoodGroupsFamily super.from,
     required String super.argument,
   }) : super(
-         retry: null,
-         name: r'comidaStatsProvider',
+         retry: _noRetry,
+         name: r'foodGroupsProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$comidaStatsHash();
+  String debugGetCreateSourceHash() => _$foodGroupsHash();
 
   @override
   String toString() {
-    return r'comidaStatsProvider'
+    return r'foodGroupsProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  $FutureProviderElement<ComidaStats> $createElement(
+  $FutureProviderElement<List<FoodGroup>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<ComidaStats> create(Ref ref) {
+  FutureOr<List<FoodGroup>> create(Ref ref) {
     final argument = this.argument as String;
-    return comidaStats(ref, argument);
+    return foodGroups(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ComidaStatsProvider && other.argument == argument;
+    return other is FoodGroupsProvider && other.argument == argument;
   }
 
   @override
@@ -218,22 +264,140 @@ final class ComidaStatsProvider
   }
 }
 
-String _$comidaStatsHash() => r'0b13ede51ecb27a4002264c9e473cea9b50fc635';
+String _$foodGroupsHash() => r'ce46aa985e394225e156fcf056f17ae39c294e67';
 
-final class ComidaStatsFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<ComidaStats>, String> {
-  ComidaStatsFamily._()
+final class FoodGroupsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<FoodGroup>>, String> {
+  FoodGroupsFamily._()
     : super(
-        retry: null,
-        name: r'comidaStatsProvider',
+        retry: _noRetry,
+        name: r'foodGroupsProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  ComidaStatsProvider call(String granjaId) =>
-      ComidaStatsProvider._(argument: granjaId, from: this);
+  FoodGroupsProvider call(String farmId) =>
+      FoodGroupsProvider._(argument: farmId, from: this);
 
   @override
-  String toString() => r'comidaStatsProvider';
+  String toString() => r'foodGroupsProvider';
+}
+
+@ProviderFor(foodAccess)
+final foodAccessProvider = FoodAccessFamily._();
+
+final class FoodAccessProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<FoodAccess>,
+          FoodAccess,
+          FutureOr<FoodAccess>
+        >
+    with $FutureModifier<FoodAccess>, $FutureProvider<FoodAccess> {
+  FoodAccessProvider._({
+    required FoodAccessFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: _noRetry,
+         name: r'foodAccessProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$foodAccessHash();
+
+  @override
+  String toString() {
+    return r'foodAccessProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<FoodAccess> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<FoodAccess> create(Ref ref) {
+    final argument = this.argument as String;
+    return foodAccess(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FoodAccessProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$foodAccessHash() => r'c069b85734a0fea0ce9933e0d18895539662cd67';
+
+final class FoodAccessFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<FoodAccess>, String> {
+  FoodAccessFamily._()
+    : super(
+        retry: _noRetry,
+        name: r'foodAccessProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FoodAccessProvider call(String farmId) =>
+      FoodAccessProvider._(argument: farmId, from: this);
+
+  @override
+  String toString() => r'foodAccessProvider';
+}
+
+@ProviderFor(FoodMutations)
+final foodMutationsProvider = FoodMutationsProvider._();
+
+final class FoodMutationsProvider
+    extends $AsyncNotifierProvider<FoodMutations, void> {
+  FoodMutationsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'foodMutationsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$foodMutationsHash();
+
+  @$internal
+  @override
+  FoodMutations create() => FoodMutations();
+}
+
+String _$foodMutationsHash() => r'cb4f532ea796b37ac807a7699be2c99ee0bfb293';
+
+abstract class _$FoodMutations extends $AsyncNotifier<void> {
+  FutureOr<void> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<void>, void>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<void>, void>,
+              AsyncValue<void>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
 }

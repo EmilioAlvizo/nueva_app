@@ -1,131 +1,274 @@
-// lib/features/comida/domain/comida_models.dart
+import 'dart:math';
 
-// ─── Lote de alimento (compra) ────────────────────────────────────────────────
-class LoteAlimento {
-  final String id;
-  final String granjaId;
-  final String tipoAnimalId;
-  final DateTime fechaCompra;
-  final double cantidadKg;
-  final double precioTotal;
-  final double? precioPorKg;
-  final String? proveedor;
-  final String? notas;
-  final DateTime createdAt;
-
-  // Joined / computed
-  final String tipoNombre;
-  final double kgConsumidosTotal;
-  final int numPeriodos;
-
-  const LoteAlimento({
+class FoodCategory {
+  const FoodCategory({
     required this.id,
-    required this.granjaId,
-    required this.tipoAnimalId,
-    required this.fechaCompra,
-    required this.cantidadKg,
-    required this.precioTotal,
-    this.precioPorKg,
-    this.proveedor,
-    this.notas,
-    required this.createdAt,
-    required this.tipoNombre,
-    required this.kgConsumidosTotal,
-    required this.numPeriodos,
+    required this.name,
+    required this.isActive,
+    this.farmId,
+    this.createdAt,
   });
 
-  double get kgRestantes => cantidadKg - kgConsumidosTotal;
+  final String id;
+  final String? farmId;
+  final String name;
+  final bool isActive;
+  final DateTime? createdAt;
 
-  factory LoteAlimento.fromJson(Map<String, dynamic> j) => LoteAlimento(
-        id: j['id'] as String,
-        granjaId: j['granja_id'] as String,
-        tipoAnimalId: j['tipo_animal_id'] as String,
-        fechaCompra: DateTime.parse(j['fecha_compra'] as String),
-        cantidadKg: (j['cantidad_kg'] as num).toDouble(),
-        precioTotal: (j['precio_total'] as num).toDouble(),
-        precioPorKg: (j['precio_por_kg'] as num?)?.toDouble(),
-        proveedor: j['proveedor'] as String?,
-        notas: j['notas'] as String?,
-        createdAt: DateTime.parse(j['created_at'] as String),
-        tipoNombre: j['tipo_nombre'] as String? ?? '',
-        kgConsumidosTotal:
-            (j['kg_consumidos_total'] as num?)?.toDouble() ?? 0.0,
-        numPeriodos: (j['num_periodos'] as num?)?.toInt() ?? 0,
-      );
+  factory FoodCategory.fromJson(Map<String, dynamic> json) => FoodCategory(
+    id: json['id'] as String,
+    farmId: json['granja_id'] as String?,
+    name: json['nombre'] as String,
+    isActive: json['activo'] as bool? ?? true,
+    createdAt: switch (json['created_at']) {
+      final String value => DateTime.parse(value),
+      _ => null,
+    },
+  );
 }
 
-// ─── Periodo de alimento (uso del lote) ──────────────────────────────────────
-class PeriodoAlimento {
+class FoodGroup {
+  const FoodGroup({required this.id, required this.name});
+
   final String id;
-  final String loteAlimentoId;
-  final DateTime fechaInicio;
-  final DateTime? fechaFin;
-  final bool activo;
-  final double kgConsumidos;
-  final String? notas;
-  final DateTime createdAt;
+  final String name;
 
-  // Joined desde lote
-  final String tipoAnimalId;
-  final String tipoNombre;
-  final double precioTotal;      // del lote
-  final double cantidadKgLote;  // del lote
-  final String? proveedor;
-  final String? nombreAlimento; // proveedor usado como nombre en las imágenes
+  factory FoodGroup.fromJson(Map<String, dynamic> json) =>
+      FoodGroup(id: json['id'] as String, name: json['nombre'] as String);
+}
 
-  const PeriodoAlimento({
+class MixtureIngredient {
+  const MixtureIngredient({
     required this.id,
-    required this.loteAlimentoId,
-    required this.fechaInicio,
-    this.fechaFin,
-    required this.activo,
-    required this.kgConsumidos,
-    this.notas,
-    required this.createdAt,
-    required this.tipoAnimalId,
-    required this.tipoNombre,
-    required this.precioTotal,
-    required this.cantidadKgLote,
-    this.proveedor,
-    this.nombreAlimento,
+    required this.foodId,
+    required this.categoryId,
+    required this.categoryName,
+    required this.categoryIsActive,
+    required this.quantityKg,
+    required this.totalCost,
   });
 
-  /// Días activo desde fecha_inicio
-  int get diasActivo {
-    final fin = fechaFin ?? DateTime.now();
-    return fin.difference(fechaInicio).inDays;
-  }
+  final String id;
+  final String foodId;
+  final String categoryId;
+  final String categoryName;
+  final bool categoryIsActive;
+  final double quantityKg;
+  final double totalCost;
 
-  /// Egreso proporcional: precio_total * (kg_consumidos / cantidad_kg_lote)
-  double get egresoCalculado {
-    if (cantidadKgLote == 0) return 0;
-    return precioTotal * (kgConsumidos / cantidadKgLote);
+  factory MixtureIngredient.fromJson(Map<String, dynamic> json) {
+    final food = Map<String, dynamic>.from(json['comida'] as Map);
+    final category = Map<String, dynamic>.from(food['cat_comida'] as Map);
+    return MixtureIngredient(
+      id: json['id'] as String,
+      foodId: food['id'] as String,
+      categoryId: food['cat_comida_id'] as String,
+      categoryName: category['nombre'] as String,
+      categoryIsActive: category['activo'] as bool? ?? true,
+      quantityKg: ((json['cantidad'] ?? food['cantidad']) as num).toDouble(),
+      totalCost: (food['precio'] as num?)?.toDouble() ?? 0,
+    );
   }
-
-  factory PeriodoAlimento.fromJson(Map<String, dynamic> j) => PeriodoAlimento(
-        id: j['id'] as String,
-        loteAlimentoId: j['lote_alimento_id'] as String,
-        fechaInicio: DateTime.parse(j['fecha_inicio'] as String),
-        fechaFin: j['fecha_fin'] != null
-            ? DateTime.parse(j['fecha_fin'] as String)
-            : null,
-        activo: j['activo'] as bool? ?? false,
-        kgConsumidos: (j['kg_consumidos'] as num).toDouble(),
-        notas: j['notas'] as String?,
-        createdAt: DateTime.parse(j['created_at'] as String),
-        tipoAnimalId: j['tipo_animal_id'] as String? ?? '',
-        tipoNombre: j['tipo_nombre'] as String? ?? '',
-        precioTotal: (j['precio_total'] as num?)?.toDouble() ?? 0.0,
-        cantidadKgLote: (j['cantidad_kg'] as num?)?.toDouble() ?? 0.0,
-        proveedor: j['proveedor'] as String?,
-        nombreAlimento: j['nombre_alimento'] as String?,
-      );
 }
 
-// ─── Stats de comida ──────────────────────────────────────────────────────────
-class ComidaStats {
+class FoodMixture {
+  const FoodMixture({
+    required this.id,
+    required this.farmId,
+    required this.groupId,
+    required this.groupName,
+    required this.startDate,
+    required this.updatedAt,
+    required this.ingredients,
+    this.endDate,
+    this.createdAt,
+  });
+
+  final String id;
+  final String farmId;
+  final String groupId;
+  final String groupName;
+  final DateTime startDate;
+  final DateTime updatedAt;
+  final DateTime? endDate;
+  final DateTime? createdAt;
+  final List<MixtureIngredient> ingredients;
+
+  bool get isActive => endDate == null;
+  double get totalKg =>
+      ingredients.fold(0, (sum, item) => sum + item.quantityKg);
+  double get totalCost =>
+      ingredients.fold(0, (sum, item) => sum + item.totalCost);
+
+  factory FoodMixture.fromJson(Map<String, dynamic> json) {
+    final group = json['grupos'] as Map?;
+    final ingredientRows =
+        (json['mezcla_comida'] as List? ?? const [])
+            .map(
+              (row) => MixtureIngredient.fromJson(
+                Map<String, dynamic>.from(row as Map),
+              ),
+            )
+            .toList()
+          ..sort((a, b) => a.categoryName.compareTo(b.categoryName));
+    return FoodMixture(
+      id: json['id'] as String,
+      farmId: json['granja_id'] as String,
+      groupId: json['grupo_id'] as String,
+      groupName: group?['nombre'] as String? ?? 'Grupo sin nombre',
+      startDate: DateTime.parse(json['fecha_inicio'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+      endDate: switch (json['fecha_termino']) {
+        final String value => DateTime.parse(value),
+        _ => null,
+      },
+      createdAt: switch (json['created_at']) {
+        final String value => DateTime.parse(value),
+        _ => null,
+      },
+      ingredients: List.unmodifiable(ingredientRows),
+    );
+  }
+}
+
+class FoodStats {
+  const FoodStats({
+    required this.totalKg,
+    required this.totalCost,
+    required this.count,
+  });
+
   final double totalKg;
-  final double totalEgreso;
+  final double totalCost;
+  final int count;
 
-  const ComidaStats({required this.totalKg, required this.totalEgreso});
+  factory FoodStats.forMixtures(List<FoodMixture> mixtures) => FoodStats(
+    totalKg: mixtures.fold(0, (sum, mixture) => sum + mixture.totalKg),
+    totalCost: mixtures.fold(0, (sum, mixture) => sum + mixture.totalCost),
+    count: mixtures.length,
+  );
+
+  factory FoodStats.forCategories({
+    required List<FoodMixture> mixtures,
+    required List<FoodCategory> categories,
+  }) => FoodStats(
+    totalKg: mixtures.fold(0, (sum, mixture) => sum + mixture.totalKg),
+    totalCost: mixtures.fold(0, (sum, mixture) => sum + mixture.totalCost),
+    count: categories.where((category) => category.isActive).length,
+  );
+}
+
+class FoodAccess {
+  const FoodAccess({required this.canEdit});
+
+  final bool canEdit;
+}
+
+class MixtureIngredientInput {
+  const MixtureIngredientInput({
+    required this.categoryId,
+    required this.quantityKg,
+    required this.totalCost,
+  });
+
+  final String categoryId;
+  final double quantityKg;
+  final double totalCost;
+
+  Map<String, Object> toJson() => {
+    'categoria_id': categoryId,
+    'cantidad_kg': quantityKg,
+    'costo_total': totalCost,
+  };
+
+  String? validate() {
+    if (categoryId.trim().isEmpty) return 'Selecciona una categoría.';
+    if (!quantityKg.isFinite || quantityKg <= 0) {
+      return 'La cantidad debe ser mayor que 0.';
+    }
+    if (!totalCost.isFinite || totalCost < 0) {
+      return 'El precio total no puede ser negativo.';
+    }
+    return null;
+  }
+}
+
+class MixtureInput {
+  MixtureInput({
+    String? mixtureId,
+    required this.farmId,
+    required this.groupId,
+    required this.startDate,
+    required this.ingredients,
+    this.endDate,
+    this.expectedUpdatedAt,
+  }) : mixtureId = mixtureId ?? newFoodUuid();
+
+  final String mixtureId;
+  final String farmId;
+  final String groupId;
+  final DateTime startDate;
+  final DateTime? endDate;
+  final DateTime? expectedUpdatedAt;
+  final List<MixtureIngredientInput> ingredients;
+
+  String? validate() {
+    if (farmId.trim().isEmpty || groupId.trim().isEmpty) {
+      return 'Selecciona un grupo.';
+    }
+    if (endDate != null && _dateOnly(endDate!).isBefore(_dateOnly(startDate))) {
+      return 'La fecha de término no puede ser anterior al inicio.';
+    }
+    if (ingredients.isEmpty) return 'Agrega al menos un ingrediente.';
+    final categoryIds = <String>{};
+    for (final ingredient in ingredients) {
+      final error = ingredient.validate();
+      if (error != null) return error;
+      if (!categoryIds.add(ingredient.categoryId)) {
+        return 'No puedes repetir una categoría en la misma mezcla.';
+      }
+    }
+    return null;
+  }
+}
+
+abstract final class FoodValidation {
+  static String? categoryName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Escribe el nombre de la categoría.';
+    }
+    if (value.trim().length > 80) {
+      return 'El nombre no puede superar 80 caracteres.';
+    }
+    return null;
+  }
+
+  static String? ingredientCount(String? value, {required int maximum}) {
+    final count = int.tryParse(value?.trim() ?? '');
+    if (count == null || count <= 0) {
+      return 'La cantidad de ingredientes debe ser mayor que 0.';
+    }
+    if (count > maximum) {
+      return 'Sólo hay $maximum categorías disponibles.';
+    }
+    return null;
+  }
+
+  static double? decimal(String value) =>
+      double.tryParse(value.trim().replaceAll(',', '.'));
+}
+
+DateTime _dateOnly(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
+
+String newFoodUuid() {
+  final random = Random.secure();
+  final bytes = List.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final hex = bytes
+      .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+      .join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }

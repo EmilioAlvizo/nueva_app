@@ -1,186 +1,202 @@
-// lib/features/comida/data/comida_repository.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'comida_models.dart';
 
-class ComidaRepository {
+abstract interface class ComidaRepository {
+  Future<List<FoodMixture>> getMixtures(String farmId);
+  Future<List<FoodCategory>> getCategories(String farmId);
+  Future<List<FoodGroup>> getGroups(String farmId);
+  Future<FoodAccess> getAccess(String farmId);
+
+  Future<void> createCategory({required String farmId, required String name});
+  Future<void> updateCategory({
+    required String farmId,
+    required String categoryId,
+    required String name,
+  });
+  Future<void> deleteCategory({
+    required String farmId,
+    required String categoryId,
+  });
+  Future<void> createMixture(MixtureInput input);
+  Future<void> updateMixture({
+    required String mixtureId,
+    required MixtureInput input,
+  });
+  Future<void> deleteMixture({
+    required String farmId,
+    required String mixtureId,
+  });
+}
+
+final class SupabaseComidaRepository implements ComidaRepository {
+  SupabaseComidaRepository(this._client);
+
   final SupabaseClient _client;
-  ComidaRepository(this._client);
 
-  static String _fecha(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
-
-  // ── LOTES DE ALIMENTO ──────────────────────────────────────────────────────
-
-  Future<List<LoteAlimento>> getLotes(String granjaId) async {
+  @override
+  Future<List<FoodMixture>> getMixtures(String farmId) async {
     final data = await _client
-        .from('lotes_alimento')
-        .select('''
-          *,
-          tipo_animal ( nombre )
-        ''')
-        .eq('granja_id', granjaId)
-        .order('fecha_compra', ascending: false);
-
-    // Para cada lote calculamos kg_consumidos_total y num_periodos
-    final ids = (data as List).map((e) => e['id'] as String).toList();
-
-    // Traer periodos de todos los lotes de una sola vez
-    Map<String, double> kgPorLote = {};
-    Map<String, int> numPorLote = {};
-
-    if (ids.isNotEmpty) {
-      final periodos = await _client
-          .from('periodos_alimento')
-          .select('lote_alimento_id, kg_consumidos')
-          .inFilter('lote_alimento_id', ids);
-
-      for (final p in periodos as List) {
-        final lid = p['lote_alimento_id'] as String;
-        kgPorLote[lid] = (kgPorLote[lid] ?? 0) +
-            (p['kg_consumidos'] as num).toDouble();
-        numPorLote[lid] = (numPorLote[lid] ?? 0) + 1;
-      }
-    }
-
-    return data.map((e) {
-      final raw = Map<String, dynamic>.from(e);
-      raw['tipo_nombre'] = (raw['tipo_animal'] as Map?)?['nombre'] ?? '';
-      raw['kg_consumidos_total'] = kgPorLote[raw['id']] ?? 0.0;
-      raw['num_periodos'] = numPorLote[raw['id']] ?? 0;
-      return LoteAlimento.fromJson(raw);
-    }).toList();
+        .from('mezcla')
+        .select(_mixtureSelect)
+        .eq('granja_id', farmId)
+        .order('fecha_inicio', ascending: false)
+        .order('created_at', ascending: false);
+    return _rows(data).map(FoodMixture.fromJson).toList();
   }
 
-  Future<void> addLote({
-    required String granjaId,
-    required String tipoAnimalId,
-    required DateTime fechaCompra,
-    required double cantidadKg,
-    required double precioTotal,
-    String? proveedor,
-    String? notas,
-  }) async {
+  @override
+  Future<List<FoodCategory>> getCategories(String farmId) async {
+    final data = await _client
+        .from('cat_comida')
+        .select('id,granja_id,nombre,activo,created_at')
+        .eq('granja_id', farmId)
+        .eq('activo', true)
+        .order('nombre');
+    return _rows(data).map(FoodCategory.fromJson).toList();
+  }
+
+  @override
+  Future<List<FoodGroup>> getGroups(String farmId) async {
+    final data = await _client
+        .from('grupos')
+        .select('id,nombre')
+        .eq('granja_id', farmId)
+        .order('nombre');
+    return _rows(data).map(FoodGroup.fromJson).toList();
+  }
+
+  @override
+  Future<FoodAccess> getAccess(String farmId) async {
     final userId = _client.auth.currentUser?.id;
-    final precioPorKg = cantidadKg > 0 ? precioTotal / cantidadKg : null;
+    if (userId == null) return const FoodAccess(canEdit: false);
 
-    final loteData = await _client
-        .from('lotes_alimento')
-        .insert({
-          'granja_id': granjaId,
-          'tipo_animal_id': tipoAnimalId,
-          'fecha_compra': _fecha(fechaCompra),
-          'cantidad_kg': cantidadKg,
-          'precio_total': precioTotal,
-          'precio_por_kg': precioPorKg,
-          'proveedor': proveedor,
-          'notas': notas,
-          'created_by': userId,
-        })
-        .select('id')
-        .single();
+    final farm = await _client
+        .from('granjas')
+        .select('owner_id')
+        .eq('id', farmId)
+        .maybeSingle();
+    if (farm?['owner_id'] == userId) return const FoodAccess(canEdit: true);
 
-    // Al crear un lote, automáticamente creamos un período activo desde hoy
-    final loteId = loteData['id'] as String;
-    await _client.from('periodos_alimento').insert({
-      'lote_alimento_id': loteId,
-      'fecha_inicio': _fecha(DateTime.now()),
+    final membership = await _client
+        .from('miembros_granja')
+        .select('rol')
+        .eq('granja_id', farmId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    return FoodAccess(canEdit: membership?['rol'] == 'editor');
+  }
+
+  @override
+  Future<void> createCategory({
+    required String farmId,
+    required String name,
+  }) async {
+    final error = FoodValidation.categoryName(name);
+    if (error != null) throw ArgumentError(error);
+    await _client.from('cat_comida').insert({
+      'granja_id': farmId,
+      'nombre': name.trim(),
       'activo': true,
-      'kg_consumidos': 0,
-      'created_by': userId,
+      'created_by': _client.auth.currentUser?.id,
     });
   }
 
-  Future<void> updateLote({
-    required String id,
-    required String tipoAnimalId,
-    required DateTime fechaCompra,
-    required double cantidadKg,
-    required double precioTotal,
-    String? proveedor,
-    String? notas,
+  @override
+  Future<void> updateCategory({
+    required String farmId,
+    required String categoryId,
+    required String name,
   }) async {
-    final precioPorKg = cantidadKg > 0 ? precioTotal / cantidadKg : null;
-    await _client.from('lotes_alimento').update({
-      'tipo_animal_id': tipoAnimalId,
-      'fecha_compra': _fecha(fechaCompra),
-      'cantidad_kg': cantidadKg,
-      'precio_total': precioTotal,
-      'precio_por_kg': precioPorKg,
-      'proveedor': proveedor,
-      'notas': notas,
-    }).eq('id', id);
+    final error = FoodValidation.categoryName(name);
+    if (error != null) throw ArgumentError(error);
+    await _client
+        .from('cat_comida')
+        .update({'nombre': name.trim()})
+        .eq('id', categoryId)
+        .eq('granja_id', farmId);
   }
 
-  Future<void> deleteLote(String id) async {
-    // Los periodos se eliminan en cascada (FK con ON DELETE CASCADE)
-    await _client.from('lotes_alimento').delete().eq('id', id);
+  @override
+  Future<void> deleteCategory({
+    required String farmId,
+    required String categoryId,
+  }) => _client.rpc<void>(
+    'eliminar_categoria_comida_segura',
+    params: {'p_granja_id': farmId, 'p_categoria_id': categoryId},
+  );
+
+  @override
+  Future<void> createMixture(MixtureInput input) {
+    final error = input.validate();
+    if (error != null) throw ArgumentError(error);
+    return _client.rpc<void>(
+      'crear_mezcla_completa',
+      params: {
+        'p_granja_id': input.farmId,
+        'p_mezcla_id': input.mixtureId,
+        'p_fecha_inicio': _date(input.startDate),
+        'p_grupo_id': input.groupId,
+        'p_ingredientes': input.ingredients
+            .map((item) => item.toJson())
+            .toList(),
+      },
+    );
   }
 
-  // ── PERIODOS DE ALIMENTO ───────────────────────────────────────────────────
-
-  Future<List<PeriodoAlimento>> getPeriodos(String granjaId) async {
-    // Join: periodos → lotes → tipo_animal
-    final data = await _client
-        .from('periodos_alimento')
-        .select('''
-          *,
-          lotes_alimento!lote_alimento_id (
-            granja_id,
-            tipo_animal_id,
-            precio_total,
-            cantidad_kg,
-            proveedor,
-            tipo_animal ( nombre )
-          )
-        ''')
-        .order('fecha_inicio', ascending: false);
-
-    // Filtrar por granja_id del lote
-    final filtrados = (data as List).where((e) {
-      final lote = e['lotes_alimento'] as Map?;
-      return lote?['granja_id'] == granjaId;
-    }).toList();
-
-    return filtrados.map((e) {
-      final raw = Map<String, dynamic>.from(e);
-      final lote = raw['lotes_alimento'] as Map? ?? {};
-      raw['tipo_animal_id'] = lote['tipo_animal_id'] ?? '';
-      raw['tipo_nombre'] =
-          (lote['tipo_animal'] as Map?)?['nombre'] ?? '';
-      raw['precio_total'] = lote['precio_total'] ?? 0;
-      raw['cantidad_kg'] = lote['cantidad_kg'] ?? 0;
-      raw['proveedor'] = lote['proveedor'];
-      // En las imágenes el "nombre" de la card es el proveedor del lote
-      raw['nombre_alimento'] = lote['proveedor'];
-      return PeriodoAlimento.fromJson(raw);
-    }).toList();
+  @override
+  Future<void> updateMixture({
+    required String mixtureId,
+    required MixtureInput input,
+  }) {
+    final error = input.validate();
+    if (error != null) throw ArgumentError(error);
+    if (input.expectedUpdatedAt == null) {
+      throw ArgumentError('Falta la versión esperada de la mezcla.');
+    }
+    return _client.rpc<void>(
+      'actualizar_mezcla_completa',
+      params: {
+        'p_mezcla_id': mixtureId,
+        'p_granja_id': input.farmId,
+        'p_expected_updated_at': input.expectedUpdatedAt!
+            .toUtc()
+            .toIso8601String(),
+        'p_fecha_inicio': _date(input.startDate),
+        'p_fecha_termino': input.endDate == null ? null : _date(input.endDate!),
+        'p_grupo_id': input.groupId,
+        'p_ingredientes': input.ingredients
+            .map((item) => item.toJson())
+            .toList(),
+      },
+    );
   }
 
-  Future<void> updatePeriodo({
-    required String id,
-    required DateTime fechaInicio,
-    DateTime? fechaFin,
-    required bool activo,
-    required double kgConsumidos,
-    String? notas,
-  }) async {
-    await _client.from('periodos_alimento').update({
-      'fecha_inicio': _fecha(fechaInicio),
-      'fecha_fin': fechaFin != null ? _fecha(fechaFin) : null,
-      'activo': activo,
-      'kg_consumidos': kgConsumidos,
-      'notas': notas,
-    }).eq('id', id);
-  }
+  @override
+  Future<void> deleteMixture({
+    required String farmId,
+    required String mixtureId,
+  }) => _client.rpc<void>(
+    'eliminar_mezcla_completa',
+    params: {'p_granja_id': farmId, 'p_mezcla_id': mixtureId},
+  );
 
-  Future<void> deletePeriodo(String id) async {
-    await _client.from('periodos_alimento').delete().eq('id', id);
-  }
+  static List<Map<String, dynamic>> _rows(Object? value) => [
+    for (final row in value as List? ?? const [])
+      Map<String, dynamic>.from(row as Map),
+  ];
+
+  static String _date(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
+  static const _mixtureSelect = '''
+    id,granja_id,fecha_inicio,fecha_termino,created_at,updated_at,grupo_id,
+    grupos(nombre),
+    mezcla_comida(
+      id,cantidad,
+      comida(id,cat_comida_id,precio,cantidad,cat_comida(nombre,activo))
+    )
+  ''';
 }
-
-final comidaRepositoryProvider = Provider<ComidaRepository>(
-  (ref) => ComidaRepository(Supabase.instance.client),
-);
