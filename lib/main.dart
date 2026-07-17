@@ -9,8 +9,8 @@ import 'features/settings/presentation/providers/theme_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
-    url: 'https://xagnnkqqtdtvadaseubc.supabase.co',
-    anonKey: 'sb_publishable_ItraVK0Eb5JHGX17QNfZIA_2A7VLfnj',
+    url: 'https://wjdazuycudtzycpekxga.supabase.co',
+    anonKey: 'sb_publishable_WQO-DB3TWcrQvk9dVfH7Ng_W36hiG_f',
   );
 
   runApp(
