@@ -8,6 +8,7 @@ import '../comida_models.dart';
 import '../comida_provider.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/app_text_field.dart';
 
 class MixtureFormSheet extends ConsumerStatefulWidget {
   const MixtureFormSheet({
@@ -175,8 +176,9 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
           initialValue: _groupId,
           isExpanded: true,
           dropdownColor: AppColors.bgCard,
-          decoration:AppTheme.customDecoration(context: context,label:
-            'Selecciona un grupo',
+          decoration: AppTheme.customDecoration(
+            context: context,
+            label: 'Selecciona un grupo',
             icon: Icons.groups_2_outlined,
           ),
           items: [
@@ -187,11 +189,27 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
           validator: (value) => value == null ? 'Selecciona un grupo.' : null,
         ),
         const SizedBox(height: 16),
-        const _SectionLabel(label: 'Cantidad de ingredientes'),
+        /* const _SectionLabel(label: 'Cantidad de ingredientes'),
         TextFormField(
           controller: _countController,
           keyboardType: TextInputType.number,
-          decoration: AppTheme.customDecoration(context: context,label:'Ej. 3',icon: Icons.format_list_numbered_rounded),
+          decoration: AppTheme.customDecoration(
+            context: context,
+            label: 'Ej. 3',
+            icon: Icons.format_list_numbered_rounded,
+          ),
+          validator: (value) => FoodValidation.ingredientCount(
+            value,
+            maximum: _selectableCategories.length,
+          ),
+        ), */
+        const SizedBox(height: 16),
+        AppTextField(
+          label: 'Cantidad de ingredientes',
+          hint: 'ej. 3',
+          keyboardType: TextInputType.number,
+          //maxLength: 80,
+          controller: _countController,
           validator: (value) => FoodValidation.ingredientCount(
             value,
             maximum: _selectableCategories.length,
@@ -265,7 +283,12 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
           TextFormField(
             controller: _quantityController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: AppTheme.customDecoration(context: context,label:'0.00', icon:Icons.scale_outlined, suffix: 'kg'),
+            decoration: AppTheme.customDecoration(
+              context: context,
+              label: '0.00',
+              icon: Icons.scale_outlined,
+              suffix: 'kg',
+            ),
             validator: (value) {
               final quantity = FoodValidation.decimal(value ?? '');
               return quantity == null || !quantity.isFinite || quantity <= 0
@@ -483,30 +506,38 @@ class _Header extends StatelessWidget {
 
   final String title;
   final VoidCallback? onClose;
+  //final bool isDark;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 8, 12, 10),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 21,
-              fontWeight: FontWeight.w800,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // 2. Opcional: Detecta si ese tema padre específico es oscuro
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 12, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-        ),
-        IconButton.filledTonal(
-          tooltip: 'Cerrar',
-          onPressed: onClose,
-          icon: const Icon(Icons.close_rounded),
-        ),
-      ],
-    ),
-  );
+          IconButton.filledTonal(
+            tooltip: 'Cerrar',
+            onPressed: onClose,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SectionLabel extends StatelessWidget {

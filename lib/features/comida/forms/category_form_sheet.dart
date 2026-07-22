@@ -7,6 +7,7 @@ import '../comida_models.dart';
 import '../comida_provider.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/app_text_field.dart';
 
 class CategoryFormSheet extends ConsumerStatefulWidget {
   const CategoryFormSheet({super.key, required this.farmId, this.category});
@@ -66,12 +67,15 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
                         child: Text(
                           _isEditing ? 'Editar categoría' : 'Nueva categoría',
                           style: TextStyle(
-                            color: isDark ? AppColors.textPrimary:AppColors.textPrimaryLg,
+                            color: isDark
+                                ? AppColors.textPrimary
+                                : AppColors.textPrimaryLg,
                             fontSize: 21,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
+
                       IconButton.filledTonal(
                         tooltip: 'Cerrar',
                         onPressed: mutation.isLoading
@@ -81,14 +85,36 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  Text(
+                    'Tipo de alimento que compras (ej. Migaj, Maíz)',
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.textMutedLg
+                          : AppColors.textMuted,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  /* const SizedBox(height: 20),
                   TextFormField(
                     controller: _nameController,
                     autofocus: true,
                     textCapitalization: TextCapitalization.sentences,
                     maxLength: 80,
                     validator: FoodValidation.categoryName,
-                    decoration: AppTheme.customDecoration(context: context,label:'Nombre', icon: Icons.sell_outlined),
+                    decoration: AppTheme.customDecoration(
+                      context: context,
+                      label: 'Nombre',
+                      icon: Icons.sell_outlined,
+                    ),
+                  ), */
+                  const SizedBox(height: 20),
+                  AppTextField(
+                    label: 'Nombre',
+                    hint: 'ej. Migaj, Maíz',
+                    maxLength: 80,
+                    controller: _nameController,
+                    validator: FoodValidation.categoryName,
                   ),
                   const SizedBox(height: 18),
                   FilledButton(
@@ -97,6 +123,11 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
                       minimumSize: const Size.fromHeight(52),
                       backgroundColor: AppColors.naranjao,
                       foregroundColor: AppColors.textPrimaryLg,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          8,
+                        ), // Custom corner radius
+                      ),
                     ),
                     child: mutation.isLoading
                         ? const SizedBox.square(

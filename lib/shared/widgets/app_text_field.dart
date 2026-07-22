@@ -12,6 +12,7 @@ class AppTextField extends StatefulWidget {
     this.textInputAction = TextInputAction.next,
     this.validator,
     this.onFieldSubmitted,
+    this.maxLength,
   });
 
   final TextEditingController controller;
@@ -22,6 +23,7 @@ class AppTextField extends StatefulWidget {
   final TextInputAction textInputAction;
   final String? Function(String?)? validator;
   final VoidCallback? onFieldSubmitted;
+  final int? maxLength;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -51,6 +53,7 @@ class _AppTextFieldState extends State<AppTextField> {
           keyboardType: widget.keyboardType,
           textInputAction: widget.textInputAction,
           validator: widget.validator,
+          maxLength: widget.maxLength,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           style: const TextStyle(
             color: AppColors.textPrimary,
