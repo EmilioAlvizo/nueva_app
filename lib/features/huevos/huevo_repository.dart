@@ -1,185 +1,186 @@
-// lib/features/huevos/data/huevo_repository.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'huevo_models.dart';
 
-class HuevoRepository {
-  final SupabaseClient _client;
-  HuevoRepository(this._client);
-
-  static String _soloFecha(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
-
-  // ── Catálogos ─────────────────────────────────────────────────────────────
-
-  Future<List<CatItemHuevo>> getRazonesReduccion() async {
-    final data = await _client
-        .from('cat_razon_reduccion')
-        .select('id, nombre')
-        .order('nombre');
-    return (data as List).map((e) => CatItemHuevo(e['id'], e['nombre'])).toList();
-  }
-
-  /// Obtiene el periodo de alimento activo para la granja.
-  /// Las recolecciones y reducciones requieren un periodo_alimento_id.
-  /// Si no existe uno activo, lanza excepción con mensaje claro.
-  Future<String> getPeriodoActivoId(String granjaId) async {
-    final data = await _client
-        .from('periodos_alimento')
-        .select('id')
-        .eq('activo', true)
-        .limit(1)
-        .maybeSingle();
-
-    if (data == null) {
-      throw Exception(
-        'No hay un período de alimento activo. '
-        'Crea uno en la sección de Alimentos antes de registrar huevos.',
-      );
-    }
-    return data['id'] as String;
-  }
-
-  // ── Recolecciones ──────────────────────────────────────────────────────────
-
-  Future<List<RecoleccionHuevo>> getRecolecciones(String granjaId) async {
-    final data = await _client
-        .from('recolecciones_huevo')
-        .select('''
-          *,
-          tipo_animal ( nombre ),
-          grupos ( nombre )
-        ''')
-        .eq('granja_id', granjaId)
-        .order('fecha', ascending: false);
-
-    return (data as List).map((e) {
-      final raw = Map<String, dynamic>.from(e);
-      raw['tipo_nombre'] = (raw['tipo_animal'] as Map?)?['nombre'] ?? '';
-      raw['grupo_nombre'] = (raw['grupos'] as Map?)?['nombre'];
-      return RecoleccionHuevo.fromJson(raw);
-    }).toList();
-  }
-
-  Future<void> addRecoleccion({
-    required String granjaId,
-    required String tipoAnimalId,
-    required String periodoAlimentoId,
-    String? grupoId,
-    required DateTime fecha,
-    required int huevosBuenos,
-    required int huevosRotos,
-    String? notas,
-  }) async {
-    final userId = _client.auth.currentUser?.id;
-    await _client.from('recolecciones_huevo').insert({
-      'granja_id': granjaId,
-      'tipo_animal_id': tipoAnimalId,
-      'periodo_alimento_id': periodoAlimentoId,
-      'grupo_id': grupoId,
-      'fecha': _soloFecha(fecha),
-      'huevos_buenos': huevosBuenos,
-      'huevos_rotos': huevosRotos,
-      'notas': notas,
-      'created_by': userId,
-    });
-  }
-
-  Future<void> updateRecoleccion({
-    required String id,
-    required String tipoAnimalId,
-    String? grupoId,
-    required DateTime fecha,
-    required int huevosBuenos,
-    required int huevosRotos,
-    String? notas,
-  }) async {
-    await _client.from('recolecciones_huevo').update({
-      'tipo_animal_id': tipoAnimalId,
-      'grupo_id': grupoId,
-      'fecha': _soloFecha(fecha),
-      'huevos_buenos': huevosBuenos,
-      'huevos_rotos': huevosRotos,
-      'notas': notas,
-    }).eq('id', id);
-  }
-
-  Future<void> deleteRecoleccion(String id) async {
-    await _client.from('recolecciones_huevo').delete().eq('id', id);
-  }
-
-  // ── Reducciones ────────────────────────────────────────────────────────────
-
-  Future<List<ReduccionHuevo>> getReducciones(String granjaId) async {
-    final data = await _client
-        .from('reducciones_huevo')
-        .select('''
-          *,
-          tipo_animal ( nombre ),
-          cat_razon_reduccion!razon_reduccion_id ( nombre )
-        ''')
-        .eq('granja_id', granjaId)
-        .order('fecha', ascending: false);
-
-    return (data as List).map((e) {
-      final raw = Map<String, dynamic>.from(e);
-      raw['tipo_nombre'] = (raw['tipo_animal'] as Map?)?['nombre'] ?? '';
-      raw['razon_nombre'] =
-          (raw['cat_razon_reduccion'] as Map?)?['nombre'] ?? '';
-      return ReduccionHuevo.fromJson(raw);
-    }).toList();
-  }
-
-  Future<void> addReduccion({
-    required String granjaId,
-    required String tipoAnimalId,
-    required String periodoAlimentoId,
-    required String razonReduccionId,
-    required int cantidad,
-    double? importe,
-    required DateTime fecha,
-    String? notas,
-  }) async {
-    final userId = _client.auth.currentUser?.id;
-    await _client.from('reducciones_huevo').insert({
-      'granja_id': granjaId,
-      'tipo_animal_id': tipoAnimalId,
-      'periodo_alimento_id': periodoAlimentoId,
-      'razon_reduccion_id': razonReduccionId,
-      'cantidad': cantidad,
-      'importe': importe,
-      'fecha': _soloFecha(fecha),
-      'notas': notas,
-      'created_by': userId,
-    });
-  }
-
-  Future<void> updateReduccion({
-    required String id,
-    required String tipoAnimalId,
-    required String razonReduccionId,
-    required int cantidad,
-    double? importe,
-    required DateTime fecha,
-    String? notas,
-  }) async {
-    await _client.from('reducciones_huevo').update({
-      'tipo_animal_id': tipoAnimalId,
-      'razon_reduccion_id': razonReduccionId,
-      'cantidad': cantidad,
-      'importe': importe,
-      'fecha': _soloFecha(fecha),
-      'notas': notas,
-    }).eq('id', id);
-  }
-
-  Future<void> deleteReduccion(String id) async {
-    await _client.from('reducciones_huevo').delete().eq('id', id);
-  }
+abstract interface class HuevoRepository {
+  Future<List<EggCollection>> getCollections(String farmId);
+  Future<List<EggSale>> getSales(String farmId);
+  Future<EggAccess> getAccess(String farmId);
+  Future<void> createCollection(EggCollectionInput input);
+  Future<void> updateCollection({
+    required String collectionId,
+    required EggCollectionInput input,
+  });
+  Future<void> deleteCollection({
+    required String farmId,
+    required String collectionId,
+  });
+  Future<void> createSale(EggSaleInput input);
+  Future<void> updateSale({
+    required String saleId,
+    required EggSaleInput input,
+  });
+  Future<void> deleteSale({required String farmId, required String saleId});
 }
 
-final huevoRepositoryProvider = Provider<HuevoRepository>(
-  (ref) => HuevoRepository(Supabase.instance.client),
-);
+final class SupabaseHuevoRepository implements HuevoRepository {
+  SupabaseHuevoRepository(this._client);
+
+  final SupabaseClient _client;
+
+  @override
+  Future<List<EggCollection>> getCollections(String farmId) async {
+    final data = await _client
+        .from('recoleccion_huevo')
+        .select(_collectionSelect)
+        .eq('granja_id', farmId)
+        .order('fecha_recoleccion', ascending: false)
+        .order('created_at', ascending: false);
+    return _rows(data).map(EggCollection.fromJson).toList();
+  }
+
+  @override
+  Future<List<EggSale>> getSales(String farmId) async {
+    final data = await _client
+        .from('venta_huevo')
+        .select(_saleSelect)
+        .eq('granja_id', farmId)
+        .order('fecha_venta', ascending: false)
+        .order('created_at', ascending: false);
+    return _rows(data).map(EggSale.fromJson).toList();
+  }
+
+  @override
+  Future<EggAccess> getAccess(String farmId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return const EggAccess(canEdit: false);
+
+    final farm = await _client
+        .from('granjas')
+        .select('owner_id')
+        .eq('id', farmId)
+        .maybeSingle();
+    if (farm?['owner_id'] == userId) return const EggAccess(canEdit: true);
+
+    final membership = await _client
+        .from('miembros_granja')
+        .select('rol')
+        .eq('granja_id', farmId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    return EggAccess(canEdit: membership?['rol'] == 'editor');
+  }
+
+  @override
+  Future<void> createCollection(EggCollectionInput input) async {
+    _validate(input.validate());
+    await _client.from('recoleccion_huevo').insert({
+      'granja_id': input.farmId,
+      'grupo_id': input.groupId,
+      'fecha_recoleccion': _date(input.date),
+      'buenos': input.goodEggs,
+      'rotos': input.brokenEggs,
+      'created_by': _client.auth.currentUser?.id,
+    });
+  }
+
+  @override
+  Future<void> updateCollection({
+    required String collectionId,
+    required EggCollectionInput input,
+  }) async {
+    _validate(input.validate());
+    await _client
+        .from('recoleccion_huevo')
+        .update({
+          'grupo_id': input.groupId,
+          'fecha_recoleccion': _date(input.date),
+          'buenos': input.goodEggs,
+          'rotos': input.brokenEggs,
+        })
+        .eq('id', collectionId)
+        .eq('granja_id', input.farmId);
+  }
+
+  @override
+  Future<void> deleteCollection({
+    required String farmId,
+    required String collectionId,
+  }) async {
+    await _client
+        .from('recoleccion_huevo')
+        .delete()
+        .eq('id', collectionId)
+        .eq('granja_id', farmId);
+  }
+
+  @override
+  Future<void> createSale(EggSaleInput input) async {
+    _validate(input.validate());
+    await _client.from('venta_huevo').insert({
+      'granja_id': input.farmId,
+      'grupo_id': input.groupId,
+      'fecha_venta': _date(input.date),
+      'cantidad': input.quantity,
+      'precio': input.unitPrice,
+      'created_by': _client.auth.currentUser?.id,
+    });
+  }
+
+  @override
+  Future<void> updateSale({
+    required String saleId,
+    required EggSaleInput input,
+  }) async {
+    _validate(input.validate());
+    await _client
+        .from('venta_huevo')
+        .update({
+          'grupo_id': input.groupId,
+          'fecha_venta': _date(input.date),
+          'cantidad': input.quantity,
+          'precio': input.unitPrice,
+        })
+        .eq('id', saleId)
+        .eq('granja_id', input.farmId);
+  }
+
+  @override
+  Future<void> deleteSale({
+    required String farmId,
+    required String saleId,
+  }) async {
+    await _client
+        .from('venta_huevo')
+        .delete()
+        .eq('id', saleId)
+        .eq('granja_id', farmId);
+  }
+
+  static void _validate(String? error) {
+    if (error != null) throw ArgumentError(error);
+  }
+
+  static List<Map<String, dynamic>> _rows(Object? value) => [
+    for (final row in value as List? ?? const [])
+      Map<String, dynamic>.from(row as Map),
+  ];
+
+  static String _date(DateTime value) {
+    return '${value.year.toString().padLeft(4, '0')}-'
+        '${value.month.toString().padLeft(2, '0')}-'
+        '${value.day.toString().padLeft(2, '0')}';
+  }
+
+  static const _collectionSelect = '''
+    id,granja_id,grupo_id,fecha_recoleccion,buenos,rotos,created_by,created_at,
+    group:grupos(nombre,tipo_animal_id,animal_type:tipo_animal(nombre)),
+    author:perfiles(nombre)
+  ''';
+
+  static const _saleSelect = '''
+    id,granja_id,grupo_id,fecha_venta,cantidad,precio,created_by,created_at,
+    group:grupos(nombre,tipo_animal_id,animal_type:tipo_animal(nombre)),
+    author:perfiles(nombre)
+  ''';
+}

@@ -1,78 +1,112 @@
-// lib/features/huevos/presentation/huevo_provider.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'huevo_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'huevo_models.dart';
+import 'huevo_repository.dart';
 
 part 'huevo_provider.g.dart';
 
-// ── Recolecciones ─────────────────────────────────────────────────────────────
-@riverpod
-Future<List<RecoleccionHuevo>> recolecciones(
-  Ref ref,
-  String granjaId,
-) =>
-    ref.watch(huevoRepositoryProvider).getRecolecciones(granjaId);
+Duration? _noRetry(int _, Object _) => null;
 
-// ── Reducciones ───────────────────────────────────────────────────────────────
-@riverpod
-Future<List<ReduccionHuevo>> reducciones(
-  Ref ref,
-  String granjaId,
-) =>
-    ref.watch(huevoRepositoryProvider).getReducciones(granjaId);
-
-// ── Lista combinada y ordenada por fecha desc ─────────────────────────────────
-@riverpod
-Future<List<MovHuevo>> movimientosHuevo(
-  Ref ref,
-  String granjaId,
-) async {
-  final recs = await ref.watch(recoleccionesProvider(granjaId).future);
-  final reds = await ref.watch(reduccionesProvider(granjaId).future);
-
-  final movs = [
-    ...recs.map(MovHuevo.deRecoleccion),
-    ...reds.map(MovHuevo.deReduccion),
-  ]..sort((a, b) => b.fecha.compareTo(a.fecha));
-
-  return movs;
+@Riverpod(keepAlive: true)
+HuevoRepository huevoRepository(Ref ref) {
+  return SupabaseHuevoRepository(Supabase.instance.client);
 }
 
-// ── Stats totales ─────────────────────────────────────────────────────────────
-@riverpod
-Future<HuevoStats> huevoStats(
-  Ref ref,
-  String granjaId,
-) async {
-  final recs = await ref.watch(recoleccionesProvider(granjaId).future);
-  final reds = await ref.watch(reduccionesProvider(granjaId).future);
-
-  final totalBuenos = recs.fold<int>(0, (s, r) => s + r.huevosBuenos);
-  final totalRotos = recs.fold<int>(0, (s, r) => s + r.huevosRotos);
-
-  double ingreso = 0;
-  int ventas = 0;
-  final Map<String, int> porRazon = {};
-
-  for (final red in reds) {
-    porRazon[red.razonNombre] = (porRazon[red.razonNombre] ?? 0) + red.cantidad;
-    if (red.importe != null) {
-      ingreso += red.importe!;
-      ventas += red.cantidad;
-    }
-  }
-
-  return HuevoStats(
-    totalRecolectados: totalBuenos + totalRotos,
-    totalBuenos: totalBuenos,
-    totalRotos: totalRotos,
-    totalIngreso: ingreso,
-    totalVentas: ventas,
-    porRazon: porRazon,
+@Riverpod(retry: _noRetry)
+Future<EggData> huevoData(Ref ref, String farmId) async {
+  final repository = ref.watch(huevoRepositoryProvider);
+  final collectionsFuture = repository.getCollections(farmId);
+  final salesFuture = repository.getSales(farmId);
+  return EggData(
+    collections: await collectionsFuture,
+    sales: await salesFuture,
   );
 }
 
-// ── Razones de reducción (catálogo) ──────────────────────────────────────────
+@Riverpod(retry: _noRetry)
+Future<EggAccess> huevoAccess(Ref ref, String farmId) {
+  return ref.watch(huevoRepositoryProvider).getAccess(farmId);
+}
+
 @riverpod
-Future<List<CatItemHuevo>> razonesReduccion(Ref ref) =>
-    ref.watch(huevoRepositoryProvider).getRazonesReduccion();
+class HuevoFilters extends _$HuevoFilters {
+  @override
+  EggFilters build(String farmId) => const EggFilters();
+
+  void setGroup(String? groupId) {
+    state = state.copyWith(groupId: groupId, clearGroup: groupId == null);
+  }
+
+  void setPeriod(EggPeriod period) {
+    state = state.copyWith(period: period);
+  }
+}
+
+@riverpod
+class HuevoMutations extends _$HuevoMutations {
+  @override
+  Future<void> build() async {}
+
+  Future<void> createCollection(EggCollectionInput input) => _run(
+    input.farmId,
+    () => ref.read(huevoRepositoryProvider).createCollection(input),
+  );
+
+  Future<void> updateCollection({
+    required String collectionId,
+    required EggCollectionInput input,
+  }) => _run(
+    input.farmId,
+    () => ref
+        .read(huevoRepositoryProvider)
+        .updateCollection(collectionId: collectionId, input: input),
+  );
+
+  Future<void> deleteCollection({
+    required String farmId,
+    required String collectionId,
+  }) => _run(
+    farmId,
+    () => ref
+        .read(huevoRepositoryProvider)
+        .deleteCollection(farmId: farmId, collectionId: collectionId),
+  );
+
+  Future<void> createSale(EggSaleInput input) => _run(
+    input.farmId,
+    () => ref.read(huevoRepositoryProvider).createSale(input),
+  );
+
+  Future<void> updateSale({
+    required String saleId,
+    required EggSaleInput input,
+  }) => _run(
+    input.farmId,
+    () => ref
+        .read(huevoRepositoryProvider)
+        .updateSale(saleId: saleId, input: input),
+  );
+
+  Future<void> deleteSale({required String farmId, required String saleId}) =>
+      _run(
+        farmId,
+        () => ref
+            .read(huevoRepositoryProvider)
+            .deleteSale(farmId: farmId, saleId: saleId),
+      );
+
+  Future<void> _run(String farmId, Future<void> Function() operation) async {
+    state = const AsyncLoading();
+    final result = await AsyncValue.guard(operation);
+    if (!ref.mounted) return;
+    state = result;
+    if (result case AsyncData()) {
+      ref.invalidate(huevoDataProvider(farmId));
+      return;
+    }
+    if (result case AsyncError(:final error, :final stackTrace)) {
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+}
