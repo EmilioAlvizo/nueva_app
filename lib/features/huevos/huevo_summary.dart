@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 
 import 'huevo_models.dart';
 import 'huevo_pie_chart.dart';
+import '../../shared/widgets/metric_card.dart';
+import '../../core/theme/app_colors.dart';
 
 class EggSummaryView extends StatelessWidget {
   const EggSummaryView({super.key, required this.summary});
@@ -19,29 +21,32 @@ class EggSummaryView extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _MetricCard(
-                key: const Key('egg-metric-eggs'),
-                icon: Icons.egg_outlined,
+              child: MetricCard(
+                //key: const Key('egg-metric-eggs'),
                 label: 'Huevos',
                 value: '${summary.goodEggs}',
+                color: const Color(0xFFB8E6CF),
+            foreground: const Color(0xFF14392A),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _MetricCard(
-                key: const Key('egg-metric-income'),
-                icon: Icons.payments_outlined,
+              child: MetricCard(
+                //key: const Key('egg-metric-income'),
                 label: 'Ingresos',
                 value: currency.format(summary.income),
+                color: AppColors.bgCard,
+            foreground: AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _MetricCard(
-                key: const Key('egg-metric-sold'),
-                icon: Icons.shopping_basket_outlined,
+              child: MetricCard(
+                //key: const Key('egg-metric-sold'),
                 label: 'Vendidos',
                 value: '${summary.soldEggs}',
+                color: const Color(0xFF75422F),
+            foreground: Colors.white,
               ),
             ),
           ],
@@ -75,7 +80,7 @@ class EggSummaryView extends StatelessWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
+/* class _MetricCard extends StatelessWidget {
   const _MetricCard({
     super.key,
     required this.icon,
@@ -128,6 +133,7 @@ class _MetricCard extends StatelessWidget {
     );
   }
 }
+ */
 
 class _DestinationCard extends StatelessWidget {
   const _DestinationCard({required this.summary});
