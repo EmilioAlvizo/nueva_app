@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../animales/animales_provider.dart';
 import '../animales/tipo_filtro.dart';
+import '../model/tipoAnimal/tipoAnimal.dart';
 import 'huevo_cards.dart';
 import 'huevo_filters.dart';
 import 'huevo_forms.dart';
@@ -124,6 +125,7 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
                                 ),
                                 EggTab.add => _CollectionsList(
                                   collections: filtered.collections,
+                                  animalTypes: animalTypes,
                                   canEdit: canEdit,
                                   onEdit: (collection) => _openCollectionForm(
                                     groupChoices,
@@ -133,6 +135,7 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
                                 ),
                                 EggTab.reduce => _SalesList(
                                   sales: filtered.sales,
+                                  animalTypes: animalTypes,
                                   canEdit: canEdit,
                                   onEdit: (sale) =>
                                       _openSaleForm(groupChoices, sale: sale),
@@ -374,12 +377,14 @@ class _SegmentedTabs extends StatelessWidget {
 class _CollectionsList extends StatelessWidget {
   const _CollectionsList({
     required this.collections,
+    required this.animalTypes,
     required this.canEdit,
     required this.onEdit,
     required this.onDelete,
   });
 
   final List<EggCollection> collections;
+  final List<TipoAnimal> animalTypes;
   final bool canEdit;
   final ValueChanged<EggCollection> onEdit;
   final ValueChanged<EggCollection> onDelete;
@@ -403,6 +408,10 @@ class _CollectionsList extends StatelessWidget {
         return EggCollectionCard(
           collection: collection,
           canEdit: canEdit,
+          stripeColor: colorParaTipoAnimal(
+            collection.animalTypeId,
+            animalTypes,
+          ),
           onEdit: () => onEdit(collection),
           onDelete: () => onDelete(collection),
         );
@@ -414,12 +423,14 @@ class _CollectionsList extends StatelessWidget {
 class _SalesList extends StatelessWidget {
   const _SalesList({
     required this.sales,
+    required this.animalTypes,
     required this.canEdit,
     required this.onEdit,
     required this.onDelete,
   });
 
   final List<EggSale> sales;
+  final List<TipoAnimal> animalTypes;
   final bool canEdit;
   final ValueChanged<EggSale> onEdit;
   final ValueChanged<EggSale> onDelete;
@@ -443,6 +454,7 @@ class _SalesList extends StatelessWidget {
         return EggSaleCard(
           sale: sale,
           canEdit: canEdit,
+          stripeColor: colorParaTipoAnimal(sale.animalTypeId, animalTypes),
           onEdit: () => onEdit(sale),
           onDelete: () => onDelete(sale),
         );

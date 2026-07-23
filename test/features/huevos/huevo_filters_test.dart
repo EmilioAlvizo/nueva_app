@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nueva_app/core/theme/app_colors.dart';
 import 'package:nueva_app/features/animales/tipo_filtro.dart';
 import 'package:nueva_app/features/huevos/huevo_filters.dart';
 import 'package:nueva_app/features/huevos/huevo_models.dart';
@@ -36,6 +37,12 @@ void main() {
       nombre: 'Codornices A',
     ),
   ];
+
+  test('animal type colors are ID-based with canonical fallback', () {
+    expect(colorParaTipoAnimal('type-2', types), AppColors.tipoColor[1]);
+    expect(colorParaTipoAnimal('missing', types), AppColors.tipoColor.first);
+    expect(colorParaTipoAnimal('', types), AppColors.tipoColor.first);
+  });
 
   test('group helpers constrain and resolve groups against animal type', () {
     expect(eggGroupsForType(groups: groups, animalTypeId: 'type-1'), [

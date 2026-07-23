@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nueva_app/core/theme/app_colors.dart';
 import 'package:nueva_app/core/theme/app_theme.dart';
 import 'package:nueva_app/features/animales/animales_provider.dart';
 import 'package:nueva_app/features/huevos/huevo_models.dart';
@@ -51,6 +52,29 @@ void main() {
     expect(find.byKey(const Key('egg-record-menu')), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
   });
+
+  testWidgets('collection and sale share the ID-resolved animal type color', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, canEdit: false);
+
+    await tester.tap(find.byKey(const ValueKey('egg-tab-add')));
+    await tester.pumpAndSettle();
+    final collectionStripe = tester.widget<ColoredBox>(
+      find.byKey(const Key('egg-animal-type-stripe')),
+    );
+    expect(collectionStripe.color, AppColors.tipoColor[1]);
+    expect(find.text('Display name unrelated to type ID'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('egg-tab-reduce')));
+    await tester.pumpAndSettle();
+    final saleStripe = tester.widget<ColoredBox>(
+      find.byKey(const Key('egg-sale-animal-type-stripe')),
+    );
+    expect(saleStripe.color, collectionStripe.color);
+    expect(saleStripe.color, AppColors.tipoColor[1]);
+    expect(find.text('Display name unrelated to type ID'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpScreen(WidgetTester tester, {required bool canEdit}) async {
@@ -77,6 +101,12 @@ const _animalTypes = [
     id: 'type-1',
     granjaId: 'farm-1',
     nombre: 'Gallinas',
+    createdBy: 'user-1',
+  ),
+  TipoAnimal(
+    id: 'type-2',
+    granjaId: 'farm-1',
+    nombre: 'Codornices',
     createdBy: 'user-1',
   ),
 ];
@@ -106,8 +136,8 @@ final class _FakeHuevoRepository implements HuevoRepository {
       brokenEggs: 2,
       createdAt: DateTime.now(),
       groupName: 'Ponedoras',
-      animalTypeId: 'type-1',
-      animalTypeName: 'Gallinas',
+      animalTypeId: 'type-2',
+      animalTypeName: 'Display name unrelated to type ID',
       authorName: 'Ana Pérez',
     ),
   ];
@@ -123,8 +153,8 @@ final class _FakeHuevoRepository implements HuevoRepository {
       unitPrice: 3,
       createdAt: DateTime.now(),
       groupName: 'Ponedoras',
-      animalTypeId: 'type-1',
-      animalTypeName: 'Gallinas',
+      animalTypeId: 'type-2',
+      animalTypeName: 'Display name unrelated to type ID',
       authorName: 'Ana Pérez',
     ),
   ];

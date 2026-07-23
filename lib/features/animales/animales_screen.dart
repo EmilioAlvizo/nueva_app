@@ -27,12 +27,6 @@ import '../../../../shared/widgets/confirmation_dialog.dart';
 import 'editar_baja_sheet.dart';
 import 'registrar_baja_sheet.dart';
 
-// ─── Helpers de color ────────────────────────────────────────────────────────
-Color _colorParaTipo(String tipoId, List<TipoAnimal> tipos) {
-  final idx = tipos.indexWhere((t) => t.id == tipoId);
-  return AppColors.tipoColor[(idx < 0 ? 0 : idx) % AppColors.tipoColor.length];
-}
-
 Future<void> _showAltaEditor({
   required BuildContext context,
   required String granjaId,
@@ -660,7 +654,7 @@ class _GruposTab extends ConsumerWidget {
                             final conteo =
                                 conteos[grupo.id] ??
                                 const GrupoConteo(vivos: 0, bajas: 0, total: 0);
-                            final color = _colorParaTipo(
+                            final color = colorParaTipoAnimal(
                               grupo.tipoAnimalId,
                               tipos,
                             );
@@ -1608,7 +1602,7 @@ class _TiposTab extends ConsumerWidget {
               0,
               (s, g) => s + (conteos[g.id]?.vivos ?? 0),
             );
-            final color = _colorParaTipo(tipo.id, tipos);
+            final color = colorParaTipoAnimal(tipo.id, tipos);
 
             return GestureDetector(
               onTap: () => showModalBottomSheet(
@@ -2337,7 +2331,7 @@ class _NoGroupCard extends StatelessWidget {
                       segment.alta.tipoAnimalId == item.tipo.id,
                 ),
             ].take(3).toList(growable: false),
-            stripColor: _colorParaTipo(item.tipo.id, tipos),
+            stripColor: colorParaTipoAnimal(item.tipo.id, tipos),
             expandido: expandidos.contains('no-group-altas-${item.tipo.id}'),
             colapsado: colapsados.contains('no-group-${item.tipo.id}'),
             onToggleExpand: () =>
