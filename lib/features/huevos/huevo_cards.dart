@@ -23,24 +23,337 @@ class EggCollectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _EggRecordCard(
+    return _EggCollectionRecordCard(
       key: ValueKey('egg-collection-${collection.id}'),
-      semanticsLabel:
-          'Recolección de ${collection.groupName}: '
-          '${collection.goodEggs} buenos y ${collection.brokenEggs} rotos',
-      icon: Icons.egg_rounded,
-      iconColor: eggConsumptionColor,
-      title: collection.groupName,
-      subtitle: collection.animalTypeName,
-      firstLabel: 'Buenos',
-      firstValue: '${collection.goodEggs}',
-      secondLabel: 'Rotos',
-      secondValue: '${collection.brokenEggs}',
-      author: collection.authorName,
-      date: collection.date,
+      collection: collection,
       canEdit: canEdit,
       onEdit: onEdit,
       onDelete: onDelete,
+    );
+  }
+}
+
+class _EggCollectionRecordCard extends StatelessWidget {
+  const _EggCollectionRecordCard({
+    super.key,
+    required this.collection,
+    required this.canEdit,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final EggCollection collection;
+  final bool canEdit;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final bodyColor = Color.alphaBlend(
+      const Color(0xFF2A2D25).withValues(alpha: isDark ? 0.82 : 0.12),
+      colors.surfaceContainerHigh,
+    );
+    final footerColor = Color.alphaBlend(
+      const Color(0xFF485043).withValues(alpha: isDark ? 0.68 : 0.1),
+      colors.surfaceContainerHighest,
+    );
+    final stripeColor = Color.alphaBlend(
+      const Color(0xFF0F766E).withValues(alpha: 0.88),
+      colors.primary,
+    );
+
+    return Semantics(
+      container: true,
+      label:
+          'Recolección de ${collection.groupName}: '
+          '${collection.goodEggs} buenos y ${collection.brokenEggs} rotos',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(21),
+        child: DecoratedBox(
+          key: const Key('egg-collection-surface'),
+          decoration: BoxDecoration(color: bodyColor),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 13, 10, 12),
+                        child: Column(
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: .center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Icon(
+                                    Icons.egg_outlined,
+                                    key: const Key('egg-collection-icon'),
+                                    size: 20,
+                                    color: eggConsumptionColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Recolección',
+                                        key: const Key('egg-collection-title'),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              color: colors.onSurface,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 1),
+                                      Text(
+                                        collection.groupName,
+                                        key: const Key('egg-collection-group'),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: colors.onSurfaceVariant,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _CollectionStatistic(
+                                  valueKey: const Key('egg-good-value'),
+                                  labelKey: const Key('egg-good-label'),
+                                  value: '${collection.goodEggs}',
+                                  label: 'Buenos',
+                                  color: colors.onSurface,
+                                ),
+                                const SizedBox(width: 9),
+                                _CollectionStatistic(
+                                  valueKey: const Key('egg-broken-value'),
+                                  labelKey: const Key('egg-broken-label'),
+                                  value: '${collection.brokenEggs}',
+                                  label: 'Rotos',
+                                  color: colors.error,
+                                ),
+                                if (canEdit) ...[
+                                  const SizedBox(width: 2),
+                                  _RecordMenu(
+                                    onEdit: onEdit,
+                                    onDelete: onDelete,
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 11),
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: colors.outlineVariant.withValues(
+                                alpha: 0.1,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  key: const Key('egg-collection-avatar'),
+                                  radius: 12,
+                                  backgroundColor: AppColors.naranjal,
+                                  child: Text(
+                                    _initials(collection.authorName),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 9,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text.rich(
+                                    key: const Key('egg-collection-author'),
+                                    TextSpan(
+                                      text: 'Registrado por ',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colors.onSurfaceVariant,
+                                          ),
+                                      children: [
+                                        TextSpan(
+                                          text: collection.authorName,
+                                          style: TextStyle(
+                                            color: colors.onSurface,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        key: const Key('egg-date-footer'),
+                        width: double.infinity,
+                        color: footerColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          _formatSpanishLongDate(collection.date),
+                          key: const Key('egg-collection-date'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  key: const Key('egg-group-stripe'),
+                  width: 36,
+                  child: ColoredBox(
+                    key: const Key('egg-animal-type-stripe'),
+                    color: stripeColor,
+                    child: RotatedBox(
+                      quarterTurns: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Center(
+                          child: Text(
+                            collection.animalTypeName,
+                            key: const Key('egg-animal-type-label'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CollectionStatistic extends StatelessWidget {
+  const _CollectionStatistic({
+    required this.valueKey,
+    required this.labelKey,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final Key valueKey;
+  final Key labelKey;
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      //mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          value,
+          key: valueKey,
+          maxLines: 1,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          key: labelKey,
+          maxLines: 1,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: color.withValues(alpha: 0.78),
+            fontSize: 9,
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecordMenu extends StatelessWidget {
+  const _RecordMenu({required this.onEdit, required this.onDelete});
+
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      child: PopupMenuButton<_EggCardAction>(
+        key: const Key('egg-record-menu'),
+        padding: EdgeInsets.zero,
+        tooltip: 'Opciones del registro',
+        onSelected: (action) => switch (action) {
+          _EggCardAction.edit => onEdit?.call(),
+          _EggCardAction.delete => onDelete?.call(),
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: _EggCardAction.edit,
+            child: ListTile(
+              leading: Icon(Icons.edit_outlined),
+              title: Text('Editar'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          PopupMenuItem(
+            value: _EggCardAction.delete,
+            child: ListTile(
+              leading: Icon(Icons.delete_outline, color: colors.error),
+              title: const Text('Eliminar'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -134,7 +447,6 @@ class _EggRecordCard extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: colors.surface,
-            border: Border.all(color: colors.outlineVariant),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -366,4 +678,22 @@ String _initials(String name) {
       .toList();
   if (words.isEmpty) return '?';
   return words.take(2).map((word) => word[0].toUpperCase()).join();
+}
+
+String _formatSpanishLongDate(DateTime date) {
+  const months = [
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+  ];
+  return '${date.day} de ${months[date.month - 1]} ${date.year}';
 }

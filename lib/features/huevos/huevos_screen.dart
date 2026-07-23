@@ -328,11 +328,6 @@ class _SegmentedTabs extends StatelessWidget {
                         ? const Color(0xFFF59E0B)
                         : colors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: selected == tab
-                          ? const Color(0xFFF59E0B)
-                          : colors.outlineVariant,
-                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,

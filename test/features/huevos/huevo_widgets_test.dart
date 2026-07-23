@@ -5,44 +5,94 @@ import 'package:nueva_app/core/theme/app_theme.dart';
 import 'package:nueva_app/features/huevos/huevo_cards.dart';
 import 'package:nueva_app/features/huevos/huevo_forms.dart';
 import 'package:nueva_app/features/huevos/huevo_models.dart';
-import 'package:nueva_app/features/huevos/huevo_pie_chart.dart';
 import 'package:nueva_app/features/huevos/huevo_summary.dart';
 
 void main() {
   testWidgets(
-    'collection card has olive body, right stripe, footer, and menu',
+    'collection card matches the collection reference and menu behavior',
     (tester) async {
       var edited = false;
+      var deleted = false;
       await _pump(
         tester,
         EggCollectionCard(
           collection: _collection(),
           canEdit: true,
           onEdit: () => edited = true,
-          onDelete: () {},
+          onDelete: () => deleted = true,
         ),
       );
 
-      final decorated = tester.widget<DecoratedBox>(
-        find
-            .descendant(
-              of: find.byType(EggCollectionCard),
-              matching: find.byType(DecoratedBox),
-            )
-            .first,
+      final surface = tester.widget<DecoratedBox>(
+        find.byKey(const Key('egg-collection-surface')),
       );
-      expect((decorated.decoration as BoxDecoration).color, AppColors.bgCard);
-      final stripe = tester.widget<ColoredBox>(
-        find.descendant(
-          of: find.byKey(const Key('egg-group-stripe')),
-          matching: find.byType(ColoredBox),
-        ),
-      );
-      expect(stripe.color, eggConsumptionColor);
-      expect(find.byKey(const Key('egg-date-footer')), findsOneWidget);
-      expect(find.byType(CircleAvatar), findsOneWidget);
+      final decoration = surface.decoration as BoxDecoration;
+      expect(decoration.color, isNotNull);
+      expect(decoration.border, isNull);
+      expect(find.byIcon(Icons.egg_outlined), findsOneWidget);
+      expect(find.byKey(const Key('egg-record-icon')), findsNothing);
+      expect(find.text('Recolección'), findsOneWidget);
+      expect(find.text('Ponedoras'), findsOneWidget);
+      expect(find.text('Gallinas'), findsOneWidget);
+      expect(find.text('18'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
       expect(find.text('Buenos'), findsOneWidget);
       expect(find.text('Rotos'), findsOneWidget);
+
+      final brokenValue = tester.widget<Text>(
+        find.byKey(const Key('egg-broken-value')),
+      );
+      final cardContext = tester.element(find.byType(EggCollectionCard));
+      expect(brokenValue.style?.color, Theme.of(cardContext).colorScheme.error);
+
+      final author = tester.widget<Text>(
+        find.byKey(const Key('egg-collection-author')),
+      );
+      final authorSpan = author.textSpan! as TextSpan;
+      expect(authorSpan.text, 'Registrado por ');
+      expect(authorSpan.children, hasLength(1));
+      final nameSpan = authorSpan.children!.single as TextSpan;
+      expect(nameSpan.text, 'Ana Pérez');
+      expect(nameSpan.style?.fontWeight, FontWeight.w800);
+
+      expect(find.byKey(const Key('egg-date-footer')), findsOneWidget);
+      expect(find.text('20 de julio 2026'), findsOneWidget);
+      expect(find.byIcon(Icons.calendar_today_outlined), findsNothing);
+      expect(find.byType(CircleAvatar), findsOneWidget);
+      final footer = tester.widget<Container>(
+        find.byKey(const Key('egg-date-footer')),
+      );
+      final date = tester.widget<Text>(
+        find.byKey(const Key('egg-collection-date')),
+      );
+      final animalLabel = tester.widget<RotatedBox>(
+        find.ancestor(
+          of: find.byKey(const Key('egg-animal-type-label')),
+          matching: find.byType(RotatedBox),
+        ),
+      );
+      expect(footer.alignment, Alignment.center);
+      expect(date.textAlign, TextAlign.center);
+      expect(animalLabel.quarterTurns, 3);
+
+      final cardRect = tester.getRect(
+        find.byKey(const ValueKey('egg-collection-collection-1')),
+      );
+      final stripeRect = tester.getRect(
+        find.byKey(const Key('egg-group-stripe')),
+      );
+      final footerRect = tester.getRect(
+        find.byKey(const Key('egg-date-footer')),
+      );
+      expect(stripeRect.width, 36);
+      expect(stripeRect.right, closeTo(cardRect.right, 0.01));
+      expect(stripeRect.top, closeTo(cardRect.top, 0.01));
+      expect(stripeRect.bottom, closeTo(cardRect.bottom, 0.01));
+      expect(footerRect.right, closeTo(stripeRect.left, 0.01));
+
+      final menuRect = tester.getRect(find.byKey(const Key('egg-record-menu')));
+      expect(menuRect.width, greaterThanOrEqualTo(48));
+      expect(menuRect.height, greaterThanOrEqualTo(48));
 
       await tester.tap(find.byKey(const Key('egg-record-menu')));
       await tester.pumpAndSettle();
@@ -51,6 +101,40 @@ void main() {
       await tester.tap(find.text('Editar'));
       await tester.pumpAndSettle();
       expect(edited, isTrue);
+
+      await tester.tap(find.byKey(const Key('egg-record-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Eliminar'));
+      await tester.pumpAndSettle();
+      expect(deleted, isTrue);
+    },
+  );
+
+  testWidgets(
+    'collection card hides menu and does not overflow at narrow width',
+    (tester) async {
+      await _pump(
+        tester,
+        SizedBox(
+          width: 288,
+          child: EggCollectionCard(
+            collection: _collection(
+              groupName: 'Gallinero de ponedoras del sector norte',
+              animalTypeName: 'Gallina ponedora',
+              authorName: 'Ana María Pérez Rodríguez',
+            ),
+            canEdit: false,
+          ),
+        ),
+        theme: AppTheme.light,
+      );
+
+      expect(find.byKey(const Key('egg-record-menu')), findsNothing);
+      expect(find.byKey(const Key('egg-animal-type-stripe')), findsOneWidget);
+      expect(find.byKey(const Key('egg-animal-type-label')), findsOneWidget);
+      expect(find.byKey(const Key('egg-collection-group')), findsOneWidget);
+      expect(find.byKey(const Key('egg-collection-author')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -136,10 +220,10 @@ void main() {
   });
 }
 
-Future<void> _pump(WidgetTester tester, Widget child) {
+Future<void> _pump(WidgetTester tester, Widget child, {ThemeData? theme}) {
   return tester.pumpWidget(
     MaterialApp(
-      theme: AppTheme.dark,
+      theme: theme ?? AppTheme.dark,
       home: Scaffold(
         body: Padding(padding: const EdgeInsets.all(16), child: child),
       ),
@@ -147,7 +231,11 @@ Future<void> _pump(WidgetTester tester, Widget child) {
   );
 }
 
-EggCollection _collection() => EggCollection(
+EggCollection _collection({
+  String groupName = 'Ponedoras',
+  String animalTypeName = 'Gallinas',
+  String authorName = 'Ana Pérez',
+}) => EggCollection(
   id: 'collection-1',
   farmId: 'farm-1',
   groupId: 'group-1',
@@ -155,10 +243,10 @@ EggCollection _collection() => EggCollection(
   goodEggs: 18,
   brokenEggs: 2,
   createdAt: DateTime(2026, 7, 20),
-  groupName: 'Ponedoras',
+  groupName: groupName,
   animalTypeId: 'type-1',
-  animalTypeName: 'Gallinas',
-  authorName: 'Ana Pérez',
+  animalTypeName: animalTypeName,
+  authorName: authorName,
 );
 
 EggSale _sale() => EggSale(

@@ -175,6 +175,8 @@ void showTipoFiltroPicker(
   required String selected,
   required ValueChanged<String> onChanged,
 }) {
+  final theme = Theme.of(context);
+  final isDark = theme.brightness == Brightness.dark;
   final options = [
     ('all', 'Todos los tipos', grupos.length),
     ...tipos.map(
@@ -185,7 +187,7 @@ void showTipoFiltroPicker(
 
   showModalBottomSheet(
     context: context,
-    backgroundColor: AppColors.bgCard,
+    backgroundColor: isDark ? AppColors.bgCard:AppColors.bgCardLg,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -217,6 +219,9 @@ class TipoFiltroPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       child: Column(
@@ -229,7 +234,7 @@ class TipoFiltroPicker extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: isDark ? Colors.white24:AppColors.bg,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -238,12 +243,12 @@ class TipoFiltroPicker extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Text(
+              Text(
                 'Filtrar por tipo',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: isDark ? AppColors.textPrimary:AppColors.textPrimaryLg,
                 ),
               ),
               const Spacer(),
@@ -267,9 +272,9 @@ class TipoFiltroPicker extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Se aplica a grupos, ejemplares, lotes y bajas',
-            style: TextStyle(fontSize: 12, color: Colors.white54),
+            style: TextStyle(fontSize: 12, color: isDark ? AppColors.textMutedLg:AppColors.textMuted),
           ),
           const SizedBox(height: 16),
           ...options.map((o) {
