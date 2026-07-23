@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import 'huevo_filters.dart';
 import 'huevo_models.dart';
 
 typedef SaveCollection = Future<void> Function(EggCollectionInput input);
@@ -40,7 +41,10 @@ class _EggCollectionFormState extends State<EggCollectionForm> {
   void initState() {
     super.initState();
     final collection = widget.collection;
-    _groupId = collection?.groupId ?? widget.initialGroupId;
+    _groupId = resolveValidEggGroupId(
+      collection?.groupId ?? widget.initialGroupId,
+      widget.groups,
+    );
     _date = collection?.date ?? DateTime.now();
     _goodController = TextEditingController(
       text: collection == null ? '' : '${collection.goodEggs}',
@@ -189,7 +193,10 @@ class _EggSaleFormState extends State<EggSaleForm> {
   void initState() {
     super.initState();
     final sale = widget.sale;
-    _groupId = sale?.groupId ?? widget.initialGroupId;
+    _groupId = resolveValidEggGroupId(
+      sale?.groupId ?? widget.initialGroupId,
+      widget.groups,
+    );
     _date = sale?.date ?? DateTime.now();
     _quantityController = TextEditingController(
       text: sale == null ? '' : '${sale.quantity}',

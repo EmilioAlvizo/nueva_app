@@ -15,6 +15,11 @@ import '../granja/nueva_granja.dart';
 // y tipo_filtro.dart).
 import '../animales/animales_provider.dart';
 import '../animales/tipo_filtro.dart';
+import '../model/grupo/grupo.dart';
+import '../model/tipoAnimal/tipoAnimal.dart';
+import '../huevos/huevo_filters.dart';
+import '../huevos/huevo_models.dart';
+import '../huevos/huevo_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   // Recibimos obligatoriamente el contenedor de navegación inyectado por GoRouter
@@ -81,86 +86,225 @@ class _AppBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 2. Extraemos dinámicamente el nombre del usuario desde Supabase authRepositoryProvider
-
-    // ── Filtro de tipo de animal: solo tiene sentido en la pestaña Animales
-    //    y cuando hay una granja seleccionada con tipos registrados.
     final selectedFarm = ref.watch(selectedFarmProvider);
-    //final isAnimalesTab = navigationShell.currentIndex == _animalesTabIndex;
-    final isAnimalesTab = [1,2,3].contains(navigationShell.currentIndex);
-    final puedeFiltrar = isAnimalesTab && selectedFarm != null;
-
-    final tiposAsync = puedeFiltrar
+    final branchIndex = navigationShell.currentIndex;
+    final isAnimalBranch = branchIndex == 1 || branchIndex == 2;
+    final isEggBranch = branchIndex == 2;
+    final tiposAsync = selectedFarm != null
         ? ref.watch(tiposAnimalProvider(selectedFarm.id))
         : null;
-    final gruposAsync = puedeFiltrar
+    final gruposAsync = isAnimalBranch && selectedFarm != null
         ? ref.watch(gruposProvider(selectedFarm.id))
         : null;
     final tipos = tiposAsync?.value ?? const [];
     final grupos = gruposAsync?.value ?? const [];
     final tipoFiltro = ref.watch(tipoFiltroProvider);
-    final mostrarFiltro = puedeFiltrar && tipos.isNotEmpty;
+    final filters = isEggBranch && selectedFarm != null
+        ? ref.watch(huevoFiltersProvider(selectedFarm.id))
+        : const EggFilters();
+    final typeIsValid =
+        tipoFiltro == 'all' || tipos.any((type) => type.id == tipoFiltro);
+    final groupIsValid =
+        resolveEggGroupForType(
+          selectedGroupId: filters.groupId,
+          groups: grupos,
+          animalTypeId: typeIsValid ? tipoFiltro : 'all',
+        ) ==
+        filters.groupId;
+
+    if (tiposAsync?.hasValue == true && !typeIsValid ||
+        gruposAsync?.hasValue == true && isEggBranch && !groupIsValid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        if (!typeIsValid && ref.read(tipoFiltroProvider) != 'all') {
+          ref.read(tipoFiltroProvider.notifier).clear();
+        }
+        if (selectedFarm != null && !groupIsValid) {
+          final provider = huevoFiltersProvider(selectedFarm.id);
+          if (ref.read(provider).groupId != null) {
+            ref.read(provider.notifier).setGroup(null);
+          }
+        }
+      });
+    }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.bgCard3,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: Text('🐔', style: TextStyle(fontSize: 16)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            'Granjas',
-            style: TextStyle(
-              color: isDark ? AppColors.textPrimary : const Color(0xFF1A1A2E),
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-            ),
-          ),
-          const Spacer(),
-          // ── Botón de filtro de tipo (badge con el color del tipo elegido) ──
-          if (mostrarFiltro) ...[
-            TipoFiltroBadgeButton(
-              isDark: isDark,
-              tipos: tipos,
-              grupos: grupos,
-              tipoFiltro: tipoFiltro,
-              onChanged: (v) => ref.read(tipoFiltroProvider.notifier).set(v),
-            ),
-            const SizedBox(width: 8),
-          ],
-          GestureDetector(
-            onTap: onSettings,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.bgCard : Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark ? AppColors.border : const Color(0xFFD1D5DB),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 560;
+          return Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.bgCard3,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: Text('🐔', style: TextStyle(fontSize: 16)),
                 ),
               ),
-              child: Icon(
-                Icons.settings_outlined,
-                color: isDark
-                    ? AppColors.textSecondary
-                    : const Color(0xFF6B7280),
-                size: 18,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _branchTitle(branchIndex),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : const Color(0xFF1A1A2E),
+                    fontSize: compact ? 18 : 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
+                ),
               ),
-            ),
+              if (selectedFarm != null)
+                HomeFilterControls(
+                  branchIndex: branchIndex,
+                  isDark: isDark,
+                  compact: compact,
+                  animalTypes: tipos,
+                  groups: grupos,
+                  selectedAnimalTypeId: typeIsValid ? tipoFiltro : 'all',
+                  filters: groupIsValid
+                      ? filters
+                      : filters.copyWith(clearGroup: true),
+                  onAnimalTypeChanged: (value) {
+                    ref.read(tipoFiltroProvider.notifier).set(value);
+                    if (!isEggBranch) return;
+                    final resolvedGroupId = resolveEggGroupForType(
+                      selectedGroupId: filters.groupId,
+                      groups: grupos,
+                      animalTypeId: value,
+                    );
+                    if (resolvedGroupId != filters.groupId) {
+                      ref
+                          .read(huevoFiltersProvider(selectedFarm.id).notifier)
+                          .setGroup(resolvedGroupId);
+                    }
+                  },
+                  onGroupChanged: (value) => ref
+                      .read(huevoFiltersProvider(selectedFarm.id).notifier)
+                      .setGroup(value),
+                  onPeriodChanged: (value) => ref
+                      .read(huevoFiltersProvider(selectedFarm.id).notifier)
+                      .setPeriod(value),
+                ),
+              const SizedBox(width: 7),
+              Tooltip(
+                message: 'Ajustes',
+                child: InkWell(
+                  onTap: onSettings,
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.bgCard : Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.border
+                            : const Color(0xFFD1D5DB),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.settings_outlined,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : const Color(0xFF6B7280),
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+String _branchTitle(int index) => switch (index) {
+  0 => 'Granjas',
+  1 => 'Animales',
+  2 => 'Huevos',
+  3 => 'Comida',
+  4 => 'Gráficas',
+  _ => 'Granjas',
+};
+
+class HomeFilterControls extends StatelessWidget {
+  const HomeFilterControls({
+    super.key,
+    required this.branchIndex,
+    required this.isDark,
+    required this.compact,
+    required this.animalTypes,
+    required this.groups,
+    required this.selectedAnimalTypeId,
+    required this.filters,
+    required this.onAnimalTypeChanged,
+    required this.onGroupChanged,
+    required this.onPeriodChanged,
+  });
+
+  final int branchIndex;
+  final bool isDark;
+  final bool compact;
+  final List<TipoAnimal> animalTypes;
+  final List<Grupo> groups;
+  final String selectedAnimalTypeId;
+  final EggFilters filters;
+  final ValueChanged<String> onAnimalTypeChanged;
+  final ValueChanged<String?> onGroupChanged;
+  final ValueChanged<EggPeriod> onPeriodChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final showAnimalType = branchIndex == 1 || branchIndex == 2;
+    final showEggFilters = branchIndex == 2;
+    final constrainedGroups = eggGroupsForType(
+      groups: groups,
+      animalTypeId: selectedAnimalTypeId,
+    );
+    return Row(
+      key: const Key('home-filter-controls'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showAnimalType && animalTypes.isNotEmpty) ...[
+          TipoFiltroBadgeButton(
+            isDark: isDark,
+            tipos: animalTypes,
+            grupos: groups,
+            tipoFiltro: selectedAnimalTypeId,
+            compact: compact,
+            onChanged: onAnimalTypeChanged,
+          ),
+          const SizedBox(width: 6),
+        ],
+        if (showEggFilters) ...[
+          EggGroupFilterBadgeButton(
+            isDark: isDark,
+            groups: constrainedGroups,
+            selectedGroupId: filters.groupId,
+            compact: compact,
+            onChanged: onGroupChanged,
+          ),
+          const SizedBox(width: 6),
+          EggPeriodFilterBadgeButton(
+            isDark: isDark,
+            period: filters.period,
+            compact: compact,
+            onChanged: onPeriodChanged,
           ),
         ],
-      ),
+      ],
     );
   }
 }
@@ -249,9 +393,7 @@ class GranjasTab extends ConsumerWidget {
                     }
                   },
                 );
-
               },
-              
             );
           },
         );

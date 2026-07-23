@@ -1,8 +1,8 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'huevo_models.dart';
+import 'huevo_pie_chart.dart';
 
 class EggSummaryView extends StatelessWidget {
   const EggSummaryView({super.key, required this.summary});
@@ -14,45 +14,43 @@ class EggSummaryView extends StatelessWidget {
     final currency = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
     return ListView(
       key: const Key('egg-summary-view'),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 112),
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 112),
       children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final compact = constraints.maxWidth < 560;
-            final width = compact
-                ? (constraints.maxWidth - 12) / 2
-                : (constraints.maxWidth - 24) / 3;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _MetricCard(
-                  width: compact ? constraints.maxWidth : width,
-                  icon: Icons.egg_outlined,
-                  label: 'Huevos',
-                  value: '${summary.goodEggs}',
-                ),
-                _MetricCard(
-                  width: width,
-                  icon: Icons.payments_outlined,
-                  label: 'Ingresos',
-                  value: currency.format(summary.income),
-                ),
-                _MetricCard(
-                  width: width,
-                  icon: Icons.shopping_basket_outlined,
-                  label: 'Vendidos',
-                  value: '${summary.soldEggs}',
-                ),
-              ],
-            );
-          },
+        Row(
+          children: [
+            Expanded(
+              child: _MetricCard(
+                key: const Key('egg-metric-eggs'),
+                icon: Icons.egg_outlined,
+                label: 'Huevos',
+                value: '${summary.goodEggs}',
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MetricCard(
+                key: const Key('egg-metric-income'),
+                icon: Icons.payments_outlined,
+                label: 'Ingresos',
+                value: currency.format(summary.income),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MetricCard(
+                key: const Key('egg-metric-sold'),
+                icon: Icons.shopping_basket_outlined,
+                label: 'Vendidos',
+                value: '${summary.soldEggs}',
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         _DestinationCard(summary: summary),
-        const SizedBox(height: 16),
-        _DetailCard(summary: summary, currency: currency),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
+        _StatisticsCard(summary: summary, currency: currency),
+        const SizedBox(height: 14),
         Row(
           children: [
             Expanded(
@@ -62,7 +60,7 @@ class EggSummaryView extends StatelessWidget {
                 value: summary.collectionCount,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _ActivityCard(
                 icon: Icons.receipt_long_outlined,
@@ -79,13 +77,12 @@ class EggSummaryView extends StatelessWidget {
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
-    required this.width,
+    super.key,
     required this.icon,
     required this.label,
     required this.value,
   });
 
-  final double width;
   final IconData icon;
   final String label;
   final String value;
@@ -95,24 +92,35 @@ class _MetricCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     return Container(
-      width: width,
-      constraints: const BoxConstraints(minHeight: 112),
-      padding: const EdgeInsets.all(16),
+      height: 96,
+      padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(20),
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: colors.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, color: colors.primary),
-          const SizedBox(height: 12),
-          Text(value, style: theme.textTheme.headlineSmall),
+          Icon(icon, size: 19, color: colors.secondary),
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
               color: colors.onSurfaceVariant,
             ),
           ),
@@ -131,118 +139,68 @@ class _DestinationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    const consumptionColor = Color(0xFF14B8A6);
-    const saleColor = Color(0xFFF59E0B);
-    final brokenColor = colors.error;
+    final chart = HuevoPieChart(
+      consumption: summary.consumedEggs.toDouble(),
+      sale: summary.soldEggs.toDouble(),
+      broken: summary.brokenEggs.toDouble(),
+    );
+    final legend = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Legend(
+          color: eggConsumptionColor,
+          label: 'Consumo',
+          value: summary.consumedEggs,
+        ),
+        const SizedBox(height: 11),
+        _Legend(color: eggSaleColor, label: 'Venta', value: summary.soldEggs),
+        const SizedBox(height: 11),
+        _Legend(color: colors.error, label: 'Rotos', value: summary.brokenEggs),
+      ],
+    );
     return Container(
-      padding: const EdgeInsets.all(20),
+      key: const Key('egg-destination-card'),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: colors.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Destino de los huevos', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 4),
           Text(
-            'Consumo representa huevos buenos no vendidos.',
+            'Destino de los Huevos',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Distribución de huevos recolectados y vendidos',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colors.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
-              final chart = Semantics(
-                label:
-                    'Destino: consumo ${summary.consumedEggs}, venta ${summary.soldEggs}, rotos ${summary.brokenEggs}',
-                child: SizedBox.square(
-                  dimension: 160,
-                  child: summary.destinationTotal == 0
-                      ? _EmptyDonut(color: colors.outlineVariant)
-                      : PieChart(
-                          PieChartData(
-                            centerSpaceRadius: 48,
-                            sectionsSpace: 3,
-                            sections: [
-                              PieChartSectionData(
-                                value: summary.consumedEggs.toDouble(),
-                                color: consumptionColor,
-                                radius: 28,
-                                showTitle: false,
-                              ),
-                              PieChartSectionData(
-                                value: summary.soldEggs.toDouble(),
-                                color: saleColor,
-                                radius: 28,
-                                showTitle: false,
-                              ),
-                              PieChartSectionData(
-                                value: summary.brokenEggs.toDouble(),
-                                color: brokenColor,
-                                radius: 28,
-                                showTitle: false,
-                              ),
-                            ],
-                          ),
-                          duration: const Duration(milliseconds: 250),
-                        ),
-                ),
-              );
-              final legend = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Legend(
-                    color: consumptionColor,
-                    label: 'Consumo',
-                    value: summary.consumedEggs,
-                  ),
-                  const SizedBox(height: 12),
-                  _Legend(
-                    color: saleColor,
-                    label: 'Venta',
-                    value: summary.soldEggs,
-                  ),
-                  const SizedBox(height: 12),
-                  _Legend(
-                    color: brokenColor,
-                    label: 'Rotos',
-                    value: summary.brokenEggs,
-                  ),
-                ],
-              );
-              if (constraints.maxWidth < 440) {
+              if (constraints.maxWidth < 320) {
                 return Column(
-                  children: [chart, const SizedBox(height: 16), legend],
+                  children: [chart, const SizedBox(height: 8), legend],
                 );
               }
               return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [chart, legend],
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Flexible(child: chart),
+                  legend,
+                ],
               );
             },
           ),
         ],
       ),
-    );
-  }
-}
-
-class _EmptyDonut extends StatelessWidget {
-  const _EmptyDonut({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: color, width: 24),
-      ),
-      child: const Center(child: Text('Sin datos')),
     );
   }
 }
@@ -264,21 +222,28 @@ class _Legend extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(width: 8),
-        Text('$value', style: Theme.of(context).textTheme.titleSmall),
+        SizedBox(
+          width: 58,
+          child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ),
+        Text(
+          '$value',
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
       ],
     );
   }
 }
 
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.summary, required this.currency});
+class _StatisticsCard extends StatelessWidget {
+  const _StatisticsCard({required this.summary, required this.currency});
 
   final EggSummary summary;
   final NumberFormat currency;
@@ -287,64 +252,158 @@ class _DetailCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colors.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Detalle', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 24,
-            runSpacing: 18,
-            children: [
-              _Detail(label: 'Buenos', value: '${summary.goodEggs}'),
-              _Detail(label: 'Rotos', value: '${summary.brokenEggs}'),
-              _Detail(label: 'Vendidos', value: '${summary.soldEggs}'),
-              _Detail(
-                label: 'Ingresos',
-                value: currency.format(summary.income),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          border: Border.all(color: colors.outlineVariant),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Precio promedio de venta',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    currency.format(summary.averageSalePrice),
+                    key: const Key('egg-average-sale-price'),
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _Statistic(
+                          label: 'Buenos',
+                          value: '${summary.goodEggs}',
+                        ),
+                      ),
+                      Expanded(
+                        child: _Statistic(
+                          label: 'Rotos',
+                          value: '${summary.brokenEggs}',
+                        ),
+                      ),
+                      Expanded(
+                        child: _Statistic(
+                          label: 'Vendidos',
+                          value: '${summary.soldEggs}',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _Statistic(
+                          label: 'Consumo',
+                          value: '${summary.consumedEggs}',
+                        ),
+                      ),
+                      Expanded(
+                        child: _Statistic(
+                          label: 'Ingresos',
+                          value: currency.format(summary.income),
+                        ),
+                      ),
+                      Expanded(
+                        child: _Statistic(
+                          label: 'Registros',
+                          value:
+                              '${summary.collectionCount + summary.saleCount}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              _Detail(
-                label: 'Precio promedio',
-                value: currency.format(summary.averageSalePrice),
+            ),
+            Container(
+              key: const Key('egg-break-even-strip'),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+              color: Color.alphaBlend(
+                colors.primary.withValues(alpha: 0.08),
+                colors.surfaceContainerHighest,
               ),
-            ],
-          ),
-        ],
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.balance_outlined,
+                    size: 18,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Punto de equilibrio',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Sin costos registrados',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Detail extends StatelessWidget {
-  const _Detail({required this.label, required this.value});
+class _Statistic extends StatelessWidget {
+  const _Statistic({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 130,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 3),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(value, style: Theme.of(context).textTheme.titleMedium),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -364,21 +423,34 @@ class _ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: colors.tertiaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Row(
         children: [
-          Icon(icon, color: colors.onTertiaryContainer),
+          Icon(icon, size: 20, color: colors.secondary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('$value', style: Theme.of(context).textTheme.titleLarge),
-                Text(label, style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  '$value',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),

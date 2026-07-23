@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../animales/animales_provider.dart';
 import '../animales/tipo_filtro.dart';
-import '../model/grupo/grupo.dart';
-import '../model/tipoAnimal/tipoAnimal.dart';
 import 'huevo_cards.dart';
 import 'huevo_filters.dart';
 import 'huevo_forms.dart';
 import 'huevo_models.dart';
+import 'huevo_pie_chart.dart';
 import 'huevo_provider.dart';
 import 'huevo_summary.dart';
 
@@ -33,120 +32,143 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
     final mutation = ref.watch(huevoMutationsProvider);
     final filters = ref.watch(huevoFiltersProvider(widget.granjaId));
     final animalTypeId = ref.watch(tipoFiltroProvider);
-    final animalTypes =
-        ref.watch(tiposAnimalProvider(widget.granjaId)).value ?? [];
-    final groups = ref.watch(gruposProvider(widget.granjaId)).value ?? [];
+    final animalTypesAsync = ref.watch(tiposAnimalProvider(widget.granjaId));
+    final groupsAsync = ref.watch(gruposProvider(widget.granjaId));
+    final animalTypes = animalTypesAsync.value ?? [];
+    final groups = groupsAsync.value ?? [];
+    final animalTypeIsValid =
+        animalTypeId == 'all' ||
+        animalTypes.any((type) => type.id == animalTypeId);
+    final effectiveAnimalTypeId = animalTypeIsValid ? animalTypeId : 'all';
     final canEdit = switch (access) {
       AsyncData(:final value) => value.canEdit && !mutation.isLoading,
       _ => false,
     };
-    final groupChoices = _groupChoices(
+    final groupChoices = buildEggGroupChoices(
       groups: groups,
       animalTypes: animalTypes,
-      animalTypeId: animalTypeId,
+      animalTypeId: effectiveAnimalTypeId,
     );
-    final selectedGroupIsValid =
-        filters.groupId == null ||
-        groupChoices.any((group) => group.id == filters.groupId);
+    final resolvedGroupId = resolveValidEggGroupId(
+      filters.groupId,
+      groupChoices,
+    );
+    final selectedGroupIsValid = filters.groupId == resolvedGroupId;
     final effectiveFilters = selectedGroupIsValid
         ? filters
         : filters.copyWith(clearGroup: true);
 
+    if (animalTypesAsync.hasValue && !animalTypeIsValid ||
+        groupsAsync.hasValue && !selectedGroupIsValid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (!animalTypeIsValid && ref.read(tipoFiltroProvider) != 'all') {
+          ref.read(tipoFiltroProvider.notifier).clear();
+        }
+        final current = ref.read(huevoFiltersProvider(widget.granjaId));
+        if (!selectedGroupIsValid && current.groupId != null) {
+          ref
+              .read(huevoFiltersProvider(widget.granjaId).notifier)
+              .setGroup(null);
+        }
+      });
+    }
+
     return Scaffold(
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
-            child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final fabRight = constraints.maxWidth > 920
+                ? (constraints.maxWidth - 920) / 2 + 16
+                : 16.0;
+            return Stack(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: _SegmentedTabs(
-                    selected: _tab,
-                    onSelected: (tab) => setState(() => _tab = tab),
-                  ),
-                ),
-                EggFilterBar(
-                  animalTypes: animalTypes,
-                  groups: groups,
-                  selectedAnimalTypeId: animalTypeId,
-                  filters: effectiveFilters,
-                  onAnimalTypeChanged: (value) {
-                    ref.read(tipoFiltroProvider.notifier).set(value);
-                    final selectedGroup = groups.where(
-                      (group) => group.id == filters.groupId,
-                    );
-                    if (selectedGroup.isNotEmpty &&
-                        value != 'all' &&
-                        selectedGroup.first.tipoAnimalId != value) {
-                      ref
-                          .read(huevoFiltersProvider(widget.granjaId).notifier)
-                          .setGroup(null);
-                    }
-                  },
-                  onGroupChanged: (value) => ref
-                      .read(huevoFiltersProvider(widget.granjaId).notifier)
-                      .setGroup(value),
-                  onPeriodChanged: (value) => ref
-                      .read(huevoFiltersProvider(widget.granjaId).notifier)
-                      .setPeriod(value),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: data.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, _) => _ErrorState(
-                      onRetry: () =>
-                          ref.invalidate(huevoDataProvider(widget.granjaId)),
-                    ),
-                    data: (value) {
-                      final filtered = value.filtered(
-                        animalTypeId: animalTypeId,
-                        filters: effectiveFilters,
-                        now: DateTime.now(),
-                      );
-                      return switch (_tab) {
-                        EggTab.summary => EggSummaryView(
-                          summary: EggSummary.fromData(filtered),
-                        ),
-                        EggTab.add => _CollectionsList(
-                          collections: filtered.collections,
-                          canEdit: canEdit,
-                          onEdit: (collection) => _openCollectionForm(
-                            groupChoices,
-                            collection: collection,
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 920),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                          child: _SegmentedTabs(
+                            selected: _tab,
+                            onSelected: (tab) => setState(() => _tab = tab),
                           ),
-                          onDelete: _deleteCollection,
                         ),
-                        EggTab.reduce => _SalesList(
-                          sales: filtered.sales,
-                          canEdit: canEdit,
-                          onEdit: (sale) =>
-                              _openSaleForm(groupChoices, sale: sale),
-                          onDelete: _deleteSale,
+                        EggFilterSummary(
+                          animalTypes: animalTypes,
+                          groups: groups,
+                          selectedAnimalTypeId: effectiveAnimalTypeId,
+                          filters: effectiveFilters,
                         ),
-                      };
-                    },
+                        Expanded(
+                          child: data.when(
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                            error: (_, _) => _ErrorState(
+                              onRetry: () => ref.invalidate(
+                                huevoDataProvider(widget.granjaId),
+                              ),
+                            ),
+                            data: (value) {
+                              final filtered = value.filtered(
+                                animalTypeId: effectiveAnimalTypeId,
+                                filters: effectiveFilters,
+                                now: DateTime.now(),
+                              );
+                              return switch (_tab) {
+                                EggTab.summary => EggSummaryView(
+                                  summary: EggSummary.fromData(filtered),
+                                ),
+                                EggTab.add => _CollectionsList(
+                                  collections: filtered.collections,
+                                  canEdit: canEdit,
+                                  onEdit: (collection) => _openCollectionForm(
+                                    groupChoices,
+                                    collection: collection,
+                                  ),
+                                  onDelete: _deleteCollection,
+                                ),
+                                EggTab.reduce => _SalesList(
+                                  sales: filtered.sales,
+                                  canEdit: canEdit,
+                                  onEdit: (sale) =>
+                                      _openSaleForm(groupChoices, sale: sale),
+                                  onDelete: _deleteSale,
+                                ),
+                              };
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+                if (canEdit && _tab != EggTab.summary)
+                  Positioned(
+                    right: fabRight,
+                    bottom: 16,
+                    child: FloatingActionButton.extended(
+                      key: ValueKey('egg-fab-${_tab.name}'),
+                      tooltip: _tab == EggTab.add
+                          ? 'Nueva recolección'
+                          : 'Nueva venta',
+                      backgroundColor: eggConsumptionColor,
+                      foregroundColor: Colors.white,
+                      onPressed: _tab == EggTab.add
+                          ? () => _openCollectionForm(groupChoices)
+                          : () => _openSaleForm(groupChoices),
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(_tab == EggTab.add ? 'Recolectar' : 'Vender'),
+                    ),
+                  ),
               ],
-            ),
-          ),
+            );
+          },
         ),
       ),
-      floatingActionButton: canEdit && _tab != EggTab.summary
-          ? FloatingActionButton.extended(
-              key: ValueKey('egg-fab-${_tab.name}'),
-              tooltip: _tab == EggTab.add ? 'Nueva recolección' : 'Nueva venta',
-              onPressed: _tab == EggTab.add
-                  ? () => _openCollectionForm(groupChoices)
-                  : () => _openSaleForm(groupChoices),
-              icon: const Icon(Icons.add_rounded),
-              label: Text(_tab == EggTab.add ? 'Recolectar' : 'Vender'),
-            )
-          : null,
     );
   }
 
@@ -165,7 +187,9 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
         farmId: widget.granjaId,
         groups: groups,
         collection: collection,
-        initialGroupId: collection == null ? filters.groupId : null,
+        initialGroupId: collection == null
+            ? resolveValidEggGroupId(filters.groupId, groups)
+            : null,
         onSave: (input) {
           if (collection == null) {
             return ref
@@ -192,7 +216,9 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
         farmId: widget.granjaId,
         groups: groups,
         sale: sale,
-        initialGroupId: sale == null ? filters.groupId : null,
+        initialGroupId: sale == null
+            ? resolveValidEggGroupId(filters.groupId, groups)
+            : null,
         onSave: (input) {
           if (sale == null) {
             return ref.read(huevoMutationsProvider.notifier).createSale(input);
@@ -280,32 +306,72 @@ class _SegmentedTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<EggTab>(
-        key: const Key('egg-segmented-tabs'),
-        segments: const [
-          ButtonSegment(value: EggTab.summary, label: Text('Resumen')),
-          ButtonSegment(value: EggTab.add, label: Text('Agregar')),
-          ButtonSegment(value: EggTab.reduce, label: Text('Reducir')),
+    return Row(
+      key: const Key('egg-segmented-tabs'),
+      children: [
+        for (final tab in EggTab.values) ...[
+          if (tab != EggTab.summary) const SizedBox(width: 7),
+          Expanded(
+            child: Semantics(
+              selected: selected == tab,
+              button: true,
+              child: InkWell(
+                key: ValueKey('egg-tab-${tab.name}'),
+                onTap: () => onSelected(tab),
+                borderRadius: BorderRadius.circular(16),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: selected == tab
+                        ? const Color(0xFFF59E0B)
+                        : colors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: selected == tab
+                          ? const Color(0xFFF59E0B)
+                          : colors.outlineVariant,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (selected == tab) ...[
+                        const Icon(
+                          Icons.check_rounded,
+                          key: Key('egg-selected-tab-check'),
+                          size: 17,
+                          color: Color(0xFF2A1700),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      Flexible(
+                        child: Text(
+                          switch (tab) {
+                            EggTab.summary => 'Resumen',
+                            EggTab.add => 'Agregar',
+                            EggTab.reduce => 'Reducir',
+                          },
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: selected == tab
+                                    ? const Color(0xFF2A1700)
+                                    : colors.onSurfaceVariant,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
-        selected: {selected},
-        showSelectedIcon: false,
-        onSelectionChanged: (selection) => onSelected(selection.first),
-        style: ButtonStyle(
-          minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
-          backgroundColor: WidgetStateProperty.resolveWith((states) {
-            return states.contains(WidgetState.selected)
-                ? const Color(0xFFF59E0B)
-                : colors.surfaceContainerHigh;
-          }),
-          foregroundColor: WidgetStateProperty.resolveWith((states) {
-            return states.contains(WidgetState.selected)
-                ? const Color(0xFF2A1700)
-                : colors.onSurfaceVariant;
-          }),
-        ),
-      ),
+      ],
     );
   }
 }
@@ -459,26 +525,4 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
-}
-
-List<EggGroupChoice> _groupChoices({
-  required List<Grupo> groups,
-  required List<TipoAnimal> animalTypes,
-  required String animalTypeId,
-}) {
-  return [
-    for (final group in groups)
-      if (animalTypeId == 'all' || group.tipoAnimalId == animalTypeId)
-        EggGroupChoice(
-          id: group.id,
-          name: group.nombre,
-          animalTypeId: group.tipoAnimalId,
-          animalTypeName:
-              animalTypes
-                  .where((type) => type.id == group.tipoAnimalId)
-                  .map((type) => type.nombre)
-                  .firstOrNull ??
-              'Tipo desconocido',
-        ),
-  ];
 }

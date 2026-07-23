@@ -40,6 +40,7 @@ class TipoFiltroBadgeButton extends StatelessWidget {
   final List<Grupo> grupos;
   final String tipoFiltro;
   final ValueChanged<String> onChanged;
+  final bool compact;
 
   const TipoFiltroBadgeButton({
     super.key,
@@ -48,6 +49,7 @@ class TipoFiltroBadgeButton extends StatelessWidget {
     required this.grupos,
     required this.tipoFiltro,
     required this.onChanged,
+    this.compact = false,
   });
 
   @override
@@ -60,7 +62,15 @@ class TipoFiltroBadgeButton extends StatelessWidget {
     final activo = tipoSel != null;
     final color = activo ? colorParaTipoAnimal(tipoSel.id, tipos) : null;
 
-    return GestureDetector(
+    return FilterBadgeButton(
+      key: const Key('animal-type-filter'),
+      isDark: isDark,
+      icon: Icons.filter_list_rounded,
+      label: tipoSel?.nombre ?? 'Todos los tipos',
+      tooltip: 'Filtrar por tipo de animal',
+      active: activo,
+      activeColor: color,
+      compact: compact,
       onTap: () => showTipoFiltroPicker(
         context,
         tipos: tipos,
@@ -68,49 +78,87 @@ class TipoFiltroBadgeButton extends StatelessWidget {
         selected: tipoFiltro,
         onChanged: onChanged,
       ),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: activo
-              ? color!.withValues(alpha: 0.15)
-              : (isDark ? AppColors.bgCard : Colors.white),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: activo
-                ? color!
-                : (isDark ? AppColors.border : const Color(0xFFD1D5DB)),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.filter_list_rounded,
-              size: 18,
-              color: activo
-                  ? color
-                  : (isDark
-                        ? AppColors.textSecondary
-                        : const Color(0xFF6B7280)),
-            ),
-            if (activo) ...[
-              const SizedBox(width: 5),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 90),
-                child: Text(
-                  tipoSel.nombre,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
+    );
+  }
+}
+
+class FilterBadgeButton extends StatelessWidget {
+  const FilterBadgeButton({
+    super.key,
+    required this.isDark,
+    required this.icon,
+    required this.label,
+    required this.tooltip,
+    required this.active,
+    required this.onTap,
+    this.activeColor,
+    this.compact = false,
+  });
+
+  final bool isDark;
+  final IconData icon;
+  final String label;
+  final String tooltip;
+  final bool active;
+  final Color? activeColor;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = activeColor ?? Theme.of(context).colorScheme.secondary;
+    final foreground = active
+        ? color
+        : (isDark ? AppColors.textSecondary : const Color(0xFF6B7280));
+    return Semantics(
+      button: true,
+      label: '$tooltip: $label',
+      child: Tooltip(
+        message: '$tooltip: $label',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const StadiumBorder(),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              height: 40,
+              padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
+              decoration: BoxDecoration(
+                color: active
+                    ? color.withValues(alpha: 0.15)
+                    : (isDark ? AppColors.bgCard : Colors.white),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: active
+                      ? color
+                      : (isDark ? AppColors.border : const Color(0xFFD1D5DB)),
                 ),
               ),
-            ],
-          ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 18, color: foreground),
+                  if (active && !compact) ...[
+                    const SizedBox(width: 5),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 88),
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: foreground,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
