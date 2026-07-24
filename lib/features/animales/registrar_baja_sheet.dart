@@ -7,6 +7,7 @@ import '../model/animal/animal.dart';
 import '../model/bajaAnimal/registrar_baja_animales_input.dart';
 import '../model/catalogoItem/catalogo_item.dart';
 import 'animales_provider.dart';
+import 'baja_eligibility.dart';
 
 class RegistrarBajaSheet extends ConsumerStatefulWidget {
   const RegistrarBajaSheet({
@@ -14,11 +15,13 @@ class RegistrarBajaSheet extends ConsumerStatefulWidget {
     required this.granjaId,
     required this.isDark,
     this.tipoAnimalIdInicial,
+    this.initialBajaDate,
   });
 
   final String granjaId;
   final bool isDark;
   final String? tipoAnimalIdInicial;
+  final DateTime? initialBajaDate;
 
   @override
   ConsumerState<RegistrarBajaSheet> createState() => _RegistrarBajaSheetState();
@@ -39,7 +42,7 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
   @override
   void initState() {
     super.initState();
-    _fechaBaja = DateTime.now();
+    _fechaBaja = widget.initialBajaDate ?? DateTime.now();
     _tipoAnimalId = widget.tipoAnimalIdInicial;
   }
 
@@ -67,16 +70,19 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
       });
     }
 
-    final animalesActivosPorTipo = (animalesAsync.value ?? const <Animal>[])
+    final animalesElegiblesPorTipo = (animalesAsync.value ?? const <Animal>[])
         .where(
           (animal) =>
-              animal.activo &&
-              animal.bajaId == null &&
-              (_tipoAnimalId == null || animal.tipoAnimalId == _tipoAnimalId),
+              _tipoAnimalId != null &&
+              isAnimalEligibleForBaja(
+                animal,
+                tipoAnimalId: _tipoAnimalId!,
+                fechaBaja: _fechaBaja,
+              ),
         )
         .toList(growable: false);
 
-    final animalesActivos = animalesActivosPorTipo
+    final animalesElegibles = animalesElegiblesPorTipo
         .where((animal) {
           final query = _query.trim().toLowerCase();
           if (query.isEmpty) {
@@ -102,13 +108,9 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
         maxChildSize: 0.96,
         expand: false,
         builder: (context, scrollController) {
-          return Container(
-            decoration: BoxDecoration(
-              color: widget.isDark ? AppColors.bg : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
+          return Material(
+            color: widget.isDark ? AppColors.bg : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             child: ListView(
               controller: scrollController,
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -311,15 +313,15 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
                       );
                     }
 
-                    if (animalesActivosPorTipo.isEmpty) {
+                    if (animalesElegiblesPorTipo.isEmpty) {
                       return _InfoBox(
                         isDark: widget.isDark,
                         message:
-                            'No hay animales activos disponibles para este tipo.',
+                            'No hay animales disponibles para este tipo y fecha.',
                       );
                     }
 
-                    if (animalesActivos.isEmpty) {
+                    if (animalesElegibles.isEmpty) {
                       return _InfoBox(
                         isDark: widget.isDark,
                         message:
@@ -339,15 +341,15 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
                       ),
                       child: ListView.separated(
                         shrinkWrap: true,
-                        itemCount: animalesActivos.length,
-                        separatorBuilder: (_, __) => Divider(
+                        itemCount: animalesElegibles.length,
+                        separatorBuilder: (_, _) => Divider(
                           height: 1,
                           color: widget.isDark
                               ? AppColors.border1lg
                               : AppColors.border1,
                         ),
                         itemBuilder: (context, index) {
-                          final animal = animalesActivos[index];
+                          final animal = animalesElegibles[index];
                           final selected = _selectedAnimalIds.contains(
                             animal.id,
                           );
@@ -414,7 +416,34 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
       return;
     }
 
-    setState(() => _fechaBaja = fecha);
+    final tipoAnimalId = _tipoAnimalId;
+    final animales = ref
+        .read(animalesProvider(widget.granjaId))
+        .unwrapPrevious()
+        .value;
+    if (tipoAnimalId == null) {
+      setState(() => _fechaBaja = fecha);
+      return;
+    }
+
+    final reconciliation = reconcileBajaSelectionIfAvailable(
+      selectedAnimalIds: _selectedAnimalIds,
+      animals: animales,
+      tipoAnimalId: tipoAnimalId,
+      fechaBaja: fecha,
+    );
+    setState(() {
+      _fechaBaja = fecha;
+      if (reconciliation != null) {
+        _selectedAnimalIds
+          ..clear()
+          ..addAll(reconciliation.eligibleIds);
+      }
+    });
+
+    if (reconciliation != null && reconciliation.removedCount > 0) {
+      _showMessage(_removedSelectionsMessage(reconciliation.removedCount));
+    }
   }
 
   Future<void> _guardar() async {
@@ -439,6 +468,43 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
           : double.tryParse(importeTexto.replaceAll(',', '.'));
       if (importeTexto.isNotEmpty && importe == null) {
         _showMessage('Ingresa un importe válido.');
+        return;
+      }
+
+      late final List<Animal> animales;
+      try {
+        animales = await ref.read(animalesProvider(widget.granjaId).future);
+      } catch (_) {
+        _showMessage(
+          'No se pudo actualizar la lista de animales. Intenta nuevamente.',
+        );
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      final reconciliation = reconcileBajaSelection(
+        selectedAnimalIds: _selectedAnimalIds,
+        animals: animales,
+        tipoAnimalId: _tipoAnimalId!,
+        fechaBaja: _fechaBaja,
+      );
+      if (reconciliation.removedCount > 0) {
+        setState(() {
+          _selectedAnimalIds
+            ..clear()
+            ..addAll(reconciliation.eligibleIds);
+        });
+        _showMessage(
+          'La selección cambió. ${_removedSelectionsMessage(reconciliation.removedCount)}',
+        );
+        return;
+      }
+
+      if (_selectedAnimalIds.isEmpty) {
+        _showMessage('Selecciona al menos un animal.');
         return;
       }
 
@@ -481,6 +547,10 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
       }
     }
   }
+
+  String _removedSelectionsMessage(int count) => count == 1
+      ? 'Se quitó 1 animal porque ya no es válido para la fecha seleccionada.'
+      : 'Se quitaron $count animales porque ya no son válidos para la fecha seleccionada.';
 
   void _showMessage(String message) {
     if (!mounted) {
