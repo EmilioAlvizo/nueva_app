@@ -23,8 +23,14 @@ class AppLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Text('🐓', style: TextStyle(fontSize: size * 0.48)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.22),
+        child: Image.asset(
+          'assets/icon/app.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        ),
       ),
     );
   }

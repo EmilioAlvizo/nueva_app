@@ -22,6 +22,12 @@ class MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(20),
+        image: DecorationImage(
+          image: const AssetImage('assets/topographi.png'),
+          colorFilter: ColorFilter.mode(foreground.withValues(alpha: 0.15), BlendMode.srcIn),
+          fit: BoxFit.none,
+          alignment: Alignment.center,
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

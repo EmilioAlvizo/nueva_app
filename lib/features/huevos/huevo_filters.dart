@@ -177,7 +177,7 @@ class EggFilterSummary extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Row(
         children: [
-          Text('Filtros', style: TextStyle(fontSize: 13, height: 1.4)),
+          Text('Filtros', style: TextStyle(fontSize: 11, height: 1.4)),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -186,9 +186,7 @@ class EggFilterSummary extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              style: TextStyle(fontSize: 11, height: 1.4),
             ),
           ),
         ],

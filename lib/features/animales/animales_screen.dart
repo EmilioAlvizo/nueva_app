@@ -26,6 +26,7 @@ import '/features/settings/presentation/providers/theme_provider.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
 import 'editar_baja_sheet.dart';
 import 'registrar_baja_sheet.dart';
+import '../../shared/widgets/metric_card.dart';
 
 Future<void> _showAltaEditor({
   required BuildContext context,
@@ -401,43 +402,6 @@ class _AppBarSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Fila título ──────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
-          child: Row(
-            children: [
-              // Logo placeholder (igual al HomeScreen)
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.green.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.egg_alt_outlined,
-                  size: 20,
-                  color: AppColors.green,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Aves',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: isDark
-                      ? AppColors.textPrimary
-                      : AppColors.textPrimaryLg,
-                ),
-              ),
-              // El botón de filtro por tipo y el de ajustes viven ahora en la
-              // barra superior del HomeScreen (junto al título "Granjas"),
-              // para no duplicar controles entre las dos barras.
-            ],
-          ),
-        ),
-
         // ── Choice chips de tabs ─────────────────────────────────────
         SizedBox(
           height: 38,
@@ -460,7 +424,7 @@ class _AppBarSection extends StatelessWidget {
                       color: sel
                           ? (isDark ? AppColors.naranjao : AppColors.naranjal)
                           : (isDark ? AppColors.bgCard : AppColors.bgLight),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -602,22 +566,31 @@ class _GruposTab extends ConsumerWidget {
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         child: Row(
                           children: [
-                            _StatTile(
-                              value: '$totalVivos',
-                              label: 'Aves vivas',
-                              color: AppColors.green,
+                            Expanded(
+                              child: MetricCard(
+                                value: '$totalVivos',
+                                label: 'Aves vivas',
+                                color: const Color(0xFFB8E6CF),
+                                foreground: const Color(0xFF14392A),
+                              ),
                             ),
                             const SizedBox(width: 10),
-                            _StatTile(
-                              value: '${gruposFiltrados.length}',
-                              label: 'Grupos',
-                              color: const Color(0xFF4B5563),
+                            Expanded(
+                              child: MetricCard(
+                                value: '${gruposFiltrados.length}',
+                                label: 'Grupos',
+                                color: AppColors.bgCard,
+                                foreground: AppColors.textPrimary,
+                              ),
                             ),
                             const SizedBox(width: 10),
-                            _StatTile(
-                              value: '$totalBajas',
-                              label: 'Bajas',
-                              color: const Color(0xFF7C3F2B),
+                            Expanded(
+                              child: MetricCard(
+                                value: '$totalBajas',
+                                label: 'Bajas',
+                                color: const Color(0xFF75422F),
+                                foreground: Colors.white,
+                              ),
                             ),
                           ],
                         ),
@@ -3272,46 +3245,6 @@ String _animalCountText(
 // WIDGETS PEQUEÑOS REUTILIZABLES
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _StatTile extends StatelessWidget {
-  final String value, label;
-  final Color color;
-  const _StatTile({
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 class _MiniStat extends StatelessWidget {
   final IconData icon;
   final String value, label;
@@ -3416,40 +3349,6 @@ class _ActionButton extends StatelessWidget {
     ),
   );
 }
-
-/* class _CardMenu extends StatelessWidget {
-  final VoidCallback onEdit, onDelete;
-  final double size;
-  final bool isDark;
-  const _CardMenu({
-    required this.onEdit,
-    required this.onDelete,
-    this.size = 20,
-    this.isDark = false,
-  });
-
-  @override
-  Widget build(BuildContext context) => PopupMenuButton<String>(
-    icon: Icon(
-      Icons.more_vert,
-      size: size,
-      color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
-    ),
-    color: AppColors.bgCard,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
-    itemBuilder: (_) => [
-      const PopupMenuItem(
-        value: 'edit',
-        child: Text('Editar', style: TextStyle(color: Colors.white)),
-      ),
-      const PopupMenuItem(
-        value: 'delete',
-        child: Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
-      ),
-    ],
-  );
-} */
 
 class _ContextualFabAction {
   const _ContextualFabAction({

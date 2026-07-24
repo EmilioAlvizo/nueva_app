@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../animales/animales_provider.dart';
 import '../animales/tipo_filtro.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
+import '../../core/theme/app_colors.dart';
 import 'huevo_cards.dart';
 import 'huevo_filters.dart';
 import 'huevo_forms.dart';
@@ -328,7 +329,7 @@ class _SegmentedTabs extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     color: selected == tab
-                        ? const Color(0xFFF59E0B)
+                        ? AppColors.naranjao
                         : colors.surface,
                     borderRadius: BorderRadius.circular(16),
                   ),

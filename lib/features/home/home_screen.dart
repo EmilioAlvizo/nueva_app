@@ -142,8 +142,16 @@ class _AppBar extends ConsumerWidget {
                   color: AppColors.bgCard3,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Center(
-                  child: Text('🐔', style: TextStyle(fontSize: 16)),
+                child: Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(40 * 0.2),
+                    child: Image.asset(
+                      'assets/icon/app.png',
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -458,16 +466,44 @@ class _BottomBar extends StatelessWidget {
 
   const _BottomBar({required this.isDark, required this.navigationShell});
 
-  static const _icons = [
-    Icons.home_rounded,
-    Icons.circle_outlined,
-    Icons.egg_outlined,
-    Icons.grass_outlined,
-    Icons.show_chart_rounded,
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final currentIndex = navigationShell.currentIndex;
+
+    // 1. Definimos una función que genera el icono correcto según su color dinámico
+    Widget getIcon(int index, Color color) {
+      switch (index) {
+        case 0:
+          return Icon(Icons.home_rounded, size: 22, color: color);
+        // 2. Aquí reemplazamos Icons.circle_outlined por tu asset personalizado
+        case 1:
+          return Image.asset(
+            'assets/chicken.png',
+            width: 22,
+            height: 22,
+            color: color,
+          );
+        case 2:
+          return Image.asset(
+            'assets/eggs.png',
+            width: 22,
+            height: 22,
+            color: color,
+          );
+        case 3:
+          return Image.asset(
+            'assets/grain.png',
+            width: 22,
+            height: 22,
+            color: color,
+          );
+        case 4:
+          return Icon(Icons.show_chart_rounded, size: 22, color: color);
+        default:
+          return const SizedBox.shrink();
+      }
+    }
+
     return Container(
       height: 70,
       decoration: BoxDecoration(
@@ -480,36 +516,29 @@ class _BottomBar extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(_icons.length, (i) {
-          // El índice activo se lee directamente del Shell de GoRouter de manera reactiva
-          final sel = navigationShell.currentIndex == i;
+        children: List.generate(5, (index) {
+          // 5 es el número total de pestañas
+          final isSelected = currentIndex == index;
+
+          // 3. Calculamos el color una sola vez para pasarlo al Icon o al Image.asset
+          final iconColor = isSelected
+              ? AppColors.green
+              : (isDark ? AppColors.textSecondary : const Color(0xFF9CA3AF));
 
           return GestureDetector(
-            onTap: () {
-              // Navega a la rama (branch) correspondiente usando la API del shell.
-              // El parámetro `initialLocation: true` asegura que si presionas una pestaña ya activa, te regrese a la raíz de esa pestaña.
-              navigationShell.goBranch(
-                i,
-                initialLocation: i == navigationShell.currentIndex,
-              );
-            },
+            behavior: HitTestBehavior.opaque,
+            onTap: () => navigationShell.goBranch(
+              index,
+              initialLocation: index == currentIndex,
+            ),
             child: Container(
               padding: const EdgeInsets.all(12),
-              decoration: sel
-                  ? const BoxDecoration(
-                      color: AppColors.bgCard3,
-                      shape: BoxShape.circle,
-                    )
-                  : null,
-              child: Icon(
-                _icons[i],
-                size: 22,
-                color: sel
-                    ? AppColors.green
-                    : (isDark
-                          ? AppColors.textSecondary
-                          : const Color(0xFF9CA3AF)),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.bgCard3 : Colors.transparent,
+                shape: BoxShape.circle,
               ),
+              // 4. Renderizamos el widget dinámico pasando el color calculado
+              child: getIcon(index, iconColor),
             ),
           );
         }),
@@ -535,10 +564,22 @@ class _FarmCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const List<String> kFarmCardImages = [
+      'assets/icon/card1.jpeg',
+      'assets/icon/card2.jpeg',
+      'assets/icon/card3.jpeg',
+      'assets/icon/card4.jpeg',
+    ];
+
     final balance = 100;
     final balanceColor = balance >= 0 ? AppColors.positive : AppColors.negative;
     final balanceStr = balance >= 0 ? '+$balance \$' : '$balance \$';
     final ownerName = farm.ownerProfile?.nombre ?? 'Desconocido';
+
+    String _imageForFarm(String farmId) {
+      final index = farmId.hashCode.abs() % kFarmCardImages.length;
+      return kFarmCardImages[index];
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -596,16 +637,11 @@ class _FarmCard extends StatelessWidget {
                     ),
                     child: Stack(
                       children: [
-                        Container(
+                        Image.asset(
+                          _imageForFarm(farm.id),
                           height: 110,
                           width: double.infinity,
-                          color: const Color(0xFF2D4A1E),
-                          child: const Center(
-                            child: Text(
-                              '🌿🌾🌿',
-                              style: TextStyle(fontSize: 40),
-                            ),
-                          ),
+                          fit: BoxFit.cover,
                         ),
                         Container(
                           height: 110,
