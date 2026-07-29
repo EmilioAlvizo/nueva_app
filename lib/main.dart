@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,6 +9,7 @@ import 'features/settings/presentation/providers/theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await Supabase.initialize(
     url: 'https://wjdazuycudtzycpekxga.supabase.co',
     anonKey: 'sb_publishable_WQO-DB3TWcrQvk9dVfH7Ng_W36hiG_f',
@@ -15,9 +17,7 @@ Future<void> main() async {
 
   runApp(
     // ProviderScope wraps the whole app — required by Riverpod
-    const ProviderScope(
-      child: GallinasApp(),
-    ),
+    const ProviderScope(child: GallinasApp()),
   );
 }
 
