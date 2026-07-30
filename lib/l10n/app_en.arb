@@ -1,0 +1,49 @@
+{
+  "@@locale": "en",
+  "financesTitle": "Finances",
+  "@financesTitle": {
+    "description": "Title of the finances section"
+  },
+  "financeTabBalance": "Break-even",
+  "financeTabIncome": "Income",
+  "financeTabExpenses": "Expenses",
+  "financeTabCharts": "Charts",
+  "financeBalanceHeading": "Break-even by feed mix",
+  "financeBalanceSubtitle": "Minimum egg price needed to cover the feed cost for each mix.",
+  "financeErrorTitle": "We couldn''t load the break-even data",
+  "financeErrorMessage": "Check your connection and try again.",
+  "financeRetry": "Try again",
+  "financeBalanceEmptyTitle": "No break-even data yet",
+  "financeBalanceEmptyMessage": "Break-even results will appear when the selected farm has feed mixes with egg production.",
+  "financeIncomeUnavailableTitle": "Income is not available yet",
+  "financeIncomeUnavailableMessage": "This tab is ready for income once a verified data source is defined.",
+  "financeExpensesUnavailableTitle": "Expenses are not available yet",
+  "financeExpensesUnavailableMessage": "This tab is ready for expenses once a verified data source is defined.",
+  "financeChartsUnavailableTitle": "Financial charts are not available yet",
+  "financeChartsUnavailableMessage": "Charts will be enabled when verified income and expense data is available.",
+  "financeNoFabricatedData": "No estimates or invented financial data are shown.",
+  "breakEvenPriceLabel": "Break-even price",
+  "goodEggsLabel": "Good eggs",
+  "brokenEggsLabel": "Broken eggs",
+  "foodCostLabel": "Feed cost",
+  "periodLabel": "Period",
+  "ongoingLabel": "Ongoing",
+  "notAvailableLabel": "Not available",
+  "breakEvenUnavailableReason": "No good eggs were recorded for this mix.",
+  "financeDateRange": "{start} - {end}",
+  "@financeDateRange": {
+    "description": "Date range shown on a break-even card",
+    "placeholders": {
+      "start": {"type": "String"},
+      "end": {"type": "String"}
+    }
+  },
+  "breakEvenCardSemantics": "{groupName}. Break-even price: {price}.",
+  "@breakEvenCardSemantics": {
+    "description": "Accessibility summary for a break-even card",
+    "placeholders": {
+      "groupName": {"type": "String"},
+      "price": {"type": "String"}
+    }
+  }
+}

@@ -11,6 +11,7 @@ import '../../features/comida/comida_screen.dart';
 import '../../features/animales/animales_screen.dart';
 import '../../features/granja/granja_provider.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/finanzas/presentation/screens/finances_screen.dart';
 
 // ─── Route names (constants → no magic strings) ───────────────────────────────
 abstract final class AppRoutes {
@@ -22,9 +23,27 @@ abstract final class AppRoutes {
   static const animales = '/animales';
   static const huevos = '/huevos';
   static const comida = '/comida';
+  static const finanzas = '/finanzas';
   static const grafica = '/grafica';
 
   static const collaborators = '/collaborators/:id';
+}
+
+String? resolveAppRedirect({
+  required bool isLoading,
+  required bool hasSession,
+  required String matchedLocation,
+}) {
+  if (isLoading) return null;
+  final onAuthRoute =
+      matchedLocation == AppRoutes.login ||
+      matchedLocation == AppRoutes.register;
+  if (!hasSession && !onAuthRoute) return AppRoutes.login;
+  if (hasSession && onAuthRoute) return AppRoutes.home;
+  if (hasSession && matchedLocation == AppRoutes.grafica) {
+    return AppRoutes.finanzas;
+  }
+  return null;
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -36,16 +55,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: authNotifier,
     redirect: (context, state) {
       final sessionAsync = ref.read(authSessionProvider);
-      if (sessionAsync.isLoading) return null;
-
-      final hasSession = sessionAsync.value != null;
-      final onAuthRoute =
-          state.matchedLocation == AppRoutes.login ||
-          state.matchedLocation == AppRoutes.register;
-
-      if (!hasSession && !onAuthRoute) return AppRoutes.login;
-      if (hasSession && onAuthRoute) return AppRoutes.home;
-      return null;
+      return resolveAppRedirect(
+        isLoading: sessionAsync.isLoading,
+        hasSession: sessionAsync.value != null,
+        matchedLocation: state.matchedLocation,
+      );
     },
     routes: [
       GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
@@ -53,6 +67,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.register,
         builder: (_, __) => const RegisterScreen(),
       ),
+      GoRoute(path: AppRoutes.grafica, redirect: (_, _) => AppRoutes.finanzas),
 
       // ─── SHELL DE NAVEGACIÓN (Mantiene HomeScreen como contenedor) ───
       StatefulShellRoute.indexedStack(
@@ -105,13 +120,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Pestaña 4: Gráfica
+          // Pestaña 4: Finanzas
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.grafica,
-                builder: (context, state) =>
-                    const Center(child: Text('Pantalla de Gráficas')),
+                path: AppRoutes.finanzas,
+                builder: (context, state) => AnimalesTabContainer(
+                  screenBuilder: (granjaId) => FinancesScreen(farmId: granjaId),
+                ),
               ),
             ],
           ),
