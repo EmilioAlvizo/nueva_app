@@ -77,6 +77,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get breakEvenPriceLabel => 'Break-even price';
 
   @override
+  String get breakEvenPricePerEggLabel => 'Break-even price per egg';
+
+  @override
+  String get breakEvenCardDescription =>
+      'Minimum price per good egg needed to cover feed costs.';
+
+  @override
+  String financeMarginValue(String value) {
+    return 'Margin $value%';
+  }
+
+  @override
+  String get financeMarginUnavailable => 'Margin unavailable';
+
+  @override
+  String get totalCostLabel => 'Total cost';
+
+  @override
   String get goodEggsLabel => 'Good eggs';
 
   @override
@@ -84,6 +102,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get foodCostLabel => 'Feed cost';
+
+  @override
+  String get totalFeedConsumptionLabel => 'Total consumption';
+
+  @override
+  String get weightedAverageBirdsLabel => 'Weighted average birds';
+
+  @override
+  String get eggsPerDayLabel => 'Eggs per day';
+
+  @override
+  String get eggsPerDayPerBirdLabel => 'Eggs per day per bird';
+
+  @override
+  String get feedPerDayLabel => 'Consumption per day';
+
+  @override
+  String get feedPerDayPerBirdLabel => 'Consumption per day per bird';
+
+  @override
+  String get averageSalePriceLabel => 'Average sale price';
+
+  @override
+  String get mixtureDurationLabel => 'Duration';
+
+  @override
+  String financeDurationDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String financeKilograms(String value) {
+    return '$value kg';
+  }
 
   @override
   String get periodLabel => 'Period';
@@ -104,7 +162,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String breakEvenCardSemantics(String groupName, String price) {
-    return '$groupName. Break-even price: $price.';
+  String breakEvenCardSemantics(String groupName, String price, String margin) {
+    return '$groupName. Break-even price per egg: $price. $margin.';
   }
 }

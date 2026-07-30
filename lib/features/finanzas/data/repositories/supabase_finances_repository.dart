@@ -11,20 +11,10 @@ final class SupabaseFinancesRepository implements FinancesRepository {
 
   @override
   Future<List<BreakEvenPoint>> getBreakEvenPoints(String farmId) async {
-    final mixtureData = await _client
-        .from('mezcla')
-        .select('id,grupos!inner(granja_id)')
-        .eq('grupos.granja_id', farmId);
-    final mixtureIds = <String>{
-      for (final row in _rows(mixtureData)) _requiredMixtureId(row),
-    }.toList(growable: false);
-
-    if (mixtureIds.isEmpty) return const [];
-
     final viewData = await _client
         .from('puntos_equilibrio_huevos')
         .select(_breakEvenSelect)
-        .inFilter('mezcla_id', mixtureIds)
+        .eq('granja_id', farmId)
         .order('fecha_inicio', ascending: false);
 
     return List<BreakEvenPoint>.unmodifiable(
@@ -32,14 +22,6 @@ final class SupabaseFinancesRepository implements FinancesRepository {
         viewData,
       ).map((row) => BreakEvenPointModel.fromJson(row).toEntity()),
     );
-  }
-
-  static String _requiredMixtureId(Map<String, dynamic> row) {
-    final value = row['id'];
-    if (value is! String || value.trim().isEmpty) {
-      throw const FormatException('Expected mixture id in farm scope query.');
-    }
-    return value.trim();
   }
 
   static List<Map<String, dynamic>> _rows(Object? value) {
@@ -58,4 +40,8 @@ final class SupabaseFinancesRepository implements FinancesRepository {
 
 const _breakEvenSelect =
     'fecha_inicio,fecha_termino,mezcla_id,grupo_nombre,buenos,rotos,'
-    'total_costo_comidas,punto_de_equilibrio';
+    'total_costo_comidas,punto_de_equilibrio,granja_id,grupo_id,'
+    'fecha_fin_calculada,dias_mezcla,consumo_total,'
+    'aves_promedio_ponderado,huevos_por_dia,huevos_por_dia_ave,'
+    'consumo_por_dia,consumo_por_dia_ave,precio_venta_promedio,'
+    'margen_porcentaje';

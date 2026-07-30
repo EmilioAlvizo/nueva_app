@@ -24,7 +24,8 @@ class BreakEvenContent extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = math.min(constraints.maxWidth, AppSizes.maxContentWidth);
+        final postPaddingWidth = constraints.maxWidth - AppSpacing.md * 2;
+        final width = math.min(postPaddingWidth, AppSizes.maxContentWidth);
         final columns = width >= AppSizes.expandedBreakpoint
             ? 3
             : width >= AppSizes.mediumBreakpoint

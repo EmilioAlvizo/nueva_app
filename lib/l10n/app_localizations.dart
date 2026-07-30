@@ -218,6 +218,36 @@ abstract class AppLocalizations {
   /// **'Break-even price'**
   String get breakEvenPriceLabel;
 
+  /// Label inside the break-even price ring
+  ///
+  /// In en, this message translates to:
+  /// **'Break-even price per egg'**
+  String get breakEvenPricePerEggLabel;
+
+  /// Short explanation beside the break-even price ring
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum price per good egg needed to cover feed costs.'**
+  String get breakEvenCardDescription;
+
+  /// Positive or negative margin percentage chip
+  ///
+  /// In en, this message translates to:
+  /// **'Margin {value}%'**
+  String financeMarginValue(String value);
+
+  /// No description provided for @financeMarginUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin unavailable'**
+  String get financeMarginUnavailable;
+
+  /// No description provided for @totalCostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total cost'**
+  String get totalCostLabel;
+
   /// No description provided for @goodEggsLabel.
   ///
   /// In en, this message translates to:
@@ -235,6 +265,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feed cost'**
   String get foodCostLabel;
+
+  /// No description provided for @totalFeedConsumptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total consumption'**
+  String get totalFeedConsumptionLabel;
+
+  /// No description provided for @weightedAverageBirdsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weighted average birds'**
+  String get weightedAverageBirdsLabel;
+
+  /// No description provided for @eggsPerDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Eggs per day'**
+  String get eggsPerDayLabel;
+
+  /// No description provided for @eggsPerDayPerBirdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Eggs per day per bird'**
+  String get eggsPerDayPerBirdLabel;
+
+  /// No description provided for @feedPerDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumption per day'**
+  String get feedPerDayLabel;
+
+  /// No description provided for @feedPerDayPerBirdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumption per day per bird'**
+  String get feedPerDayPerBirdLabel;
+
+  /// No description provided for @averageSalePriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Average sale price'**
+  String get averageSalePriceLabel;
+
+  /// No description provided for @mixtureDurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get mixtureDurationLabel;
+
+  /// Duration of a feed mixture in days
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String financeDurationDays(int count);
+
+  /// A localized feed quantity in kilograms
+  ///
+  /// In en, this message translates to:
+  /// **'{value} kg'**
+  String financeKilograms(String value);
 
   /// No description provided for @periodLabel.
   ///
@@ -269,8 +359,8 @@ abstract class AppLocalizations {
   /// Accessibility summary for a break-even card
   ///
   /// In en, this message translates to:
-  /// **'{groupName}. Break-even price: {price}.'**
-  String breakEvenCardSemantics(String groupName, String price);
+  /// **'{groupName}. Break-even price per egg: {price}. {margin}.'**
+  String breakEvenCardSemantics(String groupName, String price, String margin);
 }
 
 class _AppLocalizationsDelegate

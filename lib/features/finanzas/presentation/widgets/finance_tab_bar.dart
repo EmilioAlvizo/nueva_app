@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
+import '../../../../core/theme/finance_theme.dart';
 
 enum FinanceTab { balance, income, expenses, charts }
 
 final class FinanceTabItem {
   const FinanceTabItem({
     required this.tab,
+    required this.role,
     required this.label,
     required this.asset,
     required this.keyValue,
   });
 
   final FinanceTab tab;
+  final FinanceTabRole role;
   final String label;
   final String asset;
   final String keyValue;
@@ -78,9 +81,8 @@ class FinanceTabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final foreground = selected
-        ? colors.onPrimaryContainer
-        : colors.onSurfaceVariant;
+    final palette = FinanceTheme.of(context).tabPalette(item.role);
+    final foreground = selected ? palette.onAccent : colors.onSurfaceVariant;
     final style = ButtonStyle(
       minimumSize: const WidgetStatePropertyAll(
         Size(AppSizes.minTapTarget, AppSizes.minTapTarget),
@@ -90,7 +92,7 @@ class FinanceTabButton extends StatelessWidget {
       ),
       foregroundColor: WidgetStatePropertyAll(foreground),
       backgroundColor: WidgetStatePropertyAll(
-        selected ? colors.primaryContainer : Colors.transparent,
+        selected ? palette.accent : colors.surface.withValues(alpha: 0),
       ),
       shape: WidgetStatePropertyAll(
         RoundedRectangleBorder(

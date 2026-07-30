@@ -83,6 +83,11 @@ void main() {
     expect(find.text('Gallinero'), findsOneWidget);
     expect(find.textContaining('3,32'), findsOneWidget);
     expect(find.textContaining('610,00'), findsOneWidget);
+    expect(find.text('Huevos buenos'), findsOneWidget);
+    expect(find.text('184'), findsOneWidget);
+    expect(find.text('Consumo total'), findsOneWidget);
+    expect(find.text('80 kg'), findsOneWidget);
+    expect(find.text('Huevos rotos'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -148,14 +153,26 @@ Future<void> _flushAsync(WidgetTester tester) async {
 }
 
 final _point = BreakEvenPoint(
+  farmId: '48b129e9-a48b-438a-a401-96d4dd863da5',
+  groupId: '7428302e-9d3b-4967-9baa-4747c98778bc',
   startedAt: DateTime(2023, 12, 11),
   endedAt: DateTime(2024, 2, 12),
+  calculatedEndAt: DateTime(2024, 2, 12),
   mixtureId: '97eb3256-1dd0-42cf-91d0-7d5b84e23b62',
   groupName: 'Gallinero',
+  mixtureDays: 64,
   goodEggs: 184,
   brokenEggs: 0,
   totalFoodCost: 610,
+  totalFeedConsumption: 80,
+  weightedAverageBirds: 15,
+  eggsPerDay: 2.875,
+  eggsPerDayPerBird: 0.1917,
+  feedPerDay: 1.25,
+  feedPerDayPerBird: 0.0833,
   breakEvenPrice: 3.3152173913043478,
+  averageSalePrice: 5,
+  marginPercentage: 50.82,
 );
 
 final class _ValueRepository implements FinancesRepository {

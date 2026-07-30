@@ -20,4 +20,22 @@ extension NumFormatting on num {
   String formatInteger(AppLocalizations l10n) {
     return NumberFormat.decimalPattern(l10n.localeName).format(this);
   }
+
+  String formatDecimal(AppLocalizations l10n, {int maximumFractionDigits = 2}) {
+    return (NumberFormat.decimalPattern(l10n.localeName)
+          ..minimumFractionDigits = 0
+          ..maximumFractionDigits = maximumFractionDigits)
+        .format(this);
+  }
+
+  String formatSignedDecimal(
+    AppLocalizations l10n, {
+    int maximumFractionDigits = 2,
+  }) {
+    final formatted = formatDecimal(
+      l10n,
+      maximumFractionDigits: maximumFractionDigits,
+    );
+    return this >= 0 ? '+$formatted' : formatted;
+  }
 }

@@ -18,8 +18,14 @@ abstract final class AppSizes {
   static const smallIcon = 20.0;
   static const cardIcon = 44.0;
   static const stateImage = 96.0;
+  static const financePriceRing = 184.0;
+  static const financePriceRingStroke = 8.0;
+  static const financeDecorationLarge = 220.0;
+  static const financeDecorationSmall = 120.0;
   static const maxContentWidth = 1040.0;
   static const compactMetricBreakpoint = 260.0;
+  static const financeHeaderBreakpoint = 400.0;
+  static const financePrimaryMetricsBreakpoint = 320.0;
   static const mediumBreakpoint = 560.0;
   static const expandedBreakpoint = 840.0;
 }

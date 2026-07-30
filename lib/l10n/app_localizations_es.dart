@@ -78,6 +78,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get breakEvenPriceLabel => 'Precio de equilibrio';
 
   @override
+  String get breakEvenPricePerEggLabel => 'Precio de equilibrio por huevo';
+
+  @override
+  String get breakEvenCardDescription =>
+      'Precio mínimo por huevo bueno necesario para cubrir los costos de alimento.';
+
+  @override
+  String financeMarginValue(String value) {
+    return 'Margen $value %';
+  }
+
+  @override
+  String get financeMarginUnavailable => 'Margen no disponible';
+
+  @override
+  String get totalCostLabel => 'Costo total';
+
+  @override
   String get goodEggsLabel => 'Huevos buenos';
 
   @override
@@ -85,6 +103,46 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get foodCostLabel => 'Costo de alimento';
+
+  @override
+  String get totalFeedConsumptionLabel => 'Consumo total';
+
+  @override
+  String get weightedAverageBirdsLabel => 'Aves promedio ponderado';
+
+  @override
+  String get eggsPerDayLabel => 'Huevos por día';
+
+  @override
+  String get eggsPerDayPerBirdLabel => 'Huevos por día por ave';
+
+  @override
+  String get feedPerDayLabel => 'Consumo por día';
+
+  @override
+  String get feedPerDayPerBirdLabel => 'Consumo por día por ave';
+
+  @override
+  String get averageSalePriceLabel => 'Precio promedio de venta';
+
+  @override
+  String get mixtureDurationLabel => 'Duración';
+
+  @override
+  String financeDurationDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count días',
+      one: '1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String financeKilograms(String value) {
+    return '$value kg';
+  }
 
   @override
   String get periodLabel => 'Periodo';
@@ -105,7 +163,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String breakEvenCardSemantics(String groupName, String price) {
-    return '$groupName. Precio de equilibrio: $price.';
+  String breakEvenCardSemantics(String groupName, String price, String margin) {
+    return '$groupName. Precio de equilibrio por huevo: $price. $margin.';
   }
 }

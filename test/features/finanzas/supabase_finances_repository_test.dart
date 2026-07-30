@@ -8,83 +8,68 @@ import 'package:nueva_app/features/finanzas/data/repositories/supabase_finances_
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
-  test('scopes mixtures by farm before querying the required view', () async {
-    final requests = <http.BaseRequest>[];
-    final repository = _repository((request) async {
-      requests.add(request);
-      if (request.url.path == '/rest/v1/mezcla') {
-        return _jsonResponse([
-          {
-            'id': '97eb3256-1dd0-42cf-91d0-7d5b84e23b62',
-            'grupos': {'granja_id': 'farm-1'},
-          },
-          {
-            'id': '416e648e-1dd2-4a2f-8246-e42bcc6f36cb',
-            'grupos': {'granja_id': 'farm-1'},
-          },
-        ]);
-      }
-      return _jsonResponse([
-        {
-          'fecha_inicio': '2023-12-11',
-          'fecha_termino': '2024-02-12',
-          'mezcla_id': '97eb3256-1dd0-42cf-91d0-7d5b84e23b62',
-          'grupo_nombre': 'Gallinero',
-          'buenos': 184,
-          'rotos': 0,
-          'total_costo_comidas': '610',
-          'punto_de_equilibrio': '3.3152173913043478',
-        },
-      ]);
-    });
+  test(
+    'queries the view once with its explicit farm-scoped contract',
+    () async {
+      final requests = <http.BaseRequest>[];
+      final repository = _repository((request) async {
+        requests.add(request);
+        return _jsonResponse([_viewRow]);
+      });
 
-    final result = await repository.getBreakEvenPoints('farm-1');
+      final result = await repository.getBreakEvenPoints('farm-1');
 
-    expect(result.single.groupName, 'Gallinero');
-    expect(requests, hasLength(2));
+      expect(result.single.groupName, 'Gallinero');
+      expect(result.single.mixtureDays, 26);
+      expect(requests, hasLength(1));
 
-    final mixtureRequest = requests.first;
-    expect(mixtureRequest.method, 'GET');
-    expect(mixtureRequest.url.path, '/rest/v1/mezcla');
-    expect(
-      mixtureRequest.url.queryParameters['select'],
-      'id,grupos!inner(granja_id)',
-    );
-    expect(mixtureRequest.url.queryParameters['grupos.granja_id'], 'eq.farm-1');
-
-    final viewRequest = requests.last;
-    expect(viewRequest.method, 'GET');
-    expect(viewRequest.url.path, '/rest/v1/puntos_equilibrio_huevos');
-    expect(
-      viewRequest.url.queryParameters['select'],
-      'fecha_inicio,fecha_termino,mezcla_id,grupo_nombre,buenos,rotos,'
-      'total_costo_comidas,punto_de_equilibrio',
-    );
-    expect(
-      viewRequest.url.queryParameters['mezcla_id'],
-      'in.("97eb3256-1dd0-42cf-91d0-7d5b84e23b62",'
-      '"416e648e-1dd2-4a2f-8246-e42bcc6f36cb")',
-    );
-    expect(
-      viewRequest.url.queryParameters['order'],
-      startsWith('fecha_inicio.desc'),
-    );
-  });
-
-  test('does not query the view when the farm has no mixtures', () async {
-    final requests = <http.BaseRequest>[];
-    final repository = _repository((request) async {
-      requests.add(request);
-      return _jsonResponse([]);
-    });
-
-    final result = await repository.getBreakEvenPoints('farm-without-mixtures');
-
-    expect(result, isEmpty);
-    expect(requests, hasLength(1));
-    expect(requests.single.url.path, '/rest/v1/mezcla');
-  });
+      final request = requests.single;
+      expect(request.method, 'GET');
+      expect(request.url.path, '/rest/v1/puntos_equilibrio_huevos');
+      expect(
+        request.url.queryParameters['select'],
+        'fecha_inicio,fecha_termino,mezcla_id,grupo_nombre,buenos,rotos,'
+        'total_costo_comidas,punto_de_equilibrio,granja_id,grupo_id,'
+        'fecha_fin_calculada,dias_mezcla,consumo_total,'
+        'aves_promedio_ponderado,huevos_por_dia,huevos_por_dia_ave,'
+        'consumo_por_dia,consumo_por_dia_ave,precio_venta_promedio,'
+        'margen_porcentaje',
+      );
+      expect(request.url.queryParameters['granja_id'], 'eq.farm-1');
+      expect(
+        request.url.queryParameters['order'],
+        startsWith('fecha_inicio.desc'),
+      );
+      expect(
+        requests.where((item) => item.url.path == '/rest/v1/mezcla'),
+        isEmpty,
+      );
+    },
+  );
 }
+
+final _viewRow = <String, Object?>{
+  'fecha_inicio': '2026-07-01',
+  'fecha_termino': null,
+  'mezcla_id': '416e648e-1dd2-4a2f-8246-e42bcc6f36cb',
+  'grupo_nombre': 'Gallinero',
+  'buenos': 97,
+  'rotos': 2,
+  'total_costo_comidas': 800,
+  'punto_de_equilibrio': 8.2474,
+  'granja_id': '48b129e9-a48b-438a-a401-96d4dd863da5',
+  'grupo_id': '7428302e-9d3b-4967-9baa-4747c98778bc',
+  'fecha_fin_calculada': '2026-07-26',
+  'dias_mezcla': 26,
+  'consumo_total': 80,
+  'aves_promedio_ponderado': 15,
+  'huevos_por_dia': 3.7308,
+  'huevos_por_dia_ave': 0.2487,
+  'consumo_por_dia': 3.0769,
+  'consumo_por_dia_ave': 0.2051,
+  'precio_venta_promedio': 5,
+  'margen_porcentaje': -39.37,
+};
 
 SupabaseFinancesRepository _repository(
   Future<http.Response> Function(http.BaseRequest request) handler,

@@ -15,4 +15,12 @@ abstract final class AppWidgetKeys {
   static String financeBreakEvenCard(String mixtureId) {
     return 'finances.balance.card.$mixtureId';
   }
+
+  static String financeBreakEvenPriceIndicator(String mixtureId) {
+    return 'finances.balance.price.$mixtureId';
+  }
+
+  static String financeMarginChip(String mixtureId) {
+    return 'finances.balance.margin.$mixtureId';
+  }
 }

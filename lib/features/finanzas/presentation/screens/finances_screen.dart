@@ -5,6 +5,8 @@ import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/extensions/primitive_formatting_extensions.dart';
 import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
+import '../../../../core/theme/finance_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/break_even_point.dart';
 import '../providers/finances_providers.dart';
 import '../widgets/break_even_card.dart';
@@ -30,53 +32,35 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
     final items = [
       FinanceTabItem(
         tab: FinanceTab.balance,
+        role: FinanceTabRole.balance,
         label: l10n.financeTabBalance,
         asset: 'assets/goal.png',
         keyValue: AppWidgetKeys.financeBalanceTab,
       ),
       FinanceTabItem(
         tab: FinanceTab.income,
+        role: FinanceTabRole.income,
         label: l10n.financeTabIncome,
         asset: 'assets/income.png',
         keyValue: AppWidgetKeys.financeIncomeTab,
       ),
       FinanceTabItem(
         tab: FinanceTab.expenses,
+        role: FinanceTabRole.expenses,
         label: l10n.financeTabExpenses,
         asset: 'assets/outcome.png',
         keyValue: AppWidgetKeys.financeExpensesTab,
       ),
       FinanceTabItem(
         tab: FinanceTab.charts,
+        role: FinanceTabRole.charts,
         label: l10n.financeTabCharts,
         asset: 'assets/chart.png',
         keyValue: AppWidgetKeys.financeChartsTab,
       ),
     ];
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: AppSpacing.xs),
-            FinanceTabBar(
-              items: items,
-              selected: _selectedTab,
-              onSelected: (tab) => setState(() => _selectedTab = tab),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Expanded(child: _selectedContent()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _selectedContent() {
-    final l10n = context.l10n;
-    return switch (_selectedTab) {
-      FinanceTab.balance => _balanceContent(),
+    final content = switch (_selectedTab) {
+      FinanceTab.balance => FinanceBalanceSection(farmId: widget.farmId),
       FinanceTab.income => FinanceMessageState(
         key: const ValueKey(AppWidgetKeys.financeIncomeUnavailable),
         title: l10n.financeIncomeUnavailableTitle,
@@ -99,11 +83,36 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
         asset: 'assets/chart_filled.png',
       ),
     };
-  }
 
-  Widget _balanceContent() {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: AppSpacing.xs),
+            FinanceTabBar(
+              items: items,
+              selected: _selectedTab,
+              onSelected: (tab) => setState(() => _selectedTab = tab),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Expanded(child: content),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class FinanceBalanceSection extends ConsumerWidget {
+  const FinanceBalanceSection({required this.farmId, super.key});
+
+  final String farmId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final points = ref.watch(breakEvenPointsProvider(widget.farmId));
+    final points = ref.watch(breakEvenPointsProvider(farmId));
     return switch (points) {
       AsyncLoading() => const Center(
         key: ValueKey(AppWidgetKeys.financeLoading),
@@ -116,7 +125,7 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
         asset: 'assets/goal.png',
         actionKey: AppWidgetKeys.financeRetry,
         actionLabel: l10n.financeRetry,
-        onAction: _retry,
+        onAction: () => ref.invalidate(breakEvenPointsProvider(farmId)),
       ),
       AsyncData(:final value) when value.isEmpty => FinanceMessageState(
         key: const ValueKey(AppWidgetKeys.financeEmpty),
@@ -127,45 +136,116 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
       AsyncData(:final value) => BreakEvenContent(
         title: l10n.financeBalanceHeading,
         subtitle: l10n.financeBalanceSubtitle,
-        cards: value.map(_toCardViewData).toList(growable: false),
-        onRefresh: _refresh,
+        cards: [
+          for (final point in value) BreakEvenCardDataMapper.map(point, l10n),
+        ],
+        onRefresh: () async {
+          ref.invalidate(breakEvenPointsProvider(farmId));
+          await ref.read(breakEvenPointsProvider(farmId).future);
+        },
       ),
     };
   }
+}
 
-  BreakEvenCardViewData _toCardViewData(BreakEvenPoint point) {
-    final l10n = context.l10n;
-    final breakEvenValue =
-        point.breakEvenPrice?.formatCurrency(l10n) ?? l10n.notAvailableLabel;
-    final end = point.endedAt?.formatShortDate(l10n) ?? l10n.ongoingLabel;
+abstract final class BreakEvenCardDataMapper {
+  static BreakEvenCardViewData map(
+    BreakEvenPoint point,
+    AppLocalizations l10n,
+  ) {
+    final price = switch (point.breakEvenPrice) {
+      final value? => value.formatCurrency(l10n),
+      null => l10n.notAvailableLabel,
+    };
+    final (:marginLabel, :marginRole) = switch (point.marginPercentage) {
+      double value when value >= 0 => (
+        marginLabel: l10n.financeMarginValue(value.formatSignedDecimal(l10n)),
+        marginRole: FinanceMarginRole.positive,
+      ),
+      double value => (
+        marginLabel: l10n.financeMarginValue(value.formatSignedDecimal(l10n)),
+        marginRole: FinanceMarginRole.negative,
+      ),
+      null => (
+        marginLabel: l10n.financeMarginUnavailable,
+        marginRole: FinanceMarginRole.unavailable,
+      ),
+    };
+    final secondaryMetrics = <FinanceMetricViewData>[
+      FinanceMetricViewData(
+        label: l10n.weightedAverageBirdsLabel,
+        value: point.weightedAverageBirds.formatDecimal(l10n),
+        icon: Icons.pets_outlined,
+      ),
+      FinanceMetricViewData(
+        label: l10n.eggsPerDayLabel,
+        value: point.eggsPerDay.formatDecimal(l10n),
+        icon: Icons.calendar_today_outlined,
+      ),
+      FinanceMetricViewData(
+        label: l10n.eggsPerDayPerBirdLabel,
+        value: point.eggsPerDayPerBird.formatDecimal(l10n),
+        icon: Icons.egg_outlined,
+      ),
+      FinanceMetricViewData(
+        label: l10n.feedPerDayLabel,
+        value: l10n.financeKilograms(point.feedPerDay.formatDecimal(l10n)),
+        icon: Icons.scale_outlined,
+      ),
+      FinanceMetricViewData(
+        label: l10n.feedPerDayPerBirdLabel,
+        value: l10n.financeKilograms(
+          point.feedPerDayPerBird.formatDecimal(l10n),
+        ),
+        icon: Icons.monitor_weight_outlined,
+      ),
+      if (point.averageSalePrice case final salePrice?)
+        FinanceMetricViewData(
+          label: l10n.averageSalePriceLabel,
+          value: salePrice.formatCurrency(l10n),
+          icon: Icons.sell_outlined,
+        ),
+    ];
+
     return BreakEvenCardViewData(
       mixtureId: point.mixtureId,
       groupName: point.groupName,
-      period: l10n.financeDateRange(point.startedAt.formatShortDate(l10n), end),
-      breakEvenLabel: l10n.breakEvenPriceLabel,
-      breakEvenValue: breakEvenValue,
-      breakEvenSupportingText: point.breakEvenPrice == null
-          ? l10n.breakEvenUnavailableReason
-          : null,
-      goodEggsLabel: l10n.goodEggsLabel,
-      goodEggsValue: point.goodEggs.formatInteger(l10n),
-      brokenEggsLabel: l10n.brokenEggsLabel,
-      brokenEggsValue: point.brokenEggs.formatInteger(l10n),
-      foodCostLabel: l10n.foodCostLabel,
-      foodCostValue: point.totalFoodCost.formatCurrency(l10n),
+      description: l10n.breakEvenCardDescription,
+      priceLabel: l10n.breakEvenPricePerEggLabel,
+      priceValue: price,
+      marginLabel: marginLabel,
+      marginRole: marginRole,
+      primaryMetrics: [
+        FinanceMetricViewData(
+          label: l10n.totalCostLabel,
+          value: point.totalFoodCost.formatCurrency(l10n),
+          icon: Icons.payments_outlined,
+        ),
+        FinanceMetricViewData(
+          label: l10n.goodEggsLabel,
+          value: point.goodEggs.formatInteger(l10n),
+          icon: Icons.egg_alt_outlined,
+        ),
+        FinanceMetricViewData(
+          label: l10n.totalFeedConsumptionLabel,
+          value: l10n.financeKilograms(
+            point.totalFeedConsumption.formatDecimal(l10n),
+          ),
+          icon: Icons.grass_outlined,
+        ),
+      ],
+      secondaryMetrics: secondaryMetrics,
+      durationLabel: l10n.mixtureDurationLabel,
+      durationValue: l10n.financeDurationDays(point.mixtureDays),
+      periodValue: l10n.financeDateRange(
+        point.startedAt.formatShortDate(l10n),
+        point.calculatedEndAt.formatShortDate(l10n),
+      ),
       semanticsLabel: l10n.breakEvenCardSemantics(
         point.groupName,
-        breakEvenValue,
+        price,
+        marginLabel,
       ),
     );
-  }
-
-  void _retry() {
-    ref.invalidate(breakEvenPointsProvider(widget.farmId));
-  }
-
-  Future<void> _refresh() async {
-    ref.invalidate(breakEvenPointsProvider(widget.farmId));
-    await ref.read(breakEvenPointsProvider(widget.farmId).future);
   }
 }
