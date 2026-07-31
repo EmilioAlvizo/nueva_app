@@ -96,7 +96,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get totalCostLabel => 'Costo total';
 
   @override
-  String get goodEggsLabel => 'Huevos';
+  String get goodEggsLabel => 'Huevos buenos';
 
   @override
   String get brokenEggsLabel => 'Huevos rotos';
@@ -124,6 +124,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get averageSalePriceLabel => 'Precio promedio de venta';
+
+  @override
+  String financeCompactMetrics(String birds, String eggsRate, String feedRate) {
+    return '$birds aves • $eggsRate huevo/(día·ave) • $feedRate kg/(día·ave)';
+  }
 
   @override
   String get mixtureDurationLabel => 'Duración';

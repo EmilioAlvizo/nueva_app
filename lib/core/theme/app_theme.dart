@@ -33,7 +33,7 @@ abstract final class AppTheme {
                 secondaryContainer: isDark
                     ? AppColors.bgCard
                     : AppColors.bgCardLg,
-                onSecondaryContainer: isDark ? AppColors.bgLight : AppColors.bg,
+                onSecondaryContainer: isDark ? AppColors.bg :AppColors.bgLight ,
                 surface: card,
                 error: AppColors.negative,
               ),

@@ -81,12 +81,25 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Gallinero'), findsOneWidget);
-    expect(find.textContaining('3,32'), findsOneWidget);
-    expect(find.textContaining('610,00'), findsOneWidget);
+    expect(find.textContaining('3.32'), findsOneWidget);
+    expect(find.textContaining('610.00'), findsOneWidget);
     expect(find.text('Huevos buenos'), findsOneWidget);
     expect(find.text('184'), findsOneWidget);
     expect(find.text('Consumo total'), findsOneWidget);
     expect(find.text('80 kg'), findsOneWidget);
+    expect(
+      find.text('15.00 aves • 0.19 huevo/(día·ave) • 0.08 kg/(día·ave)'),
+      findsOneWidget,
+    );
+    expect(find.text('Aves promedio ponderado'), findsNothing);
+    expect(find.text('Huevos por día'), findsNothing);
+    expect(find.text('Huevos por día por ave'), findsNothing);
+    expect(find.text('Consumo por día'), findsNothing);
+    expect(find.text('Consumo por día por ave'), findsNothing);
+    expect(find.text('Precio promedio de venta'), findsNothing);
+    expect(find.text('2.88'), findsNothing);
+    expect(find.text('1.25 kg'), findsNothing);
+    expect(find.text(r'$5.00'), findsNothing);
     expect(find.text('Huevos rotos'), findsNothing);
     expect(tester.takeException(), isNull);
   });

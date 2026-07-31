@@ -25,6 +25,7 @@ class BreakEvenPriceRing extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final dimension =
         AppSizes.financePriceRing + (textScale - 1).clamp(0, 1) * AppSpacing.xl;
+    final contentDimension = dimension - AppSpacing.sm * 2;
 
     return SizedBox.square(
       dimension: dimension,
@@ -40,27 +41,33 @@ class BreakEvenPriceRing extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                value,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: financeTheme.onCard,
-                  fontWeight: FontWeight.w900,
-                ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: contentDimension,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    value,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: financeTheme.onCard,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: financeTheme.onCardMuted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: financeTheme.onCardMuted,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

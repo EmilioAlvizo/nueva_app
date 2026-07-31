@@ -171,41 +171,11 @@ abstract final class BreakEvenCardDataMapper {
         marginRole: FinanceMarginRole.unavailable,
       ),
     };
-    final secondaryMetrics = <FinanceMetricViewData>[
-      FinanceMetricViewData(
-        label: l10n.weightedAverageBirdsLabel,
-        value: point.weightedAverageBirds.formatDecimal(l10n),
-        icon: Icons.pets_outlined,
-      ),
-      FinanceMetricViewData(
-        label: l10n.eggsPerDayLabel,
-        value: point.eggsPerDay.formatDecimal(l10n),
-        icon: Icons.calendar_today_outlined,
-      ),
-      FinanceMetricViewData(
-        label: l10n.eggsPerDayPerBirdLabel,
-        value: point.eggsPerDayPerBird.formatDecimal(l10n),
-        icon: Icons.egg_outlined,
-      ),
-      FinanceMetricViewData(
-        label: l10n.feedPerDayLabel,
-        value: l10n.financeKilograms(point.feedPerDay.formatDecimal(l10n)),
-        icon: Icons.scale_outlined,
-      ),
-      FinanceMetricViewData(
-        label: l10n.feedPerDayPerBirdLabel,
-        value: l10n.financeKilograms(
-          point.feedPerDayPerBird.formatDecimal(l10n),
-        ),
-        icon: Icons.monitor_weight_outlined,
-      ),
-      if (point.averageSalePrice case final salePrice?)
-        FinanceMetricViewData(
-          label: l10n.averageSalePriceLabel,
-          value: salePrice.formatCurrency(l10n),
-          icon: Icons.sell_outlined,
-        ),
-    ];
+    final secondaryMetricsText = l10n.financeCompactMetrics(
+      point.weightedAverageBirds.formatFixedTwoDecimals(l10n),
+      point.eggsPerDayPerBird.formatFixedTwoDecimals(l10n),
+      point.feedPerDayPerBird.formatFixedTwoDecimals(l10n),
+    );
 
     return BreakEvenCardViewData(
       mixtureId: point.mixtureId,
@@ -234,7 +204,7 @@ abstract final class BreakEvenCardDataMapper {
           icon: Icons.grass_outlined,
         ),
       ],
-      secondaryMetrics: secondaryMetrics,
+      secondaryMetricsText: secondaryMetricsText,
       durationLabel: l10n.mixtureDurationLabel,
       durationValue: l10n.financeDurationDays(point.mixtureDays),
       periodValue: l10n.financeDateRange(

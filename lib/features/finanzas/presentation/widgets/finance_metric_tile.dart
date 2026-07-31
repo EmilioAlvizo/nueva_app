@@ -97,47 +97,22 @@ class FinancePrimaryMetrics extends StatelessWidget {
   }
 }
 
-class FinanceOperationalMetric extends StatelessWidget {
-  const FinanceOperationalMetric({required this.metric, super.key});
+class FinanceCompactMetricText extends StatelessWidget {
+  const FinanceCompactMetricText({required this.text, super.key});
 
-  final FinanceMetricViewData metric;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     final financeTheme = FinanceTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ExcludeSemantics(
-            child: Icon(
-              metric.icon,
-              color: financeTheme.onCardMuted,
-              size: AppSizes.smallIcon,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: Text(
-              metric.label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: financeTheme.onCardMuted),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Flexible(
-            child: Text(
-              metric.value,
-              textAlign: TextAlign.end,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: financeTheme.onCard,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: financeTheme.onCardMuted,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

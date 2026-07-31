@@ -8,33 +8,34 @@ import 'package:nueva_app/l10n/app_localizations.dart';
 
 void main() {
   for (final testCase in [
-    (role: FinanceMarginRole.positive, margin: 'Margen +20,00 %'),
-    (role: FinanceMarginRole.negative, margin: 'Margen -39,37 %'),
+    (role: FinanceMarginRole.positive, margin: 'Margen +20.00 %'),
+    (role: FinanceMarginRole.negative, margin: 'Margen -39.37 %'),
     (role: FinanceMarginRole.unavailable, margin: 'Margen no disponible'),
   ]) {
     testWidgets('renders ${testCase.role.name} margin card', (tester) async {
       await _pumpCard(tester, role: testCase.role, margin: testCase.margin);
 
-      expect(find.text(r'$8,25'), findsOneWidget);
+      expect(find.text(r'$8.25'), findsOneWidget);
       expect(find.text(testCase.margin), findsOneWidget);
       expect(find.text('Costo total'), findsOneWidget);
-      expect(find.text(r'$800,00'), findsOneWidget);
+      expect(find.text(r'$800.00'), findsOneWidget);
       expect(find.text('Huevos buenos'), findsOneWidget);
       expect(find.text('97'), findsOneWidget);
       expect(find.text('Consumo total'), findsOneWidget);
       expect(find.text('80 kg'), findsOneWidget);
-      expect(find.text('Aves promedio ponderado'), findsOneWidget);
-      expect(find.text('15'), findsOneWidget);
-      expect(find.text('Huevos por día'), findsOneWidget);
-      expect(find.text('3,73'), findsOneWidget);
-      expect(find.text('Huevos por día por ave'), findsOneWidget);
-      expect(find.text('0,25'), findsOneWidget);
-      expect(find.text('Consumo por día'), findsOneWidget);
-      expect(find.text('3,08 kg'), findsOneWidget);
-      expect(find.text('Consumo por día por ave'), findsOneWidget);
-      expect(find.text('0,21 kg'), findsOneWidget);
-      expect(find.text('Precio promedio de venta'), findsOneWidget);
-      expect(find.text(r'$5,00'), findsOneWidget);
+      expect(
+        find.text('15.00 aves • 0.24 huevo/(día·ave) • 0.21 kg/(día·ave)'),
+        findsOneWidget,
+      );
+      expect(find.text('Aves promedio ponderado'), findsNothing);
+      expect(find.text('Huevos por día'), findsNothing);
+      expect(find.text('Huevos por día por ave'), findsNothing);
+      expect(find.text('Consumo por día'), findsNothing);
+      expect(find.text('Consumo por día por ave'), findsNothing);
+      expect(find.text('Precio promedio de venta'), findsNothing);
+      expect(find.text('3.73'), findsNothing);
+      expect(find.text('3.08 kg'), findsNothing);
+      expect(find.text(r'$5.00'), findsNothing);
       expect(find.text('Duración'), findsOneWidget);
       expect(find.text('26 días'), findsOneWidget);
       expect(find.text('1 jul 2026 - 26 jul 2026'), findsOneWidget);
@@ -93,7 +94,7 @@ void main() {
         await _pumpCard(
           tester,
           role: FinanceMarginRole.negative,
-          margin: 'Margen -39,37 %',
+          margin: 'Margen -39.37 %',
           brightness: brightness,
           textScale: 1.5,
         );
@@ -110,7 +111,7 @@ Future<void> _pumpCard(
   WidgetTester tester, {
   required FinanceMarginRole role,
   required String margin,
-  String price = r'$8,25',
+  String price = r'$8.25',
   Brightness brightness = Brightness.light,
   double textScale = 1,
 }) async {
@@ -140,7 +141,7 @@ Future<void> _pumpCard(
               primaryMetrics: const [
                 FinanceMetricViewData(
                   label: 'Costo total',
-                  value: r'$800,00',
+                  value: r'$800.00',
                   icon: Icons.payments_outlined,
                 ),
                 FinanceMetricViewData(
@@ -154,38 +155,8 @@ Future<void> _pumpCard(
                   icon: Icons.grass_outlined,
                 ),
               ],
-              secondaryMetrics: const [
-                FinanceMetricViewData(
-                  label: 'Aves promedio ponderado',
-                  value: '15',
-                  icon: Icons.pets_outlined,
-                ),
-                FinanceMetricViewData(
-                  label: 'Huevos por día',
-                  value: '3,73',
-                  icon: Icons.calendar_today_outlined,
-                ),
-                FinanceMetricViewData(
-                  label: 'Huevos por día por ave',
-                  value: '0,25',
-                  icon: Icons.egg_outlined,
-                ),
-                FinanceMetricViewData(
-                  label: 'Consumo por día',
-                  value: '3,08 kg',
-                  icon: Icons.scale_outlined,
-                ),
-                FinanceMetricViewData(
-                  label: 'Consumo por día por ave',
-                  value: '0,21 kg',
-                  icon: Icons.monitor_weight_outlined,
-                ),
-                FinanceMetricViewData(
-                  label: 'Precio promedio de venta',
-                  value: r'$5,00',
-                  icon: Icons.sell_outlined,
-                ),
-              ],
+              secondaryMetricsText:
+                  '15.00 aves • 0.24 huevo/(día·ave) • 0.21 kg/(día·ave)',
               durationLabel: 'Duración',
               durationValue: '26 días',
               periodValue: '1 jul 2026 - 26 jul 2026',

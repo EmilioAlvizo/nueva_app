@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
-import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 
 // ignore_for_file: type=lint
@@ -93,273 +92,276 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('en'),
-    Locale('es'),
-  ];
+  static const List<Locale> supportedLocales = <Locale>[Locale('es')];
 
-  /// Title of the finances section
+  /// Título de la sección de finanzas
   ///
-  /// In en, this message translates to:
-  /// **'Finances'**
+  /// In es, this message translates to:
+  /// **'Finanzas'**
   String get financesTitle;
 
   /// No description provided for @financeTabBalance.
   ///
-  /// In en, this message translates to:
-  /// **'Break-even'**
+  /// In es, this message translates to:
+  /// **'Equilibrio'**
   String get financeTabBalance;
 
   /// No description provided for @financeTabIncome.
   ///
-  /// In en, this message translates to:
-  /// **'Income'**
+  /// In es, this message translates to:
+  /// **'Ingresos'**
   String get financeTabIncome;
 
   /// No description provided for @financeTabExpenses.
   ///
-  /// In en, this message translates to:
-  /// **'Expenses'**
+  /// In es, this message translates to:
+  /// **'Gastos'**
   String get financeTabExpenses;
 
   /// No description provided for @financeTabCharts.
   ///
-  /// In en, this message translates to:
-  /// **'Charts'**
+  /// In es, this message translates to:
+  /// **'Gráficos'**
   String get financeTabCharts;
 
   /// No description provided for @financeBalanceHeading.
   ///
-  /// In en, this message translates to:
-  /// **'Break-even by feed mix'**
+  /// In es, this message translates to:
+  /// **'Punto de equilibrio por mezcla'**
   String get financeBalanceHeading;
 
   /// No description provided for @financeBalanceSubtitle.
   ///
-  /// In en, this message translates to:
-  /// **'Minimum egg price needed to cover the feed cost for each mix.'**
+  /// In es, this message translates to:
+  /// **'Precio mínimo por huevo necesario para cubrir el costo de alimento de cada mezcla.'**
   String get financeBalanceSubtitle;
 
   /// No description provided for @financeErrorTitle.
   ///
-  /// In en, this message translates to:
-  /// **'We couldn\'\'t load the break-even data'**
+  /// In es, this message translates to:
+  /// **'No pudimos cargar los datos de equilibrio'**
   String get financeErrorTitle;
 
   /// No description provided for @financeErrorMessage.
   ///
-  /// In en, this message translates to:
-  /// **'Check your connection and try again.'**
+  /// In es, this message translates to:
+  /// **'Revisa tu conexión e inténtalo de nuevo.'**
   String get financeErrorMessage;
 
   /// No description provided for @financeRetry.
   ///
-  /// In en, this message translates to:
-  /// **'Try again'**
+  /// In es, this message translates to:
+  /// **'Reintentar'**
   String get financeRetry;
 
   /// No description provided for @financeBalanceEmptyTitle.
   ///
-  /// In en, this message translates to:
-  /// **'No break-even data yet'**
+  /// In es, this message translates to:
+  /// **'Aún no hay datos de equilibrio'**
   String get financeBalanceEmptyTitle;
 
   /// No description provided for @financeBalanceEmptyMessage.
   ///
-  /// In en, this message translates to:
-  /// **'Break-even results will appear when the selected farm has feed mixes with egg production.'**
+  /// In es, this message translates to:
+  /// **'Los resultados aparecerán cuando la granja seleccionada tenga mezclas de alimento con producción de huevos.'**
   String get financeBalanceEmptyMessage;
 
   /// No description provided for @financeIncomeUnavailableTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Income is not available yet'**
+  /// In es, this message translates to:
+  /// **'Los ingresos aún no están disponibles'**
   String get financeIncomeUnavailableTitle;
 
   /// No description provided for @financeIncomeUnavailableMessage.
   ///
-  /// In en, this message translates to:
-  /// **'This tab is ready for income once a verified data source is defined.'**
+  /// In es, this message translates to:
+  /// **'Esta pestaña está lista para mostrar ingresos cuando se defina una fuente de datos verificada.'**
   String get financeIncomeUnavailableMessage;
 
   /// No description provided for @financeExpensesUnavailableTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Expenses are not available yet'**
+  /// In es, this message translates to:
+  /// **'Los gastos aún no están disponibles'**
   String get financeExpensesUnavailableTitle;
 
   /// No description provided for @financeExpensesUnavailableMessage.
   ///
-  /// In en, this message translates to:
-  /// **'This tab is ready for expenses once a verified data source is defined.'**
+  /// In es, this message translates to:
+  /// **'Esta pestaña está lista para mostrar gastos cuando se defina una fuente de datos verificada.'**
   String get financeExpensesUnavailableMessage;
 
   /// No description provided for @financeChartsUnavailableTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Financial charts are not available yet'**
+  /// In es, this message translates to:
+  /// **'Los gráficos financieros aún no están disponibles'**
   String get financeChartsUnavailableTitle;
 
   /// No description provided for @financeChartsUnavailableMessage.
   ///
-  /// In en, this message translates to:
-  /// **'Charts will be enabled when verified income and expense data is available.'**
+  /// In es, this message translates to:
+  /// **'Los gráficos se habilitarán cuando existan datos verificados de ingresos y gastos.'**
   String get financeChartsUnavailableMessage;
 
   /// No description provided for @financeNoFabricatedData.
   ///
-  /// In en, this message translates to:
-  /// **'No estimates or invented financial data are shown.'**
+  /// In es, this message translates to:
+  /// **'No se muestran estimaciones ni datos financieros inventados.'**
   String get financeNoFabricatedData;
 
   /// No description provided for @breakEvenPriceLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Break-even price'**
+  /// In es, this message translates to:
+  /// **'Precio de equilibrio'**
   String get breakEvenPriceLabel;
 
-  /// Label inside the break-even price ring
+  /// Etiqueta dentro del círculo del precio de equilibrio
   ///
-  /// In en, this message translates to:
-  /// **'Break-even price per egg'**
+  /// In es, this message translates to:
+  /// **'\$/huevo'**
   String get breakEvenPricePerEggLabel;
 
-  /// Short explanation beside the break-even price ring
+  /// Explicación breve junto al círculo del precio de equilibrio
   ///
-  /// In en, this message translates to:
-  /// **'Minimum price per good egg needed to cover feed costs.'**
+  /// In es, this message translates to:
+  /// **'Costo mínimo de venta para cubrir la operación'**
   String get breakEvenCardDescription;
 
-  /// Positive or negative margin percentage chip
+  /// Porcentaje de margen positivo o negativo
   ///
-  /// In en, this message translates to:
-  /// **'Margin {value}%'**
+  /// In es, this message translates to:
+  /// **'Margen {value} %'**
   String financeMarginValue(String value);
 
   /// No description provided for @financeMarginUnavailable.
   ///
-  /// In en, this message translates to:
-  /// **'Margin unavailable'**
+  /// In es, this message translates to:
+  /// **'Margen no disponible'**
   String get financeMarginUnavailable;
 
   /// No description provided for @totalCostLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Total cost'**
+  /// In es, this message translates to:
+  /// **'Costo total'**
   String get totalCostLabel;
 
   /// No description provided for @goodEggsLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Good eggs'**
+  /// In es, this message translates to:
+  /// **'Huevos buenos'**
   String get goodEggsLabel;
 
   /// No description provided for @brokenEggsLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Broken eggs'**
+  /// In es, this message translates to:
+  /// **'Huevos rotos'**
   String get brokenEggsLabel;
 
   /// No description provided for @foodCostLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Feed cost'**
+  /// In es, this message translates to:
+  /// **'Costo de alimento'**
   String get foodCostLabel;
 
   /// No description provided for @totalFeedConsumptionLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Total consumption'**
+  /// In es, this message translates to:
+  /// **'Consumo total'**
   String get totalFeedConsumptionLabel;
 
   /// No description provided for @weightedAverageBirdsLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Weighted average birds'**
+  /// In es, this message translates to:
+  /// **'Aves promedio ponderado'**
   String get weightedAverageBirdsLabel;
 
   /// No description provided for @eggsPerDayLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Eggs per day'**
+  /// In es, this message translates to:
+  /// **'Huevos por día'**
   String get eggsPerDayLabel;
 
   /// No description provided for @eggsPerDayPerBirdLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Eggs per day per bird'**
+  /// In es, this message translates to:
+  /// **'Huevos por día por ave'**
   String get eggsPerDayPerBirdLabel;
 
   /// No description provided for @feedPerDayLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Consumption per day'**
+  /// In es, this message translates to:
+  /// **'Consumo por día'**
   String get feedPerDayLabel;
 
   /// No description provided for @feedPerDayPerBirdLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Consumption per day per bird'**
+  /// In es, this message translates to:
+  /// **'Consumo por día por ave'**
   String get feedPerDayPerBirdLabel;
 
   /// No description provided for @averageSalePriceLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Average sale price'**
+  /// In es, this message translates to:
+  /// **'Precio promedio de venta'**
   String get averageSalePriceLabel;
+
+  /// Resumen compacto de aves y tasas diarias por ave
+  ///
+  /// In es, this message translates to:
+  /// **'{birds} aves • {eggsRate} huevo/(día·ave) • {feedRate} kg/(día·ave)'**
+  String financeCompactMetrics(String birds, String eggsRate, String feedRate);
 
   /// No description provided for @mixtureDurationLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Duration'**
+  /// In es, this message translates to:
+  /// **'Duración'**
   String get mixtureDurationLabel;
 
-  /// Duration of a feed mixture in days
+  /// Duración de una mezcla de alimento en días
   ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 día} other{{count} días}}'**
   String financeDurationDays(int count);
 
-  /// A localized feed quantity in kilograms
+  /// Cantidad de alimento en kilogramos
   ///
-  /// In en, this message translates to:
+  /// In es, this message translates to:
   /// **'{value} kg'**
   String financeKilograms(String value);
 
   /// No description provided for @periodLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Period'**
+  /// In es, this message translates to:
+  /// **'Periodo'**
   String get periodLabel;
 
   /// No description provided for @ongoingLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Ongoing'**
+  /// In es, this message translates to:
+  /// **'En curso'**
   String get ongoingLabel;
 
   /// No description provided for @notAvailableLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Not available'**
+  /// In es, this message translates to:
+  /// **'No disponible'**
   String get notAvailableLabel;
 
   /// No description provided for @breakEvenUnavailableReason.
   ///
-  /// In en, this message translates to:
-  /// **'No good eggs were recorded for this mix.'**
+  /// In es, this message translates to:
+  /// **'No se registraron huevos buenos para esta mezcla.'**
   String get breakEvenUnavailableReason;
 
-  /// Date range shown on a break-even card
+  /// Rango de fechas mostrado en una tarjeta de equilibrio
   ///
-  /// In en, this message translates to:
+  /// In es, this message translates to:
   /// **'{start} - {end}'**
   String financeDateRange(String start, String end);
 
-  /// Accessibility summary for a break-even card
+  /// Resumen accesible de una tarjeta de equilibrio
   ///
-  /// In en, this message translates to:
-  /// **'{groupName}. Break-even price per egg: {price}. {margin}.'**
+  /// In es, this message translates to:
+  /// **'{groupName}. Precio de equilibrio por huevo: {price}. {margin}.'**
   String breakEvenCardSemantics(String groupName, String price, String margin);
 }
 
@@ -374,7 +376,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'es'].contains(locale.languageCode);
+      <String>['es'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -383,8 +385,6 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
     case 'es':
       return AppLocalizationsEs();
   }

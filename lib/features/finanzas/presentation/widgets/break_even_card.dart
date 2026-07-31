@@ -19,7 +19,7 @@ final class BreakEvenCardViewData {
     required this.marginLabel,
     required this.marginRole,
     required this.primaryMetrics,
-    required this.secondaryMetrics,
+    required this.secondaryMetricsText,
     required this.durationLabel,
     required this.durationValue,
     required this.periodValue,
@@ -34,7 +34,7 @@ final class BreakEvenCardViewData {
   final String marginLabel;
   final FinanceMarginRole marginRole;
   final List<FinanceMetricViewData> primaryMetrics;
-  final List<FinanceMetricViewData> secondaryMetrics;
+  final String secondaryMetricsText;
   final String durationLabel;
   final String durationValue;
   final String periodValue;
@@ -72,8 +72,7 @@ class BreakEvenCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
                   FinancePrimaryMetrics(metrics: data.primaryMetrics),
                   const SizedBox(height: AppSpacing.md),
-                  for (final metric in data.secondaryMetrics)
-                    FinanceOperationalMetric(metric: metric),
+                  FinanceCompactMetricText(text: data.secondaryMetricsText),
                   const SizedBox(height: AppSpacing.sm),
                   FinancePeriodStrip(data: data),
                 ],
