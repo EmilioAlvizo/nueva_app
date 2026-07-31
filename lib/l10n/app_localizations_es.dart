@@ -78,11 +78,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get breakEvenPriceLabel => 'Precio de equilibrio';
 
   @override
-  String get breakEvenPricePerEggLabel => 'Precio de equilibrio por huevo';
+  String get breakEvenPricePerEggLabel => '\$/huevo';
 
   @override
   String get breakEvenCardDescription =>
-      'Precio mínimo por huevo bueno necesario para cubrir los costos de alimento.';
+      'Costo mínimo de venta para cubrir la operación';
 
   @override
   String financeMarginValue(String value) {
@@ -96,7 +96,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get totalCostLabel => 'Costo total';
 
   @override
-  String get goodEggsLabel => 'Huevos buenos';
+  String get goodEggsLabel => 'Huevos';
 
   @override
   String get brokenEggsLabel => 'Huevos rotos';

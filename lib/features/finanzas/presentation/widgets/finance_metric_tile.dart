@@ -33,14 +33,14 @@ class FinanceMetricTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ExcludeSemantics(
+            /* ExcludeSemantics(
               child: Icon(
                 metric.icon,
                 color: financeTheme.onCardMuted,
                 size: AppSizes.smallIcon,
               ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
+            ), 
+            const SizedBox(height: AppSpacing.xs),*/
             Text(
               metric.value,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
