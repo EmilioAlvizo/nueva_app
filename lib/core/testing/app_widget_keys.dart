@@ -1,5 +1,7 @@
 abstract final class AppWidgetKeys {
+  static const eggPages = 'eggs.pages';
   static const financeTabs = 'finances.tabs';
+  static const financePages = 'finances.pages';
   static const financeBalanceTab = 'finances.tab.balance';
   static const financeIncomeTab = 'finances.tab.income';
   static const financeExpensesTab = 'finances.tab.expenses';

@@ -9,10 +9,11 @@ import 'package:nueva_app/features/finanzas/domain/entities/break_even_point.dar
 import 'package:nueva_app/features/finanzas/domain/repositories/finances_repository.dart';
 import 'package:nueva_app/features/finanzas/presentation/providers/finances_providers.dart';
 import 'package:nueva_app/features/finanzas/presentation/screens/finances_screen.dart';
+import 'package:nueva_app/features/finanzas/presentation/widgets/finance_tab_bar.dart';
 import 'package:nueva_app/l10n/app_localizations.dart';
 
 void main() {
-  testWidgets('shows all four tabs and informative unavailable states', (
+  testWidgets('horizontal swipes navigate all four tabs and back', (
     tester,
   ) async {
     await _pumpScreen(tester, repository: _ValueRepository(const []));
@@ -22,22 +23,97 @@ void main() {
     expect(find.text('Ingresos'), findsOneWidget);
     expect(find.text('Gastos'), findsOneWidget);
     expect(find.text('Gráficos'), findsOneWidget);
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeBalanceTab);
+    expect(_key(AppWidgetKeys.financeEmpty), findsOneWidget);
 
-    await tester.tap(_key(AppWidgetKeys.financeIncomeTab));
-    await tester.pump();
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeIncomeTab);
     expect(_key(AppWidgetKeys.financeIncomeUnavailable), findsOneWidget);
 
-    await tester.tap(_key(AppWidgetKeys.financeExpensesTab));
-    await tester.pump();
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
     expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
 
-    await tester.tap(_key(AppWidgetKeys.financeChartsTab));
-    await tester.pump();
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeChartsTab);
     expect(_key(AppWidgetKeys.financeChartsUnavailable), findsOneWidget);
     expect(
       find.text('No se muestran estimaciones ni datos financieros inventados.'),
       findsOneWidget,
     );
+
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
+    expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
+
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeIncomeTab);
+    expect(_key(AppWidgetKeys.financeIncomeUnavailable), findsOneWidget);
+
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeBalanceTab);
+    expect(_key(AppWidgetKeys.financeEmpty), findsOneWidget);
+  });
+
+  testWidgets('tab taps stay synchronized with horizontal swipes', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, repository: _ValueRepository(const []));
+    await _flushAsync(tester);
+
+    await tester.tap(_key(AppWidgetKeys.financeExpensesTab));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
+    expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
+
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeIncomeTab);
+    expect(_key(AppWidgetKeys.financeIncomeUnavailable), findsOneWidget);
+
+    await tester.tap(_key(AppWidgetKeys.financeChartsTab));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeChartsTab);
+    expect(_key(AppWidgetKeys.financeChartsUnavailable), findsOneWidget);
+
+    await tester.tap(_key(AppWidgetKeys.financeBalanceTab));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeBalanceTab);
+    expect(_key(AppWidgetKeys.financeEmpty), findsOneWidget);
+  });
+
+  testWidgets('tab animation follows the page and retargets midway', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, repository: _ValueRepository(const []));
+    await _flushAsync(tester);
+
+    await tester.tap(_key(AppWidgetKeys.financeChartsTab));
+    await tester.pump();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeBalanceTab);
+    expect(_pagePosition(tester, AppWidgetKeys.financePages), 0);
+
+    await tester.pump(const Duration(milliseconds: 50));
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeIncomeTab);
+    expect(
+      _pagePosition(tester, AppWidgetKeys.financePages),
+      inInclusiveRange(0.5, 1.5),
+    );
+
+    await tester.tap(_key(AppWidgetKeys.financeIncomeTab));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeIncomeTab);
+    expect(
+      _pagePosition(tester, AppWidgetKeys.financePages),
+      closeTo(1, 0.001),
+    );
+    expect(_key(AppWidgetKeys.financeIncomeUnavailable), findsOneWidget);
   });
 
   testWidgets('shows a loading state while break-even data is pending', (
@@ -129,6 +205,17 @@ void main() {
 }
 
 Finder _key(String value) => find.byKey(ValueKey(value));
+
+double _pagePosition(WidgetTester tester, String keyValue) {
+  return tester.widget<PageView>(_key(keyValue)).controller!.page!;
+}
+
+void _expectFinanceTabSelected(WidgetTester tester, String keyValue) {
+  final button = tester.widget<FinanceTabButton>(
+    find.ancestor(of: _key(keyValue), matching: find.byType(FinanceTabButton)),
+  );
+  expect(button.selected, isTrue);
+}
 
 Future<ProviderContainer> _pumpScreen(
   WidgetTester tester, {

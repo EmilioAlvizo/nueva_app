@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,7 +26,20 @@ class FinancesScreen extends ConsumerStatefulWidget {
 }
 
 class _FinancesScreenState extends ConsumerState<FinancesScreen> {
+  late final PageController _pageController;
   FinanceTab _selectedTab = FinanceTab.balance;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,30 +74,30 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
         keyValue: AppWidgetKeys.financeChartsTab,
       ),
     ];
-    final content = switch (_selectedTab) {
-      FinanceTab.balance => FinanceBalanceSection(farmId: widget.farmId),
-      FinanceTab.income => FinanceMessageState(
+    final pages = [
+      FinanceBalanceSection(farmId: widget.farmId),
+      FinanceMessageState(
         key: const ValueKey(AppWidgetKeys.financeIncomeUnavailable),
         title: l10n.financeIncomeUnavailableTitle,
         message: l10n.financeIncomeUnavailableMessage,
         note: l10n.financeNoFabricatedData,
         asset: 'assets/income.png',
       ),
-      FinanceTab.expenses => FinanceMessageState(
+      FinanceMessageState(
         key: const ValueKey(AppWidgetKeys.financeExpensesUnavailable),
         title: l10n.financeExpensesUnavailableTitle,
         message: l10n.financeExpensesUnavailableMessage,
         note: l10n.financeNoFabricatedData,
         asset: 'assets/outcome.png',
       ),
-      FinanceTab.charts => FinanceMessageState(
+      FinanceMessageState(
         key: const ValueKey(AppWidgetKeys.financeChartsUnavailable),
         title: l10n.financeChartsUnavailableTitle,
         message: l10n.financeChartsUnavailableMessage,
         note: l10n.financeNoFabricatedData,
         asset: 'assets/chart_filled.png',
       ),
-    };
+    ];
 
     return Scaffold(
       body: SafeArea(
@@ -92,14 +107,49 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
             FinanceTabBar(
               items: items,
               selected: _selectedTab,
-              onSelected: (tab) => setState(() => _selectedTab = tab),
+              onSelected: _selectTab,
             ),
             const SizedBox(height: AppSpacing.xs),
-            Expanded(child: content),
+            Expanded(
+              child: PageView(
+                key: const ValueKey(AppWidgetKeys.financePages),
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                children: pages,
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  void _selectTab(FinanceTab tab) {
+    if (_pageController.hasClients) {
+      unawaited(
+        _pageController.animateToPage(
+          tab.index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedTab == tab) return;
+    setState(() => _selectedTab = tab);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients || _selectedTab != tab) {
+        return;
+      }
+      _pageController.jumpToPage(tab.index);
+    });
+  }
+
+  void _onPageChanged(int index) {
+    final tab = FinanceTab.values[index];
+    if (_selectedTab == tab) return;
+    setState(() => _selectedTab = tab);
   }
 }
 

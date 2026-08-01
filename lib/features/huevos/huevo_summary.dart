@@ -21,12 +21,12 @@ class EggSummaryView extends StatelessWidget {
         Row(
           children: [
             Expanded(
+              key: const Key('egg-metric-eggs'),
               child: MetricCard(
-                //key: const Key('egg-metric-eggs'),
                 label: 'Huevos',
                 value: '${summary.goodEggs}',
                 color: const Color(0xFFB8E6CF),
-            foreground: const Color(0xFF14392A),
+                foreground: const Color(0xFF14392A),
               ),
             ),
             const SizedBox(width: 8),
@@ -36,7 +36,7 @@ class EggSummaryView extends StatelessWidget {
                 label: 'Ingresos',
                 value: currency.format(summary.income),
                 color: AppColors.bgCard,
-            foreground: AppColors.textPrimary,
+                foreground: AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: 8),
@@ -46,7 +46,7 @@ class EggSummaryView extends StatelessWidget {
                 label: 'Vendidos',
                 value: '${summary.soldEggs}',
                 color: const Color(0xFF75422F),
-            foreground: Colors.white,
+                foreground: Colors.white,
               ),
             ),
           ],

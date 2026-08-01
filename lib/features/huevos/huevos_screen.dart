@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/testing/app_widget_keys.dart';
+import '../../core/theme/app_colors.dart';
 import '../animales/animales_provider.dart';
 import '../animales/tipo_filtro.dart';
 import '../model/tipoAnimal/tipoAnimal.dart';
-import '../../core/theme/app_colors.dart';
 import 'huevo_cards.dart';
 import 'huevo_filters.dart';
 import 'huevo_forms.dart';
@@ -25,7 +28,20 @@ class HuevosScreen extends ConsumerStatefulWidget {
 }
 
 class _HuevosScreenState extends ConsumerState<HuevosScreen> {
+  late final PageController _pageController;
   EggTab _tab = EggTab.summary;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +92,52 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
       });
     }
 
+    late final List<Widget> pages;
+    switch (data) {
+      case AsyncLoading():
+        pages = const [
+          Center(child: CircularProgressIndicator()),
+          Center(child: CircularProgressIndicator()),
+          Center(child: CircularProgressIndicator()),
+        ];
+      case AsyncError():
+        pages = [
+          _ErrorState(
+            onRetry: () => ref.invalidate(huevoDataProvider(widget.granjaId)),
+          ),
+          _ErrorState(
+            onRetry: () => ref.invalidate(huevoDataProvider(widget.granjaId)),
+          ),
+          _ErrorState(
+            onRetry: () => ref.invalidate(huevoDataProvider(widget.granjaId)),
+          ),
+        ];
+      case AsyncData(:final value):
+        final filtered = value.filtered(
+          animalTypeId: effectiveAnimalTypeId,
+          filters: effectiveFilters,
+          now: DateTime.now(),
+        );
+        pages = [
+          EggSummaryView(summary: EggSummary.fromData(filtered)),
+          _CollectionsList(
+            collections: filtered.collections,
+            animalTypes: animalTypes,
+            canEdit: canEdit,
+            onEdit: (collection) =>
+                _openCollectionForm(groupChoices, collection: collection),
+            onDelete: _deleteCollection,
+          ),
+          _SalesList(
+            sales: filtered.sales,
+            animalTypes: animalTypes,
+            canEdit: canEdit,
+            onEdit: (sale) => _openSaleForm(groupChoices, sale: sale),
+            onDelete: _deleteSale,
+          ),
+        ];
+    }
+
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -95,7 +157,7 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                           child: _SegmentedTabs(
                             selected: _tab,
-                            onSelected: (tab) => setState(() => _tab = tab),
+                            onSelected: _selectTab,
                           ),
                         ),
                         EggFilterSummary(
@@ -105,45 +167,11 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
                           filters: effectiveFilters,
                         ),
                         Expanded(
-                          child: data.when(
-                            loading: () => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            error: (_, _) => _ErrorState(
-                              onRetry: () => ref.invalidate(
-                                huevoDataProvider(widget.granjaId),
-                              ),
-                            ),
-                            data: (value) {
-                              final filtered = value.filtered(
-                                animalTypeId: effectiveAnimalTypeId,
-                                filters: effectiveFilters,
-                                now: DateTime.now(),
-                              );
-                              return switch (_tab) {
-                                EggTab.summary => EggSummaryView(
-                                  summary: EggSummary.fromData(filtered),
-                                ),
-                                EggTab.add => _CollectionsList(
-                                  collections: filtered.collections,
-                                  animalTypes: animalTypes,
-                                  canEdit: canEdit,
-                                  onEdit: (collection) => _openCollectionForm(
-                                    groupChoices,
-                                    collection: collection,
-                                  ),
-                                  onDelete: _deleteCollection,
-                                ),
-                                EggTab.reduce => _SalesList(
-                                  sales: filtered.sales,
-                                  animalTypes: animalTypes,
-                                  canEdit: canEdit,
-                                  onEdit: (sale) =>
-                                      _openSaleForm(groupChoices, sale: sale),
-                                  onDelete: _deleteSale,
-                                ),
-                              };
-                            },
+                          child: PageView(
+                            key: const ValueKey(AppWidgetKeys.eggPages),
+                            controller: _pageController,
+                            onPageChanged: _onPageChanged,
+                            children: pages,
                           ),
                         ),
                       ],
@@ -174,6 +202,32 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
         ),
       ),
     );
+  }
+
+  void _selectTab(EggTab tab) {
+    if (_pageController.hasClients) {
+      unawaited(
+        _pageController.animateToPage(
+          tab.index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        ),
+      );
+      return;
+    }
+
+    if (_tab == tab) return;
+    setState(() => _tab = tab);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients || _tab != tab) return;
+      _pageController.jumpToPage(tab.index);
+    });
+  }
+
+  void _onPageChanged(int index) {
+    final tab = EggTab.values[index];
+    if (_tab == tab) return;
+    setState(() => _tab = tab);
   }
 
   Future<void> _openCollectionForm(

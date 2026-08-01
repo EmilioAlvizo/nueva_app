@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nueva_app/core/testing/app_widget_keys.dart';
 import 'package:nueva_app/core/theme/app_colors.dart';
 import 'package:nueva_app/core/theme/app_theme.dart';
 import 'package:nueva_app/features/animales/animales_provider.dart';
@@ -12,29 +13,96 @@ import 'package:nueva_app/features/model/grupo/grupo.dart';
 import 'package:nueva_app/features/model/tipoAnimal/tipoAnimal.dart';
 
 void main() {
-  testWidgets('tabs show one selected check and FAB only on mutation tabs', (
-    tester,
-  ) async {
+  testWidgets('horizontal swipes navigate all tabs and back', (tester) async {
     await _pumpScreen(tester, canEdit: true);
 
     expect(find.byKey(const Key('egg-segmented-tabs')), findsOneWidget);
     expect(find.byKey(const Key('egg-selected-tab-check')), findsOneWidget);
+    _expectEggTabSelected('summary');
     expect(find.byKey(const Key('egg-summary-view')), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('egg-tab-add')));
+    await tester.drag(_key(AppWidgetKeys.eggPages), const Offset(-600, 0));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('egg-selected-tab-check')), findsOneWidget);
+    _expectEggTabSelected('add');
     expect(find.byKey(const ValueKey('egg-fab-add')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('egg-collection-collection-1')),
       findsOneWidget,
     );
 
-    await tester.tap(find.byKey(const ValueKey('egg-tab-reduce')));
+    await tester.drag(_key(AppWidgetKeys.eggPages), const Offset(-600, 0));
     await tester.pumpAndSettle();
+    _expectEggTabSelected('reduce');
     expect(find.byKey(const ValueKey('egg-fab-reduce')), findsOneWidget);
     expect(find.byKey(const ValueKey('egg-sale-sale-1')), findsOneWidget);
+
+    await tester.drag(_key(AppWidgetKeys.eggPages), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    _expectEggTabSelected('add');
+    expect(find.byKey(const ValueKey('egg-fab-add')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('egg-collection-collection-1')),
+      findsOneWidget,
+    );
+
+    await tester.drag(_key(AppWidgetKeys.eggPages), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    _expectEggTabSelected('summary');
+    expect(find.byKey(const Key('egg-summary-view')), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+  });
+
+  testWidgets('tab taps stay synchronized with horizontal swipes', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, canEdit: true);
+
+    await tester.tap(find.byKey(const ValueKey('egg-tab-reduce')));
+    await tester.pumpAndSettle();
+    _expectEggTabSelected('reduce');
+    expect(find.byKey(const ValueKey('egg-sale-sale-1')), findsOneWidget);
+
+    await tester.drag(_key(AppWidgetKeys.eggPages), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    _expectEggTabSelected('add');
+    expect(find.byKey(const ValueKey('egg-fab-add')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('egg-collection-collection-1')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('egg-tab-summary')));
+    await tester.pumpAndSettle();
+    _expectEggTabSelected('summary');
+    expect(find.byKey(const Key('egg-summary-view')), findsOneWidget);
+  });
+
+  testWidgets('tab animation follows the page and retargets midway', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, canEdit: true);
+
+    await tester.tap(find.byKey(const ValueKey('egg-tab-reduce')));
+    await tester.pump();
+    _expectEggTabSelected('summary');
+    expect(_pagePosition(tester, AppWidgetKeys.eggPages), 0);
+
+    await tester.pump(const Duration(milliseconds: 50));
+    _expectEggTabSelected('add');
+    expect(
+      _pagePosition(tester, AppWidgetKeys.eggPages),
+      inInclusiveRange(0.5, 1.5),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('egg-tab-add')));
+    await tester.pumpAndSettle();
+    _expectEggTabSelected('add');
+    expect(_pagePosition(tester, AppWidgetKeys.eggPages), closeTo(1, 0.001));
+    expect(
+      find.byKey(const ValueKey('egg-collection-collection-1')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('read-only access hides record menus and mutation FABs', (
@@ -75,6 +143,22 @@ void main() {
     expect(saleStripe.color, AppColors.tipoColor[1]);
     expect(find.text('Display name unrelated to type ID'), findsOneWidget);
   });
+}
+
+Finder _key(String value) => find.byKey(ValueKey(value));
+
+double _pagePosition(WidgetTester tester, String keyValue) {
+  return tester.widget<PageView>(_key(keyValue)).controller!.page!;
+}
+
+void _expectEggTabSelected(String tabName) {
+  expect(
+    find.descendant(
+      of: find.byKey(ValueKey('egg-tab-$tabName')),
+      matching: find.byKey(const Key('egg-selected-tab-check')),
+    ),
+    findsOneWidget,
+  );
 }
 
 Future<void> _pumpScreen(WidgetTester tester, {required bool canEdit}) async {
