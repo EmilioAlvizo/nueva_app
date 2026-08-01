@@ -90,7 +90,7 @@
   "ongoingLabel": "En curso",
   "notAvailableLabel": "No disponible",
   "breakEvenUnavailableReason": "No se registraron huevos buenos para esta mezcla.",
-  "financeDateRange": "{start} - {end}",
+  "financeDateRange": "{start} – {end}",
   "@financeDateRange": {
     "description": "Rango de fechas mostrado en una tarjeta de equilibrio",
     "placeholders": {

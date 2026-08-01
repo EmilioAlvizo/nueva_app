@@ -164,7 +164,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String financeDateRange(String start, String end) {
-    return '$start - $end';
+    return '$start – $end';
   }
 
   @override

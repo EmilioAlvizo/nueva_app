@@ -32,7 +32,7 @@ class BreakEvenPriceRing extends StatelessWidget {
       child: DecoratedBox(
         key: ValueKey(AppWidgetKeys.financeBreakEvenPriceIndicator(mixtureId)),
         decoration: BoxDecoration(
-          color: financeTheme.metricSurface,
+          color: financeTheme.neutralMetricSurface,
           shape: BoxShape.circle,
           border: Border.all(
             color: palette.accent,
@@ -53,7 +53,9 @@ class BreakEvenPriceRing extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: financeTheme.onCard,
-                      fontWeight: FontWeight.w900,
+                      fontSize: AppSizes.financeRingValueFont,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxs),
@@ -62,7 +64,9 @@ class BreakEvenPriceRing extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: financeTheme.onCardMuted,
+                      fontSize: AppSizes.financeRingLabelFont,
                       fontWeight: FontWeight.w700,
+                      height: 1,
                     ),
                   ),
                 ],

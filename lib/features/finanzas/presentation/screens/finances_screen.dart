@@ -186,16 +186,19 @@ abstract final class BreakEvenCardDataMapper {
       marginRole: marginRole,
       primaryMetrics: [
         FinanceMetricViewData(
+          role: FinanceMetricRole.cost,
           label: l10n.totalCostLabel,
           value: point.totalFoodCost.formatCurrency(l10n),
           icon: Icons.payments_outlined,
         ),
         FinanceMetricViewData(
+          role: FinanceMetricRole.eggs,
           label: l10n.goodEggsLabel,
           value: point.goodEggs.formatInteger(l10n),
           icon: Icons.egg_alt_outlined,
         ),
         FinanceMetricViewData(
+          role: FinanceMetricRole.consumption,
           label: l10n.totalFeedConsumptionLabel,
           value: l10n.financeKilograms(
             point.totalFeedConsumption.formatDecimal(l10n),
@@ -204,7 +207,6 @@ abstract final class BreakEvenCardDataMapper {
         ),
       ],
       secondaryMetricsText: secondaryMetricsText,
-      durationLabel: l10n.mixtureDurationLabel,
       durationValue: l10n.financeDurationDays(point.mixtureDays),
       periodValue: l10n.financeDateRange(
         point.startedAt.formatShortDate(l10n),

@@ -1,59 +1,83 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
 import '../../../../core/theme/finance_theme.dart';
 
+enum FinanceMetricRole { cost, eggs, consumption }
+
 final class FinanceMetricViewData {
   const FinanceMetricViewData({
+    required this.role,
     required this.label,
     required this.value,
     required this.icon,
   });
 
+  final FinanceMetricRole role;
   final String label;
   final String value;
   final IconData icon;
 }
 
 class FinanceMetricTile extends StatelessWidget {
-  const FinanceMetricTile({required this.metric, super.key});
+  const FinanceMetricTile({
+    required this.mixtureId,
+    required this.metric,
+    super.key,
+  });
 
+  final String mixtureId;
   final FinanceMetricViewData metric;
 
   @override
   Widget build(BuildContext context) {
     final financeTheme = FinanceTheme.of(context);
+    final (surface, foreground) = switch (metric.role) {
+      FinanceMetricRole.cost || FinanceMetricRole.eggs => (
+        financeTheme.neutralMetricSurface,
+        financeTheme.onNeutralMetricSurface,
+      ),
+      FinanceMetricRole.consumption => (
+        financeTheme.consumptionMetricSurface,
+        financeTheme.onConsumptionMetricSurface,
+      ),
+    };
+
     return DecoratedBox(
+      key: ValueKey(
+        AppWidgetKeys.financeBreakEvenMetric(mixtureId, metric.role.name),
+      ),
       decoration: BoxDecoration(
-        color: financeTheme.metricSurface,
-        borderRadius: BorderRadius.circular(AppRadii.medium),
+        color: surface,
+        borderRadius: BorderRadius.circular(AppSizes.financeMetricRadius),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.xs),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /* ExcludeSemantics(
-              child: Icon(
-                metric.icon,
-                color: financeTheme.onCardMuted,
-                size: AppSizes.smallIcon,
-              ),
-            ), 
-            const SizedBox(height: AppSpacing.xs),*/
             Text(
               metric.value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: financeTheme.onCard,
-                fontWeight: FontWeight.w900,
+                color: foreground,
+                fontSize: AppSizes.financeMetricValueFont,
+                fontWeight: FontWeight.w800,
+                height: 1.1,
               ),
             ),
             const SizedBox(height: AppSpacing.xxs),
             Text(
               metric.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: financeTheme.onCardMuted,
-                fontWeight: FontWeight.w700,
+                color: foreground,
+                fontSize: AppSizes.financeMetricLabelFont,
+                fontWeight: FontWeight.w600,
+                height: 1.1,
               ),
             ),
           ],
@@ -64,8 +88,13 @@ class FinanceMetricTile extends StatelessWidget {
 }
 
 class FinancePrimaryMetrics extends StatelessWidget {
-  const FinancePrimaryMetrics({required this.metrics, super.key});
+  const FinancePrimaryMetrics({
+    required this.mixtureId,
+    required this.metrics,
+    super.key,
+  });
 
+  final String mixtureId;
   final List<FinanceMetricViewData> metrics;
 
   @override
@@ -88,7 +117,7 @@ class FinancePrimaryMetrics extends StatelessWidget {
             for (final metric in metrics)
               SizedBox(
                 width: width,
-                child: FinanceMetricTile(metric: metric),
+                child: FinanceMetricTile(mixtureId: mixtureId, metric: metric),
               ),
           ],
         );
@@ -107,11 +136,18 @@ class FinanceCompactMetricText extends StatelessWidget {
     final financeTheme = FinanceTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: financeTheme.onCardMuted,
-          fontWeight: FontWeight.w700,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          text,
+          maxLines: 1,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: financeTheme.onCardMuted,
+            fontSize: AppSizes.financeCompactLineFont,
+            fontWeight: FontWeight.w600,
+            height: 1.1,
+          ),
         ),
       ),
     );

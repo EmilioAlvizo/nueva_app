@@ -355,7 +355,7 @@ abstract class AppLocalizations {
   /// Rango de fechas mostrado en una tarjeta de equilibrio
   ///
   /// In es, this message translates to:
-  /// **'{start} - {end}'**
+  /// **'{start} – {end}'**
   String financeDateRange(String start, String end);
 
   /// Resumen accesible de una tarjeta de equilibrio

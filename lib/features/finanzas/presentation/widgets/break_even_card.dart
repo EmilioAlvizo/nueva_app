@@ -7,7 +7,7 @@ import 'break_even_price_ring.dart';
 import 'finance_margin_chip.dart';
 import 'finance_metric_tile.dart';
 
-export 'finance_metric_tile.dart' show FinanceMetricViewData;
+export 'finance_metric_tile.dart' show FinanceMetricRole, FinanceMetricViewData;
 
 final class BreakEvenCardViewData {
   const BreakEvenCardViewData({
@@ -20,7 +20,6 @@ final class BreakEvenCardViewData {
     required this.marginRole,
     required this.primaryMetrics,
     required this.secondaryMetricsText,
-    required this.durationLabel,
     required this.durationValue,
     required this.periodValue,
     required this.semanticsLabel,
@@ -35,7 +34,6 @@ final class BreakEvenCardViewData {
   final FinanceMarginRole marginRole;
   final List<FinanceMetricViewData> primaryMetrics;
   final String secondaryMetricsText;
-  final String durationLabel;
   final String durationValue;
   final String periodValue;
   final String semanticsLabel;
@@ -54,29 +52,44 @@ class BreakEvenCard extends StatelessWidget {
       container: true,
       label: data.semanticsLabel,
       child: Card.filled(
-        color: financeTheme.cardSurface,
+        color: financeTheme.breakEvenCardSurface(data.marginRole),
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.large),
+          borderRadius: BorderRadius.circular(AppSizes.financeCardRadius),
         ),
         child: Stack(
           children: [
-            const FinanceCardDecoration(),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  BreakEvenHero(data: data),
-                  const SizedBox(height: AppSpacing.md),
-                  FinancePrimaryMetrics(metrics: data.primaryMetrics),
-                  const SizedBox(height: AppSpacing.md),
-                  FinanceCompactMetricText(text: data.secondaryMetricsText),
-                  const SizedBox(height: AppSpacing.sm),
-                  FinancePeriodStrip(data: data),
-                ],
-              ),
+            FinanceCardDecoration(
+              mixtureId: data.mixtureId,
+              marginRole: data.marginRole,
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      BreakEvenHero(data: data),
+                      const SizedBox(height: AppSpacing.md),
+                      FinancePrimaryMetrics(
+                        mixtureId: data.mixtureId,
+                        metrics: data.primaryMetrics,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      FinanceCompactMetricText(text: data.secondaryMetricsText),
+                    ],
+                  ),
+                ),
+                FinancePeriodStrip(data: data),
+              ],
             ),
           ],
         ),
@@ -111,7 +124,7 @@ class BreakEvenHero extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(child: ring),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               details,
             ],
           );
@@ -143,19 +156,27 @@ class BreakEvenHeroDetails extends StatelessWidget {
       children: [
         Text(
           data.groupName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: financeTheme.onCard,
-            fontWeight: FontWeight.w900,
+            fontSize: AppSizes.financeTitleFont,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          data.description,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: financeTheme.onCardMuted,
+            fontSize: AppSizes.financeSubtitleFont,
+            height: 1.2,
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text(
-          data.description,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: financeTheme.onCardMuted),
-        ),
-        const SizedBox(height: AppSpacing.sm),
         FinanceMarginChip(
           mixtureId: data.mixtureId,
           label: data.marginLabel,
@@ -174,50 +195,37 @@ class FinancePeriodStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final financeTheme = FinanceTheme.of(context);
-    final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
-      color: financeTheme.onCardMuted,
-      fontWeight: FontWeight.w700,
-    );
-    final valueStyle = Theme.of(context).textTheme.labelLarge?.copyWith(
-      color: financeTheme.onCard,
-      fontWeight: FontWeight.w900,
-    );
-
     return DecoratedBox(
+      key: ValueKey(AppWidgetKeys.financeBreakEvenPeriod(data.mixtureId)),
       decoration: BoxDecoration(
-        color: financeTheme.dateStrip,
-        borderRadius: BorderRadius.circular(AppRadii.medium),
+        color: financeTheme.periodSurface,
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(AppSizes.financeCardRadius),
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Wrap(
-          spacing: AppSpacing.lg,
-          runSpacing: AppSpacing.sm,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(data.durationLabel, style: labelStyle),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(data.durationValue, style: valueStyle),
-              ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: AppSizes.financePeriodMinHeight,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.financePeriodVertical,
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '${data.periodValue} · ${data.durationValue}',
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: financeTheme.onPeriodSurface,
+                fontSize: AppSizes.financePeriodFont,
+                fontWeight: FontWeight.w700,
+                height: 1,
+              ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ExcludeSemantics(
-                  child: Icon(
-                    Icons.calendar_month_outlined,
-                    color: financeTheme.onCardMuted,
-                    size: AppSizes.smallIcon,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Flexible(child: Text(data.periodValue, style: valueStyle)),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -225,42 +233,34 @@ class FinancePeriodStrip extends StatelessWidget {
 }
 
 class FinanceCardDecoration extends StatelessWidget {
-  const FinanceCardDecoration({super.key});
+  const FinanceCardDecoration({
+    required this.mixtureId,
+    required this.marginRole,
+    super.key,
+  });
+
+  final String mixtureId;
+  final FinanceMarginRole marginRole;
 
   @override
   Widget build(BuildContext context) {
     final financeTheme = FinanceTheme.of(context);
-    return Positioned.fill(
+    return Positioned(
+      right: -AppSizes.financeDecorationLarge / 2,
+      top: -AppSizes.financeDecorationLarge / 2,
       child: ExcludeSemantics(
         child: IgnorePointer(
-          child: Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              Positioned(
-                right: -AppSizes.financeDecorationSmall / 2,
-                top: -AppSizes.financeDecorationSmall / 2,
-                child: Container(
-                  width: AppSizes.financeDecorationLarge,
-                  height: AppSizes.financeDecorationLarge,
-                  decoration: BoxDecoration(
-                    color: financeTheme.decoration.withValues(alpha: 0.10),
-                    shape: BoxShape.circle,
-                  ),
-                ),
+          child: SizedBox.square(
+            dimension: AppSizes.financeDecorationLarge,
+            child: DecoratedBox(
+              key: ValueKey(
+                AppWidgetKeys.financeBreakEvenDecoration(mixtureId),
               ),
-              Positioned(
-                left: -AppSizes.financeDecorationSmall / 2,
-                bottom: -AppSizes.financeDecorationSmall / 2,
-                child: Container(
-                  width: AppSizes.financeDecorationSmall,
-                  height: AppSizes.financeDecorationSmall,
-                  decoration: BoxDecoration(
-                    color: financeTheme.decoration.withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                  ),
-                ),
+              decoration: BoxDecoration(
+                color: financeTheme.breakEvenDecoration(marginRole),
+                shape: BoxShape.circle,
               ),
-            ],
+            ),
           ),
         ),
       ),

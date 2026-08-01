@@ -23,20 +23,21 @@ class FinanceMarginChip extends StatelessWidget {
     return DecoratedBox(
       key: ValueKey(AppWidgetKeys.financeMarginChip(mixtureId)),
       decoration: BoxDecoration(
-        color: palette.container,
+        color: palette.accent,
         borderRadius: BorderRadius.circular(AppRadii.full),
-        border: Border.all(color: palette.accent),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
+          horizontal: AppSpacing.financeChipHorizontal,
+          vertical: AppSpacing.financeChipVertical,
         ),
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: palette.onContainer,
-            fontWeight: FontWeight.w900,
+            color: palette.onAccent,
+            fontSize: AppSizes.financeMarginFont,
+            fontWeight: FontWeight.w800,
+            height: 1,
           ),
         ),
       ),

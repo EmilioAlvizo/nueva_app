@@ -23,4 +23,16 @@ abstract final class AppWidgetKeys {
   static String financeMarginChip(String mixtureId) {
     return 'finances.balance.margin.$mixtureId';
   }
+
+  static String financeBreakEvenDecoration(String mixtureId) {
+    return 'finances.balance.decoration.$mixtureId';
+  }
+
+  static String financeBreakEvenMetric(String mixtureId, String role) {
+    return 'finances.balance.metric.$mixtureId.$role';
+  }
+
+  static String financeBreakEvenPeriod(String mixtureId) {
+    return 'finances.balance.period.$mixtureId';
+  }
 }
