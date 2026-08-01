@@ -66,7 +66,7 @@ class BreakEvenCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   BreakEvenHero(data: data),
                   const SizedBox(height: AppSpacing.md),

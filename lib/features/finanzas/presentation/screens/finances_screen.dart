@@ -85,7 +85,6 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
     };
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
