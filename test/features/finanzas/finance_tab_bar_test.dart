@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/theme/app_theme.dart';
-import 'package:nueva_app/core/theme/finance_theme.dart';
-import 'package:nueva_app/features/finanzas/presentation/widgets/finance_tab_bar.dart';
+import 'package:rancho/core/theme/app_theme.dart';
+import 'package:rancho/core/theme/finance_theme.dart';
+import 'package:rancho/features/finanzas/presentation/widgets/finance_tab_bar.dart';
 
 void main() {
   for (final brightness in Brightness.values) {

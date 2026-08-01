@@ -1,6 +1,6 @@
 {
-    "name": "nueva_app",
-    "short_name": "nueva_app",
+    "name": "rancho",
+    "short_name": "rancho",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",

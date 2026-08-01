@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/theme/finance_theme.dart';
+import 'package:rancho/core/theme/finance_theme.dart';
 
 void main() {
   test('light and dark themes expose intentional semantic colors', () {

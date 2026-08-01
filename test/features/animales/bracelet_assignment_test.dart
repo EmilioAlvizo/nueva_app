@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/model/altaAnimales/bracelet_assignment.dart';
+import 'package:rancho/features/model/altaAnimales/bracelet_assignment.dart';
 
 void main() {
   group('BraceletAssignment', () {

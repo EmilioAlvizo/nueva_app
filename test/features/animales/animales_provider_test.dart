@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nueva_app/features/animales/animales_provider.dart';
-import 'package:nueva_app/features/animales/animales_repository.dart'
+import 'package:rancho/features/animales/animales_provider.dart';
+import 'package:rancho/features/animales/animales_repository.dart'
     show AnimalesRepository, NoGroupOverview;
-import 'package:nueva_app/features/model/altaAnimales/altaAnimales.dart';
+import 'package:rancho/features/model/altaAnimales/altaAnimales.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {

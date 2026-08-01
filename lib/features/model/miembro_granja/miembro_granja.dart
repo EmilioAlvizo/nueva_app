@@ -1,5 +1,5 @@
 // lib/features/model/miembro_granja/miembro_granja.dart
-import 'package:nueva_app/features/model/perfil/perfil.dart';
+import 'package:rancho/features/model/perfil/perfil.dart';
 
 class MiembroGranja {
   final String id;

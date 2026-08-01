@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/router/app_router.dart';
-import 'package:nueva_app/features/home/home_screen.dart';
-import 'package:nueva_app/l10n/app_localizations_es.dart';
+import 'package:rancho/core/router/app_router.dart';
+import 'package:rancho/features/home/home_screen.dart';
+import 'package:rancho/l10n/app_localizations_es.dart';
 
 void main() {
   test('Finanzas is canonical and legacy grafica redirects for a session', () {

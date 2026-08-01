@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:nueva_app/core/extensions/primitive_formatting_extensions.dart';
-import 'package:nueva_app/l10n/app_localizations_es.dart';
+import 'package:rancho/core/extensions/primitive_formatting_extensions.dart';
+import 'package:rancho/l10n/app_localizations_es.dart';
 
 void main() {
   final l10n = AppLocalizationsEs();

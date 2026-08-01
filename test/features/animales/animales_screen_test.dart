@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/animales/animales_provider.dart';
-import 'package:nueva_app/features/animales/animales_repository.dart'
+import 'package:rancho/features/animales/animales_provider.dart';
+import 'package:rancho/features/animales/animales_repository.dart'
     show AnimalesRepository, ConteoGrupo, NoGroupOverview;
-import 'package:nueva_app/features/animales/animales_screen.dart';
-import 'package:nueva_app/features/model/altaAnimales/altaAnimales.dart';
-import 'package:nueva_app/features/model/animal/animal.dart';
-import 'package:nueva_app/features/model/bajaAnimal/baja_animal.dart';
-import 'package:nueva_app/features/model/grupo/grupo.dart';
-import 'package:nueva_app/features/model/tipoAnimal/tipoAnimal.dart';
+import 'package:rancho/features/animales/animales_screen.dart';
+import 'package:rancho/features/model/altaAnimales/altaAnimales.dart';
+import 'package:rancho/features/model/animal/animal.dart';
+import 'package:rancho/features/model/bajaAnimal/baja_animal.dart';
+import 'package:rancho/features/model/grupo/grupo.dart';
+import 'package:rancho/features/model/tipoAnimal/tipoAnimal.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {

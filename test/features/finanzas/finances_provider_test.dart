@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/finanzas/domain/entities/break_even_point.dart';
-import 'package:nueva_app/features/finanzas/domain/repositories/finances_repository.dart';
-import 'package:nueva_app/features/finanzas/presentation/providers/finances_providers.dart';
+import 'package:rancho/features/finanzas/domain/entities/break_even_point.dart';
+import 'package:rancho/features/finanzas/domain/repositories/finances_repository.dart';
+import 'package:rancho/features/finanzas/presentation/providers/finances_providers.dart';
 
 void main() {
   test('query provider propagates the selected farm id', () async {

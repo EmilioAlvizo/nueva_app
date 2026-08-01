@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/testing/app_widget_keys.dart';
-import 'package:nueva_app/core/theme/app_theme.dart';
-import 'package:nueva_app/features/finanzas/domain/entities/break_even_point.dart';
-import 'package:nueva_app/features/finanzas/domain/repositories/finances_repository.dart';
-import 'package:nueva_app/features/finanzas/presentation/providers/finances_providers.dart';
-import 'package:nueva_app/features/finanzas/presentation/screens/finances_screen.dart';
-import 'package:nueva_app/features/finanzas/presentation/widgets/finance_tab_bar.dart';
-import 'package:nueva_app/l10n/app_localizations.dart';
+import 'package:rancho/core/testing/app_widget_keys.dart';
+import 'package:rancho/core/theme/app_theme.dart';
+import 'package:rancho/features/finanzas/domain/entities/break_even_point.dart';
+import 'package:rancho/features/finanzas/domain/repositories/finances_repository.dart';
+import 'package:rancho/features/finanzas/presentation/providers/finances_providers.dart';
+import 'package:rancho/features/finanzas/presentation/screens/finances_screen.dart';
+import 'package:rancho/features/finanzas/presentation/widgets/finance_tab_bar.dart';
+import 'package:rancho/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('horizontal swipes navigate all four tabs and back', (

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/finanzas/data/models/break_even_point_model.dart';
+import 'package:rancho/features/finanzas/data/models/break_even_point_model.dart';
 
 void main() {
   group('BreakEvenPointModel', () {

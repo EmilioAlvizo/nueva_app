@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:nueva_app/features/animales/animales_provider.dart';
-import 'package:nueva_app/features/model/altaAnimales/altaAnimales.dart';
-import 'package:nueva_app/features/model/altaAnimales/bracelet_assignment.dart';
-import 'package:nueva_app/features/model/altaAnimales/registrar_alta_animales_input.dart';
+import 'package:rancho/features/animales/animales_provider.dart';
+import 'package:rancho/features/model/altaAnimales/altaAnimales.dart';
+import 'package:rancho/features/model/altaAnimales/bracelet_assignment.dart';
+import 'package:rancho/features/model/altaAnimales/registrar_alta_animales_input.dart';
 
 import '../../../../core/theme/app_colors.dart';
 

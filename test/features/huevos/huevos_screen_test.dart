@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/testing/app_widget_keys.dart';
-import 'package:nueva_app/core/theme/app_colors.dart';
-import 'package:nueva_app/core/theme/app_theme.dart';
-import 'package:nueva_app/features/animales/animales_provider.dart';
-import 'package:nueva_app/features/huevos/huevo_models.dart';
-import 'package:nueva_app/features/huevos/huevo_provider.dart';
-import 'package:nueva_app/features/huevos/huevo_repository.dart';
-import 'package:nueva_app/features/huevos/huevos_screen.dart';
-import 'package:nueva_app/features/model/grupo/grupo.dart';
-import 'package:nueva_app/features/model/tipoAnimal/tipoAnimal.dart';
+import 'package:rancho/core/testing/app_widget_keys.dart';
+import 'package:rancho/core/theme/app_colors.dart';
+import 'package:rancho/core/theme/app_theme.dart';
+import 'package:rancho/features/animales/animales_provider.dart';
+import 'package:rancho/features/huevos/huevo_models.dart';
+import 'package:rancho/features/huevos/huevo_provider.dart';
+import 'package:rancho/features/huevos/huevo_repository.dart';
+import 'package:rancho/features/huevos/huevos_screen.dart';
+import 'package:rancho/features/model/grupo/grupo.dart';
+import 'package:rancho/features/model/tipoAnimal/tipoAnimal.dart';
 
 void main() {
   testWidgets('horizontal swipes navigate all tabs and back', (tester) async {

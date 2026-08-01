@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/testing/app_widget_keys.dart';
-import 'package:nueva_app/core/theme/app_layout.dart';
-import 'package:nueva_app/core/theme/app_theme.dart';
-import 'package:nueva_app/core/theme/finance_theme.dart';
-import 'package:nueva_app/features/finanzas/presentation/widgets/break_even_card.dart';
-import 'package:nueva_app/l10n/app_localizations.dart';
+import 'package:rancho/core/testing/app_widget_keys.dart';
+import 'package:rancho/core/theme/app_layout.dart';
+import 'package:rancho/core/theme/app_theme.dart';
+import 'package:rancho/core/theme/finance_theme.dart';
+import 'package:rancho/features/finanzas/presentation/widgets/break_even_card.dart';
+import 'package:rancho/l10n/app_localizations.dart';
 
 void main() {
   for (final brightness in Brightness.values) {

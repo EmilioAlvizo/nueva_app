@@ -4,7 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:nueva_app/features/finanzas/data/repositories/supabase_finances_repository.dart';
+import 'package:rancho/features/finanzas/data/repositories/supabase_finances_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {

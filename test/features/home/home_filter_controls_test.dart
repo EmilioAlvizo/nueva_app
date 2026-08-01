@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/theme/app_theme.dart';
-import 'package:nueva_app/features/home/home_screen.dart';
-import 'package:nueva_app/features/huevos/huevo_models.dart';
-import 'package:nueva_app/features/model/grupo/grupo.dart';
-import 'package:nueva_app/features/model/tipoAnimal/tipoAnimal.dart';
+import 'package:rancho/core/theme/app_theme.dart';
+import 'package:rancho/features/home/home_screen.dart';
+import 'package:rancho/features/huevos/huevo_models.dart';
+import 'package:rancho/features/model/grupo/grupo.dart';
+import 'package:rancho/features/model/tipoAnimal/tipoAnimal.dart';
 
 void main() {
   const animalTypes = [

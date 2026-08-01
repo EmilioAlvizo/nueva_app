@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/l10n/app_localizations.dart';
+import 'package:rancho/l10n/app_localizations.dart';
 
 void main() {
   test('Spanish is the only generated locale', () {
