@@ -4,8 +4,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:nueva_app/features/animales/animales_repository.dart';
-import 'package:nueva_app/features/model/altaAnimales/registrar_alta_animales_input.dart';
+import 'package:rancho/features/animales/animales_repository.dart';
+import 'package:rancho/features/model/altaAnimales/registrar_alta_animales_input.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {

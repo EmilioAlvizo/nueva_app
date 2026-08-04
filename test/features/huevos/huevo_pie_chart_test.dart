@@ -2,7 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/huevos/huevo_pie_chart.dart';
+import 'package:rancho/features/huevos/huevo_pie_chart.dart';
 
 void main() {
   group('HuevoPieChartPainter', () {

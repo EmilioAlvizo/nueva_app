@@ -1,6 +1,7 @@
 // lib/core/theme/app_theme.dart
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'finance_theme.dart';
 
 /// Construye los ThemeData claro y oscuro a partir de AppColors.
 /// Úsalos en MaterialApp.router como `theme: AppTheme.light` o
@@ -32,10 +33,11 @@ abstract final class AppTheme {
                 secondaryContainer: isDark
                     ? AppColors.bgCard
                     : AppColors.bgCardLg,
-                onSecondaryContainer: isDark ? AppColors.bgLight : AppColors.bg,
+                onSecondaryContainer: isDark ? AppColors.bg :AppColors.bgLight ,
                 surface: card,
                 error: AppColors.negative,
               ),
+      extensions: [isDark ? FinanceTheme.dark : FinanceTheme.light],
       textTheme: base.textTheme.apply(
         bodyColor: textPrimary,
         displayColor: textPrimary,
@@ -114,7 +116,7 @@ abstract final class AppTheme {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon, color: iconColor),
-      
+
       filled: true,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),

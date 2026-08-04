@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/theme/app_colors.dart';
-import 'package:nueva_app/core/theme/app_theme.dart';
-import 'package:nueva_app/features/huevos/huevo_cards.dart';
-import 'package:nueva_app/features/huevos/huevo_forms.dart';
-import 'package:nueva_app/features/huevos/huevo_models.dart';
-import 'package:nueva_app/features/huevos/huevo_summary.dart';
-import 'package:nueva_app/shared/widgets/compact_form_controls.dart';
+import 'package:rancho/core/theme/app_colors.dart';
+import 'package:rancho/core/theme/app_theme.dart';
+import 'package:rancho/features/huevos/huevo_cards.dart';
+import 'package:rancho/features/huevos/huevo_forms.dart';
+import 'package:rancho/features/huevos/huevo_models.dart';
+import 'package:rancho/features/huevos/huevo_summary.dart';
+import 'package:rancho/shared/widgets/compact_form_controls.dart';
 
 void main() {
   testWidgets(

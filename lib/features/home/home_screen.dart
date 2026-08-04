@@ -20,6 +20,8 @@ import '../model/tipoAnimal/tipoAnimal.dart';
 import '../huevos/huevo_filters.dart';
 import '../huevos/huevo_models.dart';
 import '../huevos/huevo_provider.dart';
+import '../../core/extensions/localization_extension.dart';
+import '../../l10n/app_localizations.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   // Recibimos obligatoriamente el contenedor de navegación inyectado por GoRouter
@@ -86,6 +88,7 @@ class _AppBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final selectedFarm = ref.watch(selectedFarmProvider);
     final branchIndex = navigationShell.currentIndex;
     final isAnimalBranch = branchIndex == 1 || branchIndex == 2;
@@ -157,7 +160,7 @@ class _AppBar extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  _branchTitle(branchIndex),
+                  homeBranchTitle(branchIndex, l10n),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -238,12 +241,12 @@ class _AppBar extends ConsumerWidget {
   }
 }
 
-String _branchTitle(int index) => switch (index) {
+String homeBranchTitle(int index, AppLocalizations l10n) => switch (index) {
   0 => 'Granjas',
   1 => 'Animales',
   2 => 'Huevos',
   3 => 'Comida',
-  4 => 'Gráficas',
+  4 => l10n.financesTitle,
   _ => 'Granjas',
 };
 
@@ -469,6 +472,7 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentIndex = navigationShell.currentIndex;
+    final l10n = context.l10n;
 
     // 1. Definimos una función que genera el icono correcto según su color dinámico
     Widget getIcon(int index, Color color) {
@@ -498,7 +502,15 @@ class _BottomBar extends StatelessWidget {
             color: color,
           );
         case 4:
-          return Icon(Icons.show_chart_rounded, size: 22, color: color);
+          return Image.asset(
+            currentIndex == index
+                ? 'assets/chart_filled.png'
+                : 'assets/chart.png',
+            width: 22,
+            height: 22,
+            color: color,
+            semanticLabel: l10n.financesTitle,
+          );
         default:
           return const SizedBox.shrink();
       }

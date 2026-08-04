@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/comida/comida_models.dart';
-import 'package:nueva_app/features/comida/comida_provider.dart';
-import 'package:nueva_app/features/comida/comida_repository.dart';
-import 'package:nueva_app/features/comida/comida_screen.dart';
+import 'package:rancho/features/comida/comida_models.dart';
+import 'package:rancho/features/comida/comida_provider.dart';
+import 'package:rancho/features/comida/comida_repository.dart';
+import 'package:rancho/features/comida/comida_screen.dart';
 
 void main() {
   testWidgets('shows the two redesigned tabs, metrics, and visible actions', (

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/model/altaAnimales/altaAnimales.dart';
-import 'package:nueva_app/features/model/altaAnimales/registrar_alta_animales_input.dart';
-import 'package:nueva_app/features/model/animal/animal.dart';
+import 'package:rancho/features/model/altaAnimales/altaAnimales.dart';
+import 'package:rancho/features/model/altaAnimales/registrar_alta_animales_input.dart';
+import 'package:rancho/features/model/animal/animal.dart';
 
 void main() {
   group('RegistrarAltaAnimalesInput.toRpcParams', () {

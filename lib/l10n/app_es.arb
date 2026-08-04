@@ -1,0 +1,120 @@
+{
+  "@@locale": "es",
+  "financesTitle": "Finanzas",
+  "@financesTitle": {
+    "description": "Título de la sección de finanzas"
+  },
+  "financeTabBalance": "Equilibrio",
+  "financeTabIncome": "Ingresos",
+  "financeTabExpenses": "Gastos",
+  "financeTabCharts": "Gráficos",
+  "financeBalanceHeading": "Punto de equilibrio por mezcla",
+  "financeBalanceSubtitle": "Precio mínimo por huevo necesario para cubrir el costo de alimento de cada mezcla.",
+  "financeErrorTitle": "No pudimos cargar los datos de equilibrio",
+  "financeErrorMessage": "Revisa tu conexión e inténtalo de nuevo.",
+  "financeRetry": "Reintentar",
+  "financeBalanceEmptyTitle": "Aún no hay datos de equilibrio",
+  "financeBalanceEmptyMessage": "Los resultados aparecerán cuando la granja seleccionada tenga mezclas de alimento con producción de huevos.",
+  "financeIncomeUnavailableTitle": "Los ingresos aún no están disponibles",
+  "financeIncomeUnavailableMessage": "Esta pestaña está lista para mostrar ingresos cuando se defina una fuente de datos verificada.",
+  "financeExpensesUnavailableTitle": "Los gastos aún no están disponibles",
+  "financeExpensesUnavailableMessage": "Esta pestaña está lista para mostrar gastos cuando se defina una fuente de datos verificada.",
+  "financeChartsUnavailableTitle": "Los gráficos financieros aún no están disponibles",
+  "financeChartsUnavailableMessage": "Los gráficos se habilitarán cuando existan datos verificados de ingresos y gastos.",
+  "financeNoFabricatedData": "No se muestran estimaciones ni datos financieros inventados.",
+  "breakEvenPriceLabel": "Precio de equilibrio",
+  "breakEvenPricePerEggLabel": "$/huevo",
+  "@breakEvenPricePerEggLabel": {
+    "description": "Etiqueta dentro del círculo del precio de equilibrio"
+  },
+  "breakEvenCardDescription": "Costo mínimo de venta para cubrir la operación",
+  "@breakEvenCardDescription": {
+    "description": "Explicación breve junto al círculo del precio de equilibrio"
+  },
+  "financeMarginValue": "Margen {value} %",
+  "@financeMarginValue": {
+    "description": "Porcentaje de margen positivo o negativo",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "financeMarginUnavailable": "Margen no disponible",
+  "totalCostLabel": "Costo total",
+  "goodEggsLabel": "Huevos buenos",
+  "brokenEggsLabel": "Huevos rotos",
+  "foodCostLabel": "Costo de alimento",
+  "totalFeedConsumptionLabel": "Consumo total",
+  "weightedAverageBirdsLabel": "Aves promedio ponderado",
+  "eggsPerDayLabel": "Huevos por día",
+  "eggsPerDayPerBirdLabel": "Huevos por día por ave",
+  "feedPerDayLabel": "Consumo por día",
+  "feedPerDayPerBirdLabel": "Consumo por día por ave",
+  "averageSalePriceLabel": "Precio promedio de venta",
+  "financeCompactMetrics": "{birds} aves • {eggsRate} huevo/(día·ave) • {feedRate} kg/(día·ave)",
+  "@financeCompactMetrics": {
+    "description": "Resumen compacto de aves y tasas diarias por ave",
+    "placeholders": {
+      "birds": {
+        "type": "String"
+      },
+      "eggsRate": {
+        "type": "String"
+      },
+      "feedRate": {
+        "type": "String"
+      }
+    }
+  },
+  "mixtureDurationLabel": "Duración",
+  "financeDurationDays": "{count, plural, =1{1 día} other{{count} días}}",
+  "@financeDurationDays": {
+    "description": "Duración de una mezcla de alimento en días",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeKilograms": "{value} kg",
+  "@financeKilograms": {
+    "description": "Cantidad de alimento en kilogramos",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "periodLabel": "Periodo",
+  "ongoingLabel": "En curso",
+  "notAvailableLabel": "No disponible",
+  "breakEvenUnavailableReason": "No se registraron huevos buenos para esta mezcla.",
+  "financeDateRange": "{start} – {end}",
+  "@financeDateRange": {
+    "description": "Rango de fechas mostrado en una tarjeta de equilibrio",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "breakEvenCardSemantics": "{groupName}. Precio de equilibrio por huevo: {price}. {margin}.",
+  "@breakEvenCardSemantics": {
+    "description": "Resumen accesible de una tarjeta de equilibrio",
+    "placeholders": {
+      "groupName": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "margin": {
+        "type": "String"
+      }
+    }
+  }
+}

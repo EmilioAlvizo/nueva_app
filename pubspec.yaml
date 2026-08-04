@@ -1,4 +1,4 @@
-name: nueva_app
+name: rancho
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -37,10 +39,7 @@ dependencies:
   supabase_flutter: ^2.12.4
   flutter_riverpod: ^3.3.1
   go_router: ^17.3.0
-  riverpod_lint: ^3.1.4
   riverpod_annotation: ^4.0.3
-  build_runner: ^2.15.0
-  riverpod_generator: ^4.0.4
   intl: ^0.20.2
 
 dev_dependencies:
@@ -53,13 +52,30 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
+  riverpod_generator: ^4.0.4
+  riverpod_lint: ^3.1.4
+  build_runner: ^2.15.0
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  web:
+    generate: true
+    image_path: "assets/icon/app.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
+
+  image_path: "assets/icon/app.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
