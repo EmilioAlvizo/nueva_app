@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/compact_form_controls.dart';
 import '../model/animal/animal.dart';
 import '../model/bajaAnimal/registrar_baja_animales_input.dart';
 import '../model/catalogoItem/catalogo_item.dart';
@@ -109,10 +110,13 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
         expand: false,
         builder: (context, scrollController) {
           return Material(
+            key: const Key('registrar-baja-sheet'),
             color: widget.isDark ? AppColors.bg : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             child: ListView(
+              key: const Key('registrar-baja-scroll-view'),
               controller: scrollController,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               children: [
                 Center(
@@ -152,25 +156,22 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
                 tiposAsync.when(
                   loading: () => const LinearProgressIndicator(),
                   error: (error, _) => Text('Error: $error'),
-                  data: (tipos) => DropdownButtonFormField<String>(
-                    initialValue: _tipoAnimalId,
-                    items: tipos
-                        .map(
-                          (tipo) => DropdownMenuItem(
-                            value: tipo.id,
-                            child: Text(tipo.nombre),
-                          ),
-                        )
-                        .toList(),
+                  data: (tipos) => CompactDropdownFormField<String>(
+                    key: const Key('baja-animal-type-field'),
+                    dropdownKey: const Key('baja-animal-type-dropdown'),
+                    label: 'Tipo de animal',
+                    value: _tipoAnimalId,
+                    items: tipos.map((tipo) => tipo.id).toList(),
+                    itemLabelBuilder: (id) =>
+                        tipos.firstWhere((tipo) => tipo.id == id).nombre,
+                    itemKeyBuilder: (id) => Key('baja-animal-type-option-$id'),
+                    hintText: 'Selecciona un tipo',
                     onChanged: (value) {
                       setState(() {
                         _tipoAnimalId = value;
                         _selectedAnimalIds.clear();
                       });
                     },
-                    decoration: const InputDecoration(
-                      labelText: 'Tipo de animal',
-                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -201,85 +202,55 @@ class _RegistrarBajaSheetState extends ConsumerState<RegistrarBajaSheet> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'Fecha',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: widget.isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondaryLg,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                InkWell(
+                CompactDateField(
+                  key: const Key('baja-date-field'),
+                  label: 'Fecha',
+                  value: _fechaBaja,
                   onTap: _seleccionarFecha,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 14,
+                  formatter: (value) =>
+                      DateFormat("d 'de' MMMM yyyy").format(value),
+                ),
+                const SizedBox(height: 16),
+                CompactLabeledField(
+                  label: 'Importe (opcional)',
+                  child: TextField(
+                    key: const Key('baja-amount-field'),
+                    controller: _importeCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: widget.isDark
-                            ? AppColors.border1lg
-                            : AppColors.border1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: widget.isDark
-                              ? AppColors.textSecondary
-                              : AppColors.textSecondaryLg,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          DateFormat("d 'de' MMMM yyyy").format(_fechaBaja),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: widget.isDark
-                                ? AppColors.textPrimary
-                                : AppColors.textPrimaryLg,
-                          ),
-                        ),
-                      ],
+                    decoration: compactInputDecoration(
+                      context,
+                      prefixText: '\$ ',
+                      hintText: '0.00',
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: _importeCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Importe (opcional)',
-                    prefixText: '\$ ',
-                    hintText: '0.00',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _notasCtrl,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Notas (opcional)',
-                    hintText: 'Detalles adicionales…',
+                CompactLabeledField(
+                  label: 'Notas (opcional)',
+                  child: TextField(
+                    key: const Key('baja-notes-field'),
+                    controller: _notasCtrl,
+                    maxLines: 3,
+                    decoration: compactInputDecoration(
+                      context,
+                      hintText: 'Detalles adicionales…',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 18),
-                TextField(
-                  controller: _searchCtrl,
-                  onChanged: (value) => setState(() => _query = value),
-                  decoration: const InputDecoration(
-                    labelText: 'Buscar animal',
-                    hintText: 'Brazalete, grupo o tipo',
-                    prefixIcon: Icon(Icons.search),
+                CompactLabeledField(
+                  label: 'Buscar animal',
+                  child: TextField(
+                    key: const Key('baja-search-field'),
+                    controller: _searchCtrl,
+                    onChanged: (value) => setState(() => _query = value),
+                    decoration: compactInputDecoration(
+                      context,
+                      hintText: 'Brazalete, grupo o tipo',
+                      prefixIcon: const Icon(Icons.search),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),

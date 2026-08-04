@@ -38,6 +38,7 @@ Future<void> _showAltaEditor({
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
+    useSafeArea: true,
     builder: (_) => AnimalRegistrationSheet(
       granjaId: granjaId,
       isDark: isDark,
@@ -309,6 +310,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
             initialQuantity: 1,
             tipoAnimalIdInicial: filteredTypeId,
           ),
+          useSafeArea: true,
         ),
       ),
       _Tab.altas => _ContextualFabAction(
@@ -325,6 +327,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
             initialQuantity: 2,
             tipoAnimalIdInicial: filteredTypeId,
           ),
+          useSafeArea: true,
         ),
       ),
       _Tab.bajas => _ContextualFabAction(
@@ -340,6 +343,7 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
             isDark: isDark,
             tipoAnimalIdInicial: filteredTypeId,
           ),
+          useSafeArea: true,
         ),
       ),
       _Tab.tipos => _ContextualFabAction(
@@ -373,11 +377,16 @@ class _AnimalesScreenState extends ConsumerState<AnimalesScreen> {
     );
   }
 
-  Future<void> _openSheet(BuildContext context, Widget child) {
+  Future<void> _openSheet(
+    BuildContext context,
+    Widget child, {
+    bool useSafeArea = false,
+  }) {
     return showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useSafeArea: useSafeArea,
       builder: (_) => child,
     );
   }
@@ -2484,6 +2493,7 @@ class _NoGroupTypeCard extends StatelessWidget {
                             context: context,
                             backgroundColor: Colors.transparent,
                             isScrollControlled: true,
+                            useSafeArea: true,
                             builder: (_) => AnimalRegistrationSheet(
                               granjaId: granjaId,
                               isDark: isDark,
@@ -2503,6 +2513,7 @@ class _NoGroupTypeCard extends StatelessWidget {
                             context: context,
                             backgroundColor: Colors.transparent,
                             isScrollControlled: true,
+                            useSafeArea: true,
                             builder: (_) => AnimalRegistrationSheet(
                               granjaId: granjaId,
                               isDark: isDark,
@@ -2523,6 +2534,7 @@ class _NoGroupTypeCard extends StatelessWidget {
                             context: context,
                             backgroundColor: Colors.transparent,
                             isScrollControlled: true,
+                            useSafeArea: true,
                             builder: (_) => RegistrarBajaSheet(
                               granjaId: granjaId,
                               isDark: isDark,
@@ -2835,6 +2847,7 @@ class _GrupoCard extends ConsumerWidget {
                               context: context,
                               backgroundColor: Colors.transparent,
                               isScrollControlled: true,
+                              useSafeArea: true,
                               builder: (_) => AnimalRegistrationSheet(
                                 granjaId: granjaId,
                                 isDark: isDark,
@@ -2854,6 +2867,7 @@ class _GrupoCard extends ConsumerWidget {
                               context: context,
                               backgroundColor: Colors.transparent,
                               isScrollControlled: true,
+                              useSafeArea: true,
                               builder: (_) => AnimalRegistrationSheet(
                                 granjaId: granjaId,
                                 isDark: isDark,

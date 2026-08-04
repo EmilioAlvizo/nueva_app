@@ -8,6 +8,7 @@ abstract final class AppColors {
   static const bgCard2 = Color(0xFF1f221e);
   static const bgCard3 = Color(0xFF1C2333);
   static const bgInput = Color(0xFF1A2030);
+  static const fecha = Color(0xFF636959);
 
   // Backgrounds light
   static const bgLight = Color(0xFFF8F9FA);
@@ -15,6 +16,7 @@ abstract final class AppColors {
   static const bgCard2Lg = Color(0xFFE6EAE2);
   static const bgCard3Lg = Color(0xFFEEF2F6);
   static const bgInputLg = Color(0xFFF0F2F5);
+  static const fechaLg = Color(0xFFB5B9AC);
 
   /* static const bgDark = Color(0xFF0D1117);
   static const bgCard = Color(0xFF161B22);

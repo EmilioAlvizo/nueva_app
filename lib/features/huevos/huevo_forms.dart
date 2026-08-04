@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../../shared/widgets/compact_form_controls.dart';
 import 'huevo_filters.dart';
 import 'huevo_models.dart';
 
@@ -107,20 +108,18 @@ class _EggCollectionFormState extends State<EggCollectionForm> {
         key: _formKey,
         child: Column(
           children: [
-            DropdownButtonFormField<String>(
+            CompactDropdownFormField<String>(
               key: const Key('collection-group-field'),
-              initialValue: _groupId,
-              decoration: const InputDecoration(
-                labelText: 'Grupo',
-                prefixIcon: Icon(Icons.groups_2_outlined),
-              ),
-              items: [
-                for (final group in widget.groups)
-                  DropdownMenuItem(
-                    value: group.id,
-                    child: Text(group.displayName),
-                  ),
-              ],
+              dropdownKey: const Key('collection-group-dropdown'),
+              label: 'Grupo',
+              value: _groupId,
+              items: widget.groups.map((group) => group.id).toList(),
+              itemLabelBuilder: (id) => widget.groups
+                  .firstWhere((group) => group.id == id)
+                  .displayName,
+              itemKeyBuilder: (id) => Key('collection-group-option-$id'),
+              hintText: 'Selecciona un grupo',
+              prefixIcon: const Icon(Icons.groups_2_outlined),
               onChanged: _saving
                   ? null
                   : (value) => setState(() => _groupId = value),
@@ -136,6 +135,7 @@ class _EggCollectionFormState extends State<EggCollectionForm> {
                     key: const Key('collection-good-field'),
                     controller: _goodController,
                     label: 'Huevos buenos',
+                    enabled: !_saving,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -144,19 +144,34 @@ class _EggCollectionFormState extends State<EggCollectionForm> {
                     key: const Key('collection-broken-field'),
                     controller: _brokenController,
                     label: 'Huevos rotos',
+                    enabled: !_saving,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            _DateField(
-              date: _date,
-              onChanged: (date) => setState(() => _date = date),
+            CompactDateField(
+              key: const Key('egg-date-field'),
+              label: 'Fecha',
+              value: _date,
+              enabled: !_saving,
+              onTap: _saving ? null : _pickDate,
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _pickDate() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _date = selected);
   }
 }
 
@@ -267,20 +282,18 @@ class _EggSaleFormState extends State<EggSaleForm> {
         key: _formKey,
         child: Column(
           children: [
-            DropdownButtonFormField<String>(
+            CompactDropdownFormField<String>(
               key: const Key('sale-group-field'),
-              initialValue: _groupId,
-              decoration: const InputDecoration(
-                labelText: 'Grupo',
-                prefixIcon: Icon(Icons.groups_2_outlined),
-              ),
-              items: [
-                for (final group in widget.groups)
-                  DropdownMenuItem(
-                    value: group.id,
-                    child: Text(group.displayName),
-                  ),
-              ],
+              dropdownKey: const Key('sale-group-dropdown'),
+              label: 'Grupo',
+              value: _groupId,
+              items: widget.groups.map((group) => group.id).toList(),
+              itemLabelBuilder: (id) => widget.groups
+                  .firstWhere((group) => group.id == id)
+                  .displayName,
+              itemKeyBuilder: (id) => Key('sale-group-option-$id'),
+              hintText: 'Selecciona un grupo',
+              prefixIcon: const Icon(Icons.groups_2_outlined),
               onChanged: _saving
                   ? null
                   : (value) => setState(() => _groupId = value),
@@ -288,44 +301,52 @@ class _EggSaleFormState extends State<EggSaleForm> {
                   value == null ? 'Selecciona un grupo.' : null,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              key: const Key('sale-quantity-field'),
-              controller: _quantityController,
-              enabled: !_saving,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Cantidad',
-                prefixIcon: Icon(Icons.egg_outlined),
+            CompactLabeledField(
+              label: 'Cantidad',
+              child: TextFormField(
+                key: const Key('sale-quantity-field'),
+                controller: _quantityController,
+                enabled: !_saving,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: compactInputDecoration(
+                  context,
+                  enabled: !_saving,
+                  prefixIcon: const Icon(Icons.egg_outlined),
+                ),
+                onChanged: (_) => setState(() {}),
+                validator: (value) {
+                  final quantity = int.tryParse(value?.trim() ?? '');
+                  return quantity == null || quantity <= 0
+                      ? 'Ingresa una cantidad mayor que cero.'
+                      : null;
+                },
               ),
-              onChanged: (_) => setState(() {}),
-              validator: (value) {
-                final quantity = int.tryParse(value?.trim() ?? '');
-                return quantity == null || quantity <= 0
-                    ? 'Ingresa una cantidad mayor que cero.'
-                    : null;
-              },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              key: const Key('sale-price-field'),
-              controller: _priceController,
-              enabled: !_saving,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            CompactLabeledField(
+              label: 'Precio unitario',
+              child: TextFormField(
+                key: const Key('sale-price-field'),
+                controller: _priceController,
+                enabled: !_saving,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: compactInputDecoration(
+                  context,
+                  enabled: !_saving,
+                  prefixText: r'$ ',
+                  prefixIcon: const Icon(Icons.payments_outlined),
+                ),
+                onChanged: (_) => setState(() {}),
+                validator: (value) {
+                  final price = _parsePrice(value ?? '');
+                  return price == null || !price.isFinite || price <= 0
+                      ? 'Ingresa un precio válido mayor que cero.'
+                      : null;
+                },
               ),
-              decoration: const InputDecoration(
-                labelText: 'Precio unitario',
-                prefixText: r'$ ',
-                prefixIcon: Icon(Icons.payments_outlined),
-              ),
-              onChanged: (_) => setState(() {}),
-              validator: (value) {
-                final price = _parsePrice(value ?? '');
-                return price == null || !price.isFinite || price <= 0
-                    ? 'Ingresa un precio válido mayor que cero.'
-                    : null;
-              },
             ),
             const SizedBox(height: 12),
             Semantics(
@@ -355,14 +376,28 @@ class _EggSaleFormState extends State<EggSaleForm> {
               ),
             ),
             const SizedBox(height: 16),
-            _DateField(
-              date: _date,
-              onChanged: (date) => setState(() => _date = date),
+            CompactDateField(
+              key: const Key('egg-date-field'),
+              label: 'Fecha',
+              value: _date,
+              enabled: !_saving,
+              onTap: _saving ? null : _pickDate,
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _pickDate() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _date = selected);
   }
 }
 
@@ -390,75 +425,96 @@ class _EggFormSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 8,
-            bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-          ),
-          child: SingleChildScrollView(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(child: Icon(icon)),
-                        const SizedBox(width: 12),
-                        Expanded(
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final availableHeight = MediaQuery.sizeOf(context).height - keyboard;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 200),
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Material(
+        key: const Key('egg-form-sheet'),
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        clipBehavior: Clip.antiAlias,
+        child: SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: availableHeight * 0.92),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(child: Icon(icon)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(title, style: theme.textTheme.titleLarge),
+                                Text(
+                                  subtitle,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Flexible(
+                        fit: FlexFit.loose,
+                        child: SingleChildScrollView(
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(title, style: theme.textTheme.titleLarge),
-                              Text(
-                                subtitle,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                              child,
+                              if (error != null) ...[
+                                const SizedBox(height: 16),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    error!,
+                                    key: const Key('egg-form-error'),
+                                    style: TextStyle(
+                                      color: theme.colorScheme.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: FilledButton.icon(
+                                  key: const Key('egg-form-submit'),
+                                  onPressed: saving ? null : onSubmit,
+                                  icon: saving
+                                      ? const SizedBox.square(
+                                          dimension: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.check_rounded),
+                                  label: Text(actionLabel),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    child,
-                    if (error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        error!,
-                        key: const Key('egg-form-error'),
-                        style: TextStyle(color: theme.colorScheme.error),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: FilledButton.icon(
-                        key: const Key('egg-form-submit'),
-                        onPressed: saving ? null : onSubmit,
-                        icon: saving
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.check_rounded),
-                        label: Text(actionLabel),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -470,53 +526,31 @@ class _EggFormSheet extends StatelessWidget {
 }
 
 class _CountField extends StatelessWidget {
-  const _CountField({super.key, required this.controller, required this.label});
+  const _CountField({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.enabled,
+  });
 
   final TextEditingController controller;
   final String label;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: InputDecoration(labelText: label),
-      validator: (value) {
-        final count = int.tryParse(value?.trim() ?? '');
-        return count == null ? 'Ingresa 0 o más.' : null;
-      },
-    );
-  }
-}
-
-class _DateField extends StatelessWidget {
-  const _DateField({required this.date, required this.onChanged});
-
-  final DateTime date;
-  final ValueChanged<DateTime> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      key: const Key('egg-date-field'),
-      borderRadius: BorderRadius.circular(12),
-      onTap: () async {
-        final selected = await showDatePicker(
-          context: context,
-          initialDate: date,
-          firstDate: DateTime(2000),
-          lastDate: DateTime.now(),
-        );
-        if (!context.mounted || selected == null) return;
-        onChanged(selected);
-      },
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Fecha',
-          prefixIcon: Icon(Icons.calendar_today_outlined),
-        ),
-        child: Text(DateFormat('dd/MM/yyyy').format(date)),
+    return CompactLabeledField(
+      label: label,
+      child: TextFormField(
+        controller: controller,
+        enabled: enabled,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        decoration: compactInputDecoration(context, enabled: enabled),
+        validator: (value) {
+          final count = int.tryParse(value?.trim() ?? '');
+          return count == null ? 'Ingresa 0 o más.' : null;
+        },
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:nueva_app/features/huevos/huevo_cards.dart';
 import 'package:nueva_app/features/huevos/huevo_forms.dart';
 import 'package:nueva_app/features/huevos/huevo_models.dart';
 import 'package:nueva_app/features/huevos/huevo_summary.dart';
+import 'package:nueva_app/shared/widgets/compact_form_controls.dart';
 
 void main() {
   testWidgets(
@@ -408,10 +409,10 @@ void main() {
       ),
     );
 
-    final field = tester.widget<DropdownButtonFormField<String>>(
+    final field = tester.widget<CompactDropdownFormField<String>>(
       find.byKey(const Key('collection-group-field')),
     );
-    expect(field.initialValue, isNull);
+    expect(field.value, isNull);
   });
 }
 

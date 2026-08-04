@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/compact_form_controls.dart';
 import '../comida_models.dart';
 import '../comida_provider.dart';
 import '/features/settings/presentation/providers/theme_provider.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/app_text_field.dart';
 
 class MixtureFormSheet extends ConsumerStatefulWidget {
   const MixtureFormSheet({
@@ -101,12 +99,14 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
     final isDark = themeMode == AppThemeMode.dark;
     final mutation = ref.watch(foodMutationsProvider);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
-    final height = MediaQuery.sizeOf(context).height * 0.92;
+    final availableHeight = MediaQuery.sizeOf(context).height - keyboard;
+    final height = availableHeight.clamp(0.0, double.infinity) * 0.92;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 200),
       padding: EdgeInsets.only(bottom: keyboard),
       child: Material(
+        key: const ValueKey('mixture-form-sheet'),
         color: isDark ? AppColors.bg : AppColors.bgLight,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         clipBehavior: Clip.antiAlias,
@@ -115,6 +115,7 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: height),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 10),
                 const _DragHandle(),
@@ -133,8 +134,10 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
                     color: AppColors.naranjao,
                     backgroundColor: AppColors.bgCard,
                   ),
-                Expanded(
+                Flexible(
+                  fit: FlexFit.loose,
                   child: SingleChildScrollView(
+                    key: const ValueKey('mixture-form-scroll-view'),
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -156,12 +159,16 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionLabel(label: 'Fecha de inicio'),
-        _DateField(value: _startDate, onTap: () => _pickDate(isEndDate: false)),
+        CompactDateField(
+          key: const ValueKey('mixture-start-date-field'),
+          label: 'Fecha de inicio',
+          value: _startDate,
+          onTap: () => _pickDate(isEndDate: false),
+        ),
         if (_isEditing) ...[
           const SizedBox(height: 16),
-          const _SectionLabel(label: 'Fecha de término (opcional)'),
-          _DateField(
+          CompactDateField(
+            label: 'Fecha de término (opcional)',
             value: _endDate,
             placeholder: 'Mezcla activa',
             onTap: () => _pickDate(isEndDate: true),
@@ -171,48 +178,32 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
           ),
         ],
         const SizedBox(height: 16),
-        const _SectionLabel(label: 'Grupo'),
-        DropdownButtonFormField<String>(
-          initialValue: _groupId,
-          isExpanded: true,
-          dropdownColor: AppColors.bgCard,
-          decoration: AppTheme.customDecoration(
-            context: context,
-            label: 'Selecciona un grupo',
-            icon: Icons.groups_2_outlined,
-          ),
-          items: [
-            for (final group in widget.groups)
-              DropdownMenuItem(value: group.id, child: Text(group.name)),
-          ],
+        CompactDropdownFormField<String>(
+          key: const ValueKey('mixture-group-field'),
+          dropdownKey: const ValueKey('mixture-group-dropdown'),
+          label: 'Grupo',
+          value: _groupId,
+          items: widget.groups.map((group) => group.id).toList(),
+          itemLabelBuilder: (id) =>
+              widget.groups.firstWhere((group) => group.id == id).name,
+          itemKeyBuilder: (id) => ValueKey('mixture-group-option-$id'),
           onChanged: (value) => setState(() => _groupId = value),
+          hintText: 'Selecciona un grupo',
           validator: (value) => value == null ? 'Selecciona un grupo.' : null,
         ),
         const SizedBox(height: 16),
-        /* const _SectionLabel(label: 'Cantidad de ingredientes'),
-        TextFormField(
-          controller: _countController,
-          keyboardType: TextInputType.number,
-          decoration: AppTheme.customDecoration(
-            context: context,
-            label: 'Ej. 3',
-            icon: Icons.format_list_numbered_rounded,
-          ),
-          validator: (value) => FoodValidation.ingredientCount(
-            value,
-            maximum: _selectableCategories.length,
-          ),
-        ), */
-        const SizedBox(height: 16),
-        AppTextField(
+        CompactLabeledField(
+          key: const ValueKey('mixture-ingredient-count-field'),
           label: 'Cantidad de ingredientes',
-          hint: 'ej. 3',
-          keyboardType: TextInputType.number,
-          //maxLength: 80,
-          controller: _countController,
-          validator: (value) => FoodValidation.ingredientCount(
-            value,
-            maximum: _selectableCategories.length,
+          child: TextFormField(
+            keyboardType: TextInputType.number,
+            controller: _countController,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            decoration: compactInputDecoration(context, hintText: 'ej. 3'),
+            validator: (value) => FoodValidation.ingredientCount(
+              value,
+              maximum: _selectableCategories.length,
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -252,65 +243,69 @@ class _MixtureFormSheetState extends ConsumerState<MixtureFormSheet> {
                   .toList(),
               categories: _selectableCategories,
             ),
-          const _SectionLabel(label: 'Categoría'),
-          DropdownButtonFormField<String>(
+          CompactDropdownFormField<String>(
             key: ValueKey('category-$_ingredientIndex-$_categoryId'),
-            initialValue: _categoryId,
-            isExpanded: true,
-            dropdownColor: AppColors.bgCard,
-            decoration: _decoration(
-              'Selecciona una categoría',
-              Icons.sell_outlined,
-            ),
-            items: [
-              for (final category in categories)
-                DropdownMenuItem(
-                  value: category.id,
-                  child: Text(
-                    category.isActive
-                        ? category.name
-                        : '${category.name} (inactiva)',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-            ],
+            dropdownKey: ValueKey('category-dropdown-$_ingredientIndex'),
+            label: 'Categoría',
+            value: _categoryId,
+            items: categories.map((category) => category.id).toList(),
+            itemLabelBuilder: (id) {
+              final category = categories.firstWhere((item) => item.id == id);
+              return category.isActive
+                  ? category.name
+                  : '${category.name} (inactiva)';
+            },
+            itemKeyBuilder: (id) => ValueKey('category-option-$id'),
+            hintText: 'Selecciona una categoría',
+            prefixIcon: const Icon(Icons.sell_outlined),
             onChanged: (value) => setState(() => _categoryId = value),
             validator: (value) =>
                 value == null ? 'Selecciona una categoría.' : null,
           ),
           const SizedBox(height: 16),
-          const _SectionLabel(label: 'Cantidad en kg'),
-          TextFormField(
-            controller: _quantityController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: AppTheme.customDecoration(
-              context: context,
-              label: '0.00',
-              icon: Icons.scale_outlined,
-              suffix: 'kg',
+          CompactLabeledField(
+            label: 'Cantidad en kg',
+            child: TextFormField(
+              key: const ValueKey('mixture-quantity-field'),
+              controller: _quantityController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: compactInputDecoration(
+                context,
+                hintText: '0.00',
+                prefixIcon: const Icon(Icons.scale_outlined),
+                suffixText: 'kg',
+              ),
+              validator: (value) {
+                final quantity = FoodValidation.decimal(value ?? '');
+                return quantity == null || !quantity.isFinite || quantity <= 0
+                    ? 'La cantidad debe ser mayor que 0.'
+                    : null;
+              },
             ),
-            validator: (value) {
-              final quantity = FoodValidation.decimal(value ?? '');
-              return quantity == null || !quantity.isFinite || quantity <= 0
-                  ? 'La cantidad debe ser mayor que 0.'
-                  : null;
-            },
           ),
           const SizedBox(height: 16),
-          const _SectionLabel(label: r'Precio ($)'),
-          TextFormField(
-            controller: _costController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: _decoration(
-              'Costo total de esta cantidad',
-              Icons.attach_money_rounded,
+          CompactLabeledField(
+            label: r'Precio ($)',
+            child: TextFormField(
+              key: const ValueKey('mixture-price-field'),
+              controller: _costController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: compactInputDecoration(
+                context,
+                hintText: 'Costo total de esta cantidad',
+                prefixIcon: const Icon(Icons.attach_money_rounded),
+              ),
+              validator: (value) {
+                final cost = FoodValidation.decimal(value ?? '');
+                return cost == null || !cost.isFinite || cost < 0
+                    ? 'El precio total no puede ser negativo.'
+                    : null;
+              },
             ),
-            validator: (value) {
-              final cost = FoodValidation.decimal(value ?? '');
-              return cost == null || !cost.isFinite || cost < 0
-                  ? 'El precio total no puede ser negativo.'
-                  : null;
-            },
           ),
           const SizedBox(height: 26),
           Row(
@@ -540,59 +535,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(left: 2, bottom: 7),
-    child: Text(
-      label,
-      style: const TextStyle(
-        color: AppColors.textSecondary,
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
-}
-
-class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.value,
-    required this.onTap,
-    this.placeholder = 'Selecciona una fecha',
-    this.onClear,
-  });
-
-  final DateTime? value;
-  final String placeholder;
-  final VoidCallback onTap;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(16),
-    child: InputDecorator(
-      decoration: _decoration('', Icons.calendar_today_outlined).copyWith(
-        suffixIcon: onClear == null
-            ? const Icon(Icons.keyboard_arrow_down_rounded)
-            : IconButton(
-                tooltip: 'Quitar fecha de término',
-                onPressed: onClear,
-                icon: const Icon(Icons.close_rounded),
-              ),
-      ),
-      child: Text(
-        value == null ? placeholder : DateFormat('dd/MM/yyyy').format(value!),
-      ),
-    ),
-  );
-}
-
 class _AccumulatedIngredients extends StatelessWidget {
   const _AccumulatedIngredients({
     required this.ingredients,
@@ -669,23 +611,6 @@ class _AccumulatedIngredients extends StatelessWidget {
     );
   }
 }
-
-InputDecoration _decoration(String hint, IconData icon, {String? suffix}) =>
-    InputDecoration(
-      hintText: hint.isEmpty ? null : hint,
-      prefixIcon: Icon(icon),
-      suffixText: suffix,
-      filled: true,
-      fillColor: AppColors.bgCard,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-    );
 
 ButtonStyle get _primaryButtonStyle => FilledButton.styleFrom(
   minimumSize: const Size.fromHeight(52),

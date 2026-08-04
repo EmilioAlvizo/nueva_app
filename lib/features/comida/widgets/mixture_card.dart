@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../comida_models.dart';
+import '../../../shared/widgets/fechas.dart';
 
 class MixtureCard extends StatelessWidget {
   const MixtureCard({
@@ -20,6 +21,8 @@ class MixtureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final currency = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
     final date = DateFormat('dd/MM/yyyy');
     return ClipRRect(
@@ -133,15 +136,19 @@ class MixtureCard extends StatelessWidget {
                         horizontal: 16,
                         vertical: 10,
                       ),
-                      color: AppColors.bgCard2,
+                      color: isDark
+                          ? AppColors.fecha
+                          : AppColors.fechaLg,
                       child: Text(
                         mixture.endDate == null
-                            ? 'Inicio ${date.format(mixture.startDate)}'
-                            : '${date.format(mixture.startDate)} - ${date.format(mixture.endDate!)}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                            ? 'Desde ${formatSpanishLongDate(mixture.startDate)}'
+                            : '${formatSpanishLongDate(mixture.startDate)} → ${formatSpanishLongDate(mixture.endDate!)}',
+                        style: TextStyle(
+                          color: isDark
+                          ? AppColors.textPrimary:AppColors.textPrimaryLg,
                           fontSize: 12,
                         ),
+                        textAlign: .center,
                       ),
                     ),
                   ],

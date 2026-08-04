@@ -8,6 +8,7 @@ import 'package:nueva_app/features/model/altaAnimales/bracelet_assignment.dart';
 import 'package:nueva_app/features/model/altaAnimales/registrar_alta_animales_input.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/compact_form_controls.dart';
 
 const _visibleAvailableBraceletLimit = 10;
 
@@ -132,15 +133,6 @@ class _AnimalRegistrationSheetState
         : gruposAsync.hasValue
         ? 'Grupo actual no disponible'
         : 'Cargando grupo...';
-    final grupoItems = <DropdownMenuItem<String?>>[
-      const DropdownMenuItem<String?>(value: null, child: Text('Sin grupo')),
-      ...grupos.map(
-        (grupo) => DropdownMenuItem<String?>(
-          value: grupo.id,
-          child: Text(grupo.nombre),
-        ),
-      ),
-    ];
     final grupoFieldValue = _grupoId != null && hasGrupoSeleccionado
         ? _grupoId
         : null;
@@ -152,274 +144,309 @@ class _AnimalRegistrationSheetState
       });
     }
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.92,
-      minChildSize: 0.6,
-      maxChildSize: 0.96,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: widget.isDark ? AppColors.bg : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-              children: [
-                Center(
-                  child: Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: widget.isDark
-                          ? AppColors.border1lg
-                          : AppColors.border1,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  _isEditMode
-                      ? 'Editar alta'
-                      : _isSingleMode
-                      ? 'Nueva alta de animal'
-                      : 'Nueva alta múltiple',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: widget.isDark
-                        ? AppColors.textPrimary
-                        : AppColors.textPrimaryLg,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _isEditMode
-                      ? 'Puedes actualizar el alta; los campos compartidos se sincronizan con los animales vinculados.'
-                      : 'Registra el alta primero y luego los animales vinculados.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: widget.isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondaryLg,
-                  ),
-                ),
-                if (_errorText != null) ...[
-                  const SizedBox(height: 16),
-                  _ErrorBanner(message: _errorText!),
-                ],
-                const SizedBox(height: 18),
-                if (_isEditMode)
-                  _CatalogStatusField(
-                    labelText: 'Tipo de animal',
-                    valueText: selectedTipoName,
-                    helperText:
-                        'Bloqueado para evitar inconsistencias con los animales existentes.',
-                    isLoading: shouldHoldTipoDropdown,
-                  )
-                else
-                  tiposAsync.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (error, _) => Text('Error: $error'),
-                    data: (tipos) => DropdownButtonFormField<String>(
-                      initialValue: tipoFieldValue,
-                      items: tipos
-                          .map(
-                            (tipo) => DropdownMenuItem(
-                              value: tipo.id,
-                              child: Text(tipo.nombre),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: _isEditMode
-                          ? null
-                          : (value) {
-                              setState(() {
-                                _tipoAnimalId = value;
-                                _grupoId = null;
-                                _assignment = null;
-                              });
-                            },
-                      validator: (value) =>
-                          value == null ? 'Selecciona un tipo' : null,
-                      decoration: InputDecoration(
-                        labelText: 'Tipo de animal',
-                        helperText: _isEditMode
-                            ? 'Bloqueado para evitar inconsistencias con los animales existentes.'
-                            : null,
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final availableHeight = MediaQuery.sizeOf(context).height - keyboard;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 200),
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Material(
+        key: const Key('animal-registration-sheet'),
+        color: widget.isDark ? AppColors.bg : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        clipBehavior: Clip.antiAlias,
+        child: SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: availableHeight * 0.92),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                key: const Key('animal-registration-scroll-view'),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: widget.isDark
+                              ? AppColors.border1lg
+                              : AppColors.border1,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
-                  ),
-                const SizedBox(height: 14),
-                if (_isEditMode)
-                  _CatalogStatusField(
-                    labelText: 'Grupo',
-                    valueText: selectedGrupoName,
-                    helperText: _grupoId == null
-                        ? 'Esta alta quedó registrada sin grupo.'
-                        : 'Editar el grupo desde el alta no es seguro porque no mueve los animales vinculados.',
-                    isLoading: shouldHoldGrupoDropdown && _grupoId != null,
-                  )
-                else
-                  DropdownButtonFormField<String?>(
-                    initialValue: grupoFieldValue,
-                    items: grupoItems,
-                    onChanged: _tipoAnimalId == null || _isEditMode
-                        ? null
-                        : (value) => setState(() => _grupoId = value),
-                    decoration: InputDecoration(
-                      labelText: 'Grupo',
+                    const SizedBox(height: 18),
+                    Text(
+                      _isEditMode
+                          ? 'Editar alta'
+                          : _isSingleMode
+                          ? 'Nueva alta de animal'
+                          : 'Nueva alta múltiple',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: widget.isDark
+                            ? AppColors.textPrimary
+                            : AppColors.textPrimaryLg,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _isEditMode
+                          ? 'Puedes actualizar el alta; los campos compartidos se sincronizan con los animales vinculados.'
+                          : 'Registra el alta primero y luego los animales vinculados.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: widget.isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLg,
+                      ),
+                    ),
+                    if (_errorText != null) ...[
+                      const SizedBox(height: 16),
+                      _ErrorBanner(message: _errorText!),
+                    ],
+                    const SizedBox(height: 18),
+                    if (_isEditMode)
+                      _CatalogStatusField(
+                        labelText: 'Tipo de animal',
+                        valueText: selectedTipoName,
+                        helperText:
+                            'Bloqueado para evitar inconsistencias con los animales existentes.',
+                        isLoading: shouldHoldTipoDropdown,
+                      )
+                    else
+                      tiposAsync.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (error, _) => Text('Error: $error'),
+                        data: (tipos) => CompactDropdownFormField<String>(
+                          key: const Key('animal-type-field'),
+                          dropdownKey: const Key('animal-type-dropdown'),
+                          label: 'Tipo de animal',
+                          value: tipoFieldValue,
+                          items: tipos.map((tipo) => tipo.id).toList(),
+                          itemLabelBuilder: (id) =>
+                              tipos.firstWhere((tipo) => tipo.id == id).nombre,
+                          itemKeyBuilder: (id) => Key('animal-type-option-$id'),
+                          hintText: 'Selecciona un tipo',
+                          onChanged: _isEditMode
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    _tipoAnimalId = value;
+                                    _grupoId = null;
+                                    _assignment = null;
+                                    _useSingleBracelet = false;
+                                    _braceletPanelEnabled = false;
+                                    _singleBraceletController.clear();
+                                    _manualBraceletController.clear();
+                                  });
+                                },
+                          validator: (value) =>
+                              value == null ? 'Selecciona un tipo' : null,
+                          helperText: _isEditMode
+                              ? 'Bloqueado para evitar inconsistencias con los animales existentes.'
+                              : null,
+                        ),
+                      ),
+                    const SizedBox(height: 14),
+                    if (_isEditMode)
+                      _CatalogStatusField(
+                        labelText: 'Grupo',
+                        valueText: selectedGrupoName,
+                        helperText: _grupoId == null
+                            ? 'Esta alta quedó registrada sin grupo.'
+                            : 'Editar el grupo desde el alta no es seguro porque no mueve los animales vinculados.',
+                        isLoading: shouldHoldGrupoDropdown && _grupoId != null,
+                      )
+                    else
+                      CompactDropdownFormField<String?>(
+                        key: const Key('animal-group-field'),
+                        dropdownKey: const Key('animal-group-dropdown'),
+                        label: 'Grupo',
+                        value: grupoFieldValue,
+                        items: <String?>[
+                          null,
+                          ...grupos.map((grupo) => grupo.id),
+                        ],
+                        itemLabelBuilder: (id) => id == null
+                            ? 'Sin grupo'
+                            : grupos
+                                  .firstWhere((grupo) => grupo.id == id)
+                                  .nombre,
+                        itemKeyBuilder: (id) => Key(
+                          id == null
+                              ? 'animal-group-option-none'
+                              : 'animal-group-option-$id',
+                        ),
+                        hintText: 'Selecciona un grupo',
+                        onChanged: _tipoAnimalId == null || _isEditMode
+                            ? null
+                            : (value) => setState(() => _grupoId = value),
+                        helperText: _isEditMode
+                            ? 'Editar el grupo desde el alta no es seguro porque no mueve los animales vinculados.'
+                            : _grupoId != null &&
+                                  !hasGrupoSeleccionado &&
+                                  gruposAsync.hasValue
+                            ? 'El grupo actual ya no está disponible en el catálogo, pero se conserva hasta que guardes.'
+                            : null,
+                      ),
+                    const SizedBox(height: 14),
+                    propositosAsync.when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (error, _) => Text('Error: $error'),
+                      data: (items) => CompactDropdownFormField<String>(
+                        key: const Key('animal-purpose-field'),
+                        dropdownKey: const Key('animal-purpose-dropdown'),
+                        label: 'Propósito',
+                        value: _propositoId,
+                        items: items.map((item) => item.id).toList(),
+                        itemLabelBuilder: (id) =>
+                            items.firstWhere((item) => item.id == id).nombre,
+                        itemKeyBuilder: (id) =>
+                            Key('animal-purpose-option-$id'),
+                        hintText: 'Selecciona un propósito',
+                        onChanged: (value) =>
+                            setState(() => _propositoId = value),
+                        validator: (value) =>
+                            value == null ? 'Selecciona un propósito' : null,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    tiposAdquisicionAsync.when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (error, _) => Text('Error: $error'),
+                      data: (items) => CompactDropdownFormField<String>(
+                        key: const Key('animal-acquisition-field'),
+                        dropdownKey: const Key('animal-acquisition-dropdown'),
+                        label: 'Tipo de adquisición',
+                        value: _tipoAdquisicionId,
+                        items: items.map((item) => item.id).toList(),
+                        itemLabelBuilder: (id) =>
+                            items.firstWhere((item) => item.id == id).nombre,
+                        itemKeyBuilder: (id) =>
+                            Key('animal-acquisition-option-$id'),
+                        hintText: 'Selecciona una adquisición',
+                        onChanged: (value) =>
+                            setState(() => _tipoAdquisicionId = value),
+                        validator: (value) =>
+                            value == null ? 'Selecciona una adquisición' : null,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _QuantityField(
+                      quantity: _quantity,
+                      onDecrement: _isEditMode
+                          ? null
+                          : _quantity > 1
+                          ? () => _setQuantity(_quantity - 1)
+                          : null,
+                      onIncrement: _isEditMode
+                          ? null
+                          : () => _setQuantity(_quantity + 1),
                       helperText: _isEditMode
-                          ? 'Editar el grupo desde el alta no es seguro porque no mueve los animales vinculados.'
-                          : _grupoId != null &&
-                                !hasGrupoSeleccionado &&
-                                gruposAsync.hasValue
-                          ? 'El grupo actual ya no está disponible en el catálogo, pero se conserva hasta que guardes.'
+                          ? 'La cantidad no se puede editar aquí porque cambiaría los animales ya creados.'
                           : null,
                     ),
-                  ),
-                const SizedBox(height: 14),
-                propositosAsync.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (error, _) => Text('Error: $error'),
-                  data: (items) => DropdownButtonFormField<String>(
-                    initialValue: _propositoId,
-                    items: items
-                        .map(
-                          (item) => DropdownMenuItem(
-                            value: item.id,
-                            child: Text(item.nombre),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) => setState(() => _propositoId = value),
-                    validator: (value) =>
-                        value == null ? 'Selecciona un propósito' : null,
-                    decoration: const InputDecoration(labelText: 'Propósito'),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                tiposAdquisicionAsync.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (error, _) => Text('Error: $error'),
-                  data: (items) => DropdownButtonFormField<String>(
-                    initialValue: _tipoAdquisicionId,
-                    items: items
-                        .map(
-                          (item) => DropdownMenuItem(
-                            value: item.id,
-                            child: Text(item.nombre),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => _tipoAdquisicionId = value),
-                    validator: (value) =>
-                        value == null ? 'Selecciona una adquisición' : null,
-                    decoration: const InputDecoration(
-                      labelText: 'Tipo de adquisición',
+                    const SizedBox(height: 14),
+                    CompactDateField(
+                      key: const Key('animal-date-field'),
+                      label: 'Fecha de alta',
+                      value: _date,
+                      onTap: _pickDate,
+                      formatter: (value) =>
+                          DateFormat("d 'de' MMMM yyyy").format(value),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _QuantityField(
-                  quantity: _quantity,
-                  onDecrement: _isEditMode
-                      ? null
-                      : _quantity > 1
-                      ? () => _setQuantity(_quantity - 1)
-                      : null,
-                  onIncrement: _isEditMode
-                      ? null
-                      : () => _setQuantity(_quantity + 1),
-                  helperText: _isEditMode
-                      ? 'La cantidad no se puede editar aquí porque cambiaría los animales ya creados.'
-                      : null,
-                ),
-                const SizedBox(height: 14),
-                _DateField(
-                  value: _date,
-                  isDark: widget.isDark,
-                  onTap: _pickDate,
-                ),
-                const SizedBox(height: 18),
-                if (_isEditMode)
-                  _LockedAltaFieldCard(
-                    isDark: widget.isDark,
-                    title: 'Brazaletes y animales vinculados',
-                    message:
-                        'Los brazaletes, la cantidad y el tipo de animal permanecen bloqueados en la edición del alta para no desalinear los ejemplares ya registrados.',
-                    details: [
-                      'Tipo: $selectedTipoName',
-                      'Grupo: $selectedGrupoName',
-                    ],
-                  )
-                else
-                  availableAsync.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (error, _) => Text('Error: $error'),
-                    data: (available) => _buildBraceletSection(available),
-                  ),
-                const SizedBox(height: 18),
-                TextFormField(
-                  controller: _providerController,
-                  decoration: const InputDecoration(
-                    labelText: 'Proveedor (opcional)',
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _costController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Costo total (opcional)',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return null;
-                    }
-                    return double.tryParse(value.trim().replaceAll(',', '.')) ==
-                            null
-                        ? 'Ingresa un número válido'
-                        : null;
-                  },
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _notesController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Notas (opcional)',
-                  ),
-                ),
-                const SizedBox(height: 22),
-                FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          _isEditMode
-                              ? 'Guardar cambios'
-                              : _isSingleMode
-                              ? 'Registrar alta'
-                              : 'Registrar alta múltiple',
+                    const SizedBox(height: 18),
+                    if (_isEditMode)
+                      _LockedAltaFieldCard(
+                        isDark: widget.isDark,
+                        title: 'Brazaletes y animales vinculados',
+                        message:
+                            'Los brazaletes, la cantidad y el tipo de animal permanecen bloqueados en la edición del alta para no desalinear los ejemplares ya registrados.',
+                        details: [
+                          'Tipo: $selectedTipoName',
+                          'Grupo: $selectedGrupoName',
+                        ],
+                      )
+                    else
+                      availableAsync.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (error, _) => Text('Error: $error'),
+                        data: (available) => _buildBraceletSection(available),
+                      ),
+                    const SizedBox(height: 18),
+                    CompactLabeledField(
+                      label: 'Proveedor (opcional)',
+                      child: TextFormField(
+                        key: const Key('animal-provider-field'),
+                        controller: _providerController,
+                        decoration: compactInputDecoration(context),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    CompactLabeledField(
+                      label: 'Costo total (opcional)',
+                      child: TextFormField(
+                        key: const Key('animal-cost-field'),
+                        controller: _costController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
                         ),
+                        decoration: compactInputDecoration(context),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          return double.tryParse(
+                                    value.trim().replaceAll(',', '.'),
+                                  ) ==
+                                  null
+                              ? 'Ingresa un número válido'
+                              : null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    CompactLabeledField(
+                      label: 'Notas (opcional)',
+                      child: TextFormField(
+                        key: const Key('animal-notes-field'),
+                        controller: _notesController,
+                        maxLines: 3,
+                        decoration: compactInputDecoration(context),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    FilledButton(
+                      onPressed: _saving ? null : _save,
+                      child: _saving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              _isEditMode
+                                  ? 'Guardar cambios'
+                                  : _isSingleMode
+                                  ? 'Registrar alta'
+                                  : 'Registrar alta múltiple',
+                            ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -439,21 +466,25 @@ class _AnimalRegistrationSheetState
             ),
           ),
           if (_useSingleBracelet)
-            TextFormField(
-              controller: _singleBraceletController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(labelText: 'Brazalete'),
-              validator: (value) {
-                if (!_useSingleBracelet) {
+            CompactLabeledField(
+              label: 'Brazalete',
+              child: TextFormField(
+                key: const Key('animal-single-bracelet-field'),
+                controller: _singleBraceletController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: compactInputDecoration(context),
+                validator: (value) {
+                  if (!_useSingleBracelet) {
+                    return null;
+                  }
+                  final parsed = int.tryParse((value ?? '').trim());
+                  if (parsed == null || parsed <= 0) {
+                    return 'Ingresa un brazalete válido';
+                  }
                   return null;
-                }
-                final parsed = int.tryParse((value ?? '').trim());
-                if (parsed == null || parsed <= 0) {
-                  return 'Ingresa un brazalete válido';
-                }
-                return null;
-              },
+                },
+              ),
             ),
         ],
       );
@@ -876,7 +907,7 @@ class _AnimalRegistrationSheetState
             ? 'No se pudo actualizar el alta: $error'
             : 'No se pudo registrar el alta: $error',
       );
-      print(error);
+      debugPrint('$error');
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -957,7 +988,7 @@ class _BraceletHeaderCard extends StatelessWidget {
           const SizedBox(width: 12),
           Switch.adaptive(
             value: enabled,
-            activeColor: AppColors.naranjao,
+            activeThumbColor: AppColors.naranjao,
             onChanged: onChanged,
           ),
         ],
@@ -1300,34 +1331,6 @@ class _CatalogStatusField extends StatelessWidget {
             const LinearProgressIndicator(),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.value,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  final DateTime value;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: InputDecorator(
-        decoration: const InputDecoration(labelText: 'Fecha de alta'),
-        child: Text(
-          DateFormat("d 'de' MMMM yyyy").format(value),
-          style: TextStyle(
-            color: isDark ? AppColors.textPrimary : AppColors.textPrimaryLg,
-          ),
-        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nueva_app/shared/widgets/fechas.dart';
 
 import '../../core/theme/app_colors.dart';
 import 'huevo_models.dart';
@@ -211,14 +212,16 @@ class _EggCollectionRecordCard extends StatelessWidget {
                       Container(
                         key: const Key('egg-date-footer'),
                         width: double.infinity,
-                        color: footerColor,
+                        color: isDark
+                          ? AppColors.fecha
+                          : AppColors.fechaLg,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 9,
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          _formatSpanishLongDate(collection.date),
+                          formatSpanishLongDate(collection.date),
                           key: const Key('egg-collection-date'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -565,14 +568,16 @@ class EggSaleCard extends StatelessWidget {
                       Container(
                         key: const Key('egg-sale-date-footer'),
                         width: double.infinity,
-                        color: footerColor,
+                        color: isDark
+                          ? AppColors.fecha
+                          : AppColors.fechaLg,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 9,
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          _formatSpanishLongDate(sale.date),
+                          formatSpanishLongDate(sale.date),
                           key: const Key('egg-sale-date'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -629,24 +634,6 @@ String _initials(String name) {
       .toList();
   if (words.isEmpty) return '?';
   return words.take(2).map((word) => word[0].toUpperCase()).join();
-}
-
-String _formatSpanishLongDate(DateTime date) {
-  const months = [
-    'enero',
-    'febrero',
-    'marzo',
-    'abril',
-    'mayo',
-    'junio',
-    'julio',
-    'agosto',
-    'septiembre',
-    'octubre',
-    'noviembre',
-    'diciembre',
-  ];
-  return '${date.day} de ${months[date.month - 1]} ${date.year}';
 }
 
 Color _onStripeColor(Color color) =>
