@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/shared/widgets/compact_form_controls.dart';
+import 'package:rancho/shared/widgets/compact_form_controls.dart';
 
 void main() {
   testWidgets('text, date, and dropdown controls have compact height parity', (

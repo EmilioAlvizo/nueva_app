@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/core/theme/app_theme.dart';
-import 'package:nueva_app/features/comida/comida_models.dart';
-import 'package:nueva_app/features/comida/forms/mixture_form_sheet.dart';
-import 'package:nueva_app/features/settings/presentation/providers/theme_provider.dart';
+import 'package:rancho/core/theme/app_theme.dart';
+import 'package:rancho/features/comida/comida_models.dart';
+import 'package:rancho/features/comida/forms/mixture_form_sheet.dart';
+import 'package:rancho/features/settings/presentation/providers/theme_provider.dart';
 
 void main() {
   testWidgets('step zero shrink-wraps well below the sheet height cap', (

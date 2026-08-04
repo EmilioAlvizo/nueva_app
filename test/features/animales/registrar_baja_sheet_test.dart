@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/animales/animales_provider.dart';
-import 'package:nueva_app/features/animales/animales_repository.dart'
+import 'package:rancho/features/animales/animales_provider.dart';
+import 'package:rancho/features/animales/animales_repository.dart'
     show AnimalesRepository;
-import 'package:nueva_app/features/animales/registrar_baja_sheet.dart';
-import 'package:nueva_app/features/model/animal/animal.dart';
-import 'package:nueva_app/features/model/bajaAnimal/registrar_baja_animales_input.dart';
-import 'package:nueva_app/features/model/catalogoItem/catalogo_item.dart';
-import 'package:nueva_app/features/model/tipoAnimal/tipoAnimal.dart';
+import 'package:rancho/features/animales/registrar_baja_sheet.dart';
+import 'package:rancho/features/model/animal/animal.dart';
+import 'package:rancho/features/model/bajaAnimal/registrar_baja_animales_input.dart';
+import 'package:rancho/features/model/catalogoItem/catalogo_item.dart';
+import 'package:rancho/features/model/tipoAnimal/tipoAnimal.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {

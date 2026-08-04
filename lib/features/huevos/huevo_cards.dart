@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nueva_app/shared/widgets/fechas.dart';
+import 'package:rancho/shared/widgets/fechas.dart';
 
 import '../../core/theme/app_colors.dart';
 import 'huevo_models.dart';

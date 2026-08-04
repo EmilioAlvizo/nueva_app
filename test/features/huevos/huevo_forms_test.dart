@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nueva_app/features/huevos/huevo_forms.dart';
-import 'package:nueva_app/features/huevos/huevo_models.dart';
+import 'package:rancho/features/huevos/huevo_forms.dart';
+import 'package:rancho/features/huevos/huevo_models.dart';
 
 void main() {
   for (final form in ['collection', 'sale']) {
