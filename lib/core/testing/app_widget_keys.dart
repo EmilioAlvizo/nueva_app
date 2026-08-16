@@ -1,5 +1,9 @@
 abstract final class AppWidgetKeys {
   static const eggPages = 'eggs.pages';
+  static const eggFormSheet = 'eggs.form.sheet';
+  static const eggFormDragHandle = 'eggs.form.drag-handle';
+  static const eggFormIcon = 'eggs.form.icon';
+  static const eggFormSubmit = 'eggs.form.submit';
   static const financeTabs = 'finances.tabs';
   static const financePages = 'finances.pages';
   static const financeBalanceTab = 'finances.tab.balance';

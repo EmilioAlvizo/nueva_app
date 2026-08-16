@@ -143,6 +143,22 @@ void main() {
     expect(saleStripe.color, AppColors.tipoColor[1]);
     expect(find.text('Display name unrelated to type ID'), findsOneWidget);
   });
+
+  testWidgets('egg forms open with the single shell drag handle', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, canEdit: true);
+    await tester.tap(find.byKey(const ValueKey('egg-tab-add')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('egg-fab-add')));
+    await tester.pumpAndSettle();
+
+    final bottomSheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
+    expect(bottomSheet.showDragHandle, isFalse);
+    expect(_key(AppWidgetKeys.eggFormDragHandle), findsOneWidget);
+    expect(find.text('Nueva recolección'), findsOneWidget);
+  });
 }
 
 Finder _key(String value) => find.byKey(ValueKey(value));

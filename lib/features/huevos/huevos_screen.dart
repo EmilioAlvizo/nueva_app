@@ -239,7 +239,7 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
+      showDragHandle: false,
       backgroundColor: Colors.transparent,
       builder: (_) => EggCollectionForm(
         farmId: widget.granjaId,
@@ -268,7 +268,7 @@ class _HuevosScreenState extends ConsumerState<HuevosScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
+      showDragHandle: false,
       backgroundColor: Colors.transparent,
       builder: (_) => EggSaleForm(
         farmId: widget.granjaId,

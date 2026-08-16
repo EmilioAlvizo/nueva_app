@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/testing/app_widget_keys.dart';
+import '../../core/theme/app_layout.dart';
 import '../../shared/widgets/compact_form_controls.dart';
 import 'huevo_filters.dart';
 import 'huevo_models.dart';
@@ -96,7 +98,7 @@ class _EggCollectionFormState extends State<EggCollectionForm> {
   @override
   Widget build(BuildContext context) {
     final editing = widget.collection != null;
-    return _EggFormSheet(
+    return EggFormSheet(
       title: editing ? 'Editar recolección' : 'Nueva recolección',
       subtitle: 'Registra los huevos recolectados por grupo.',
       icon: Icons.egg_outlined,
@@ -270,7 +272,7 @@ class _EggSaleFormState extends State<EggSaleForm> {
   Widget build(BuildContext context) {
     final editing = widget.sale != null;
     final currency = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
-    return _EggFormSheet(
+    return EggFormSheet(
       title: editing ? 'Editar venta' : 'Nueva venta',
       subtitle: 'Registra la cantidad y el precio unitario de la venta.',
       icon: Icons.point_of_sale_outlined,
@@ -401,8 +403,8 @@ class _EggSaleFormState extends State<EggSaleForm> {
   }
 }
 
-class _EggFormSheet extends StatelessWidget {
-  const _EggFormSheet({
+class EggFormSheet extends StatelessWidget {
+  const EggFormSheet({
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -425,42 +427,92 @@ class _EggFormSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final availableHeight = MediaQuery.sizeOf(context).height - keyboard;
     return AnimatedPadding(
       duration: const Duration(milliseconds: 200),
       padding: EdgeInsets.only(bottom: keyboard),
       child: Material(
-        key: const Key('egg-form-sheet'),
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        key: const ValueKey(AppWidgetKeys.eggFormSheet),
+        color: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadii.large),
+          ),
+          side: BorderSide(color: colors.outlineVariant),
+        ),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
           top: false,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: availableHeight * 0.92),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
+                  constraints: const BoxConstraints(
+                    maxWidth: AppSizes.mediumBreakpoint,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Center(
+                        child: Container(
+                          key: const ValueKey(AppWidgetKeys.eggFormDragHandle),
+                          width: AppSizes.cardIcon,
+                          height: AppSpacing.xxs,
+                          decoration: BoxDecoration(
+                            color: colors.onSurfaceVariant.withValues(
+                              alpha: 0.35,
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadii.full),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(child: Icon(icon)),
-                          const SizedBox(width: 12),
+                          Container(
+                            key: const ValueKey(AppWidgetKeys.eggFormIcon),
+                            width: AppSizes.cardIcon,
+                            height: AppSizes.cardIcon,
+                            decoration: BoxDecoration(
+                              color: colors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.medium,
+                              ),
+                            ),
+                            child: Icon(icon, color: colors.primary),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(title, style: theme.textTheme.titleLarge),
+                                Semantics(
+                                  header: true,
+                                  child: Text(
+                                    title,
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xxs),
                                 Text(
                                   subtitle,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                    color: colors.onSurfaceVariant,
+                                    height: 1.4,
                                   ),
                                 ),
                               ],
@@ -468,49 +520,34 @@ class _EggFormSheet extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      Flexible(
-                        fit: FlexFit.loose,
-                        child: SingleChildScrollView(
-                          keyboardDismissBehavior:
-                              ScrollViewKeyboardDismissBehavior.onDrag,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              child,
-                              if (error != null) ...[
-                                const SizedBox(height: 16),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    error!,
-                                    key: const Key('egg-form-error'),
-                                    style: TextStyle(
-                                      color: theme.colorScheme.error,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 52,
-                                child: FilledButton.icon(
-                                  key: const Key('egg-form-submit'),
-                                  onPressed: saving ? null : onSubmit,
-                                  icon: saving
-                                      ? const SizedBox.square(
-                                          dimension: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(Icons.check_rounded),
-                                  label: Text(actionLabel),
-                                ),
-                              ),
-                            ],
+                      const SizedBox(height: AppSpacing.lg),
+                      child,
+                      if (error != null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          error!,
+                          key: const Key('egg-form-error'),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.error,
                           ),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                      SizedBox(
+                        width: double.infinity,
+                        height: AppSizes.minTapTarget,
+                        child: FilledButton.icon(
+                          key: const ValueKey(AppWidgetKeys.eggFormSubmit),
+                          onPressed: saving ? null : onSubmit,
+                          icon: saving
+                              ? const SizedBox.square(
+                                  dimension: AppSizes.smallIcon,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.check_rounded),
+                          label: Text(actionLabel),
                         ),
                       ),
                     ],
