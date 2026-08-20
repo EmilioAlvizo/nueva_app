@@ -472,6 +472,29 @@ class AnimalesRepository {
         .single();
   }
 
+  Future<List<BajaAnimal>> registrarVentaAnimalV2({
+    required String granjaId,
+    required List<String> animalIds,
+    required DateTime fechaVenta,
+    required double totalAmount,
+    double? peso,
+    String? notas,
+  }) async {
+    await _client.rpc(
+      'registrar_venta_animal_v2',
+      params: {
+        'p_granja_id': granjaId,
+        'p_animal_ids': List<String>.from(animalIds),
+        'p_fecha_venta': _soloFecha(fechaVenta),
+        'p_total_amount': totalAmount,
+        'p_peso': peso,
+        'p_notas': _normalizeNullableText(notas),
+      },
+    );
+
+    return getBajasAnimales(granjaId);
+  }
+
   Future<void> eliminarAltaAnimales(
     String altaId, {
     required bool deleteBajas,
