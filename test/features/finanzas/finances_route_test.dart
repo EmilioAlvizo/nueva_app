@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rancho/core/router/app_router.dart';
+import 'package:rancho/features/ciclos/domain/cycle_models.dart';
 import 'package:rancho/features/home/home_screen.dart';
 import 'package:rancho/l10n/app_localizations_es.dart';
 
@@ -25,6 +26,57 @@ void main() {
         matchedLocation: AppRoutes.grafica,
       ),
       AppRoutes.login,
+    );
+  });
+
+  test('V2 cycle route redirects when access is unavailable', () {
+    expect(
+      resolveEconomicsV2Redirect(
+        isEnabled: false,
+        role: CycleRole.owner,
+        farmId: 'farm-1',
+        matchedLocation: AppRoutes.productionCycles,
+      ),
+      AppRoutes.finanzas,
+    );
+    expect(
+      resolveEconomicsV2Redirect(
+        isEnabled: true,
+        role: CycleRole.viewer,
+        farmId: 'farm-1',
+        matchedLocation: AppRoutes.productionCycles,
+      ),
+      AppRoutes.finanzas,
+    );
+    expect(
+      resolveEconomicsV2Redirect(
+        isEnabled: true,
+        role: CycleRole.owner,
+        farmId: null,
+        matchedLocation: AppRoutes.productionCycles,
+      ),
+      AppRoutes.finanzas,
+    );
+  });
+
+  test('V2 cycle route remains available to enabled owners and editors', () {
+    expect(
+      resolveEconomicsV2Redirect(
+        isEnabled: true,
+        role: CycleRole.owner,
+        farmId: 'farm-1',
+        matchedLocation: AppRoutes.productionCycles,
+      ),
+      isNull,
+    );
+    expect(
+      resolveEconomicsV2Redirect(
+        isEnabled: true,
+        role: CycleRole.editor,
+        farmId: 'farm-1',
+        matchedLocation: AppRoutes.productionCycles,
+      ),
+      isNull,
     );
   });
 

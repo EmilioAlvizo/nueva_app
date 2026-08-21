@@ -171,4 +171,93 @@ class AppLocalizationsEs extends AppLocalizations {
   String breakEvenCardSemantics(String groupName, String price, String margin) {
     return '$groupName. Precio de equilibrio por huevo: $price. $margin.';
   }
+
+  @override
+  String get economicsV2PurposePostura => 'Postura';
+
+  @override
+  String get economicsV2PurposeCarne => 'Carne';
+
+  @override
+  String get economicsV2PurposeOrnamental => 'Ornamental';
+
+  @override
+  String get economicsV2AttributableCost => 'Costo atribuible';
+
+  @override
+  String get economicsV2CanonicalRevenue => 'Ingreso canónico';
+
+  @override
+  String get economicsV2BreakEven => 'Punto de equilibrio';
+
+  @override
+  String get economicsV2BasisEggs => 'huevos';
+
+  @override
+  String get economicsV2BasisAnimalsSold => 'animales vendidos';
+
+  @override
+  String get economicsV2BasisSpecimensSold => 'especímenes vendidos';
+
+  @override
+  String get economicsV2SelectPurposePostura =>
+      'Seleccionar propósito: postura';
+
+  @override
+  String get economicsV2SelectPurposeCarne => 'Seleccionar propósito: carne';
+
+  @override
+  String get economicsV2SelectPurposeOrnamental =>
+      'Seleccionar propósito: ornamental';
+
+  @override
+  String get economicsV2ProductionCycles => 'Ciclos de producción';
+
+  @override
+  String get economicsV2OpenProductionCycles => 'Abrir ciclos de producción';
+
+  @override
+  String get economicsV2LifecycleTitle => 'Crear ciclo V2';
+
+  @override
+  String get economicsV2LifecyclePurpose => 'Propósito';
+
+  @override
+  String get economicsV2LifecycleCreate => 'Crear ciclo';
+
+  @override
+  String get economicsV2LifecycleCreated => 'Ciclo creado';
+
+  @override
+  String get economicsV2LifecycleAnimal => 'Animal';
+
+  @override
+  String get economicsV2LifecycleAssignAnimal => 'Asignar animal';
+
+  @override
+  String get economicsV2LifecycleAnimalAssigned => 'Animal asignado';
+
+  @override
+  String get economicsV2LifecycleExpense => 'Monto del gasto';
+
+  @override
+  String get economicsV2LifecycleRecordExpense => 'Registrar gasto';
+
+  @override
+  String get economicsV2LifecycleExpenseRecorded => 'Gasto registrado';
+
+  @override
+  String get economicsV2LifecycleFeed => 'Mezcla de alimento';
+
+  @override
+  String get economicsV2LifecycleLinkFeed => 'Vincular alimento';
+
+  @override
+  String get economicsV2LifecycleFeedLinked => 'Alimento vinculado';
+
+  @override
+  String get economicsV2LifecycleFailure => 'No se pudo completar el paso.';
+
+  @override
+  String get economicsV2LifecycleInvalidExpense => 'Ingresa un monto válido.';
 }

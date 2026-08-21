@@ -116,5 +116,76 @@
         "type": "String"
       }
     }
-  }
+  },
+  "economicsV2PurposePostura": "Postura",
+  "@economicsV2PurposePostura": {
+    "description": "Propósito de ciclo para producción de huevos"
+  },
+  "economicsV2PurposeCarne": "Carne",
+  "@economicsV2PurposeCarne": {
+    "description": "Propósito de ciclo para producción y venta de carne"
+  },
+  "economicsV2PurposeOrnamental": "Ornamental",
+  "@economicsV2PurposeOrnamental": {
+    "description": "Propósito de ciclo para venta de especímenes ornamentales"
+  },
+  "economicsV2AttributableCost": "Costo atribuible",
+  "@economicsV2AttributableCost": {
+    "description": "Métrica de costos asignados al ciclo de producción V2"
+  },
+  "economicsV2CanonicalRevenue": "Ingreso canónico",
+  "@economicsV2CanonicalRevenue": {
+    "description": "Métrica de ingresos canónicos del ciclo de producción V2"
+  },
+  "economicsV2BreakEven": "Punto de equilibrio",
+  "@economicsV2BreakEven": {
+    "description": "Métrica de equilibrio del ciclo de producción V2"
+  },
+  "economicsV2BasisEggs": "huevos",
+  "@economicsV2BasisEggs": {
+    "description": "Base de cálculo de equilibrio para ciclos de postura"
+  },
+  "economicsV2BasisAnimalsSold": "animales vendidos",
+  "@economicsV2BasisAnimalsSold": {
+    "description": "Base de cálculo de equilibrio para ciclos de carne"
+  },
+  "economicsV2BasisSpecimensSold": "especímenes vendidos",
+  "@economicsV2BasisSpecimensSold": {
+    "description": "Base de cálculo de equilibrio para ciclos ornamentales"
+  },
+  "economicsV2SelectPurposePostura": "Seleccionar propósito: postura",
+  "@economicsV2SelectPurposePostura": {
+    "description": "Etiqueta accesible para seleccionar el propósito de postura"
+  },
+  "economicsV2SelectPurposeCarne": "Seleccionar propósito: carne",
+  "@economicsV2SelectPurposeCarne": {
+    "description": "Etiqueta accesible para seleccionar el propósito de carne"
+  },
+  "economicsV2SelectPurposeOrnamental": "Seleccionar propósito: ornamental",
+  "@economicsV2SelectPurposeOrnamental": {
+    "description": "Etiqueta accesible para seleccionar el propósito ornamental"
+  },
+  "economicsV2ProductionCycles": "Ciclos de producción",
+  "@economicsV2ProductionCycles": {
+    "description": "Entrada a los ciclos de producción Economics V2 desde finanzas"
+  },
+  "economicsV2OpenProductionCycles": "Abrir ciclos de producción",
+  "@economicsV2OpenProductionCycles": {
+    "description": "Etiqueta accesible para abrir los ciclos de producción Economics V2"
+  },
+  "economicsV2LifecycleTitle": "Crear ciclo V2",
+  "economicsV2LifecyclePurpose": "Propósito",
+  "economicsV2LifecycleCreate": "Crear ciclo",
+  "economicsV2LifecycleCreated": "Ciclo creado",
+  "economicsV2LifecycleAnimal": "Animal",
+  "economicsV2LifecycleAssignAnimal": "Asignar animal",
+  "economicsV2LifecycleAnimalAssigned": "Animal asignado",
+  "economicsV2LifecycleExpense": "Monto del gasto",
+  "economicsV2LifecycleRecordExpense": "Registrar gasto",
+  "economicsV2LifecycleExpenseRecorded": "Gasto registrado",
+  "economicsV2LifecycleFeed": "Mezcla de alimento",
+  "economicsV2LifecycleLinkFeed": "Vincular alimento",
+  "economicsV2LifecycleFeedLinked": "Alimento vinculado",
+  "economicsV2LifecycleFailure": "No se pudo completar el paso.",
+  "economicsV2LifecycleInvalidExpense": "Ingresa un monto válido."
 }

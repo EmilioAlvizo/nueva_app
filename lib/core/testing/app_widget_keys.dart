@@ -17,6 +17,29 @@ abstract final class AppWidgetKeys {
   static const financeIncomeUnavailable = 'finances.income.unavailable';
   static const financeExpensesUnavailable = 'finances.expenses.unavailable';
   static const financeChartsUnavailable = 'finances.charts.unavailable';
+  static const financeEconomicsV2Entry = 'finances.economics-v2.entry';
+  static const economicsV2PurposePostura =
+      'cycles.economics-v2.purpose.postura';
+  static const economicsV2PurposeCarne = 'cycles.economics-v2.purpose.carne';
+  static const economicsV2PurposeOrnamental =
+      'cycles.economics-v2.purpose.ornamental';
+  static const economicsV2LifecyclePanel =
+      'cycles.economics-v2.lifecycle.panel';
+  static const economicsV2LifecyclePurpose =
+      'cycles.economics-v2.lifecycle.purpose';
+  static const economicsV2LifecycleCreate =
+      'cycles.economics-v2.lifecycle.create';
+  static const economicsV2LifecycleAnimal =
+      'cycles.economics-v2.lifecycle.animal';
+  static const economicsV2LifecycleAssignAnimal =
+      'cycles.economics-v2.lifecycle.assign-animal';
+  static const economicsV2LifecycleExpenseAmount =
+      'cycles.economics-v2.lifecycle.expense-amount';
+  static const economicsV2LifecycleRecordExpense =
+      'cycles.economics-v2.lifecycle.record-expense';
+  static const economicsV2LifecycleFeed = 'cycles.economics-v2.lifecycle.feed';
+  static const economicsV2LifecycleLinkFeed =
+      'cycles.economics-v2.lifecycle.link-feed';
 
   static String financeBreakEvenCard(String mixtureId) {
     return 'finances.balance.card.$mixtureId';

@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/extensions/primitive_formatting_extensions.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
 import '../../../../core/theme/finance_theme.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../ciclos/presentation/providers/cycle_providers.dart';
 import '../../domain/entities/break_even_point.dart';
 import '../providers/finances_providers.dart';
 import '../widgets/break_even_card.dart';
@@ -162,7 +165,12 @@ class FinanceBalanceSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final points = ref.watch(breakEvenPointsProvider(farmId));
-    return switch (points) {
+    final canOpenEconomicsV2 = canAccessEconomicsV2(
+      isEnabled: economicsV2Enabled,
+      role: ref.watch(cycleAccessProvider(farmId)).value?.role,
+      farmId: farmId,
+    );
+    final content = switch (points) {
       AsyncLoading() => const Center(
         key: ValueKey(AppWidgetKeys.financeLoading),
         child: CircularProgressIndicator(),
@@ -194,6 +202,26 @@ class FinanceBalanceSection extends ConsumerWidget {
         },
       ),
     };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (canOpenEconomicsV2)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Semantics(
+              key: const ValueKey(AppWidgetKeys.financeEconomicsV2Entry),
+              button: true,
+              label: l10n.economicsV2OpenProductionCycles,
+              child: OutlinedButton.icon(
+                onPressed: () => context.go(AppRoutes.productionCycles),
+                icon: const Icon(Icons.auto_graph_outlined),
+                label: Text(l10n.economicsV2ProductionCycles),
+              ),
+            ),
+          ),
+        Expanded(child: content),
+      ],
+    );
   }
 }
 

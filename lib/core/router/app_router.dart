@@ -12,6 +12,9 @@ import '../../features/animales/animales_screen.dart';
 import '../../features/granja/granja_provider.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/finanzas/presentation/screens/finances_screen.dart';
+import '../../features/ciclos/domain/cycle_models.dart';
+import '../../features/ciclos/presentation/providers/cycle_providers.dart';
+import '../../features/ciclos/presentation/screens/cycles_list_screen.dart';
 
 // ─── Route names (constants → no magic strings) ───────────────────────────────
 abstract final class AppRoutes {
@@ -25,9 +28,24 @@ abstract final class AppRoutes {
   static const comida = '/comida';
   static const finanzas = '/finanzas';
   static const grafica = '/grafica';
+  static const productionCycles = '/production-cycles';
 
   static const collaborators = '/collaborators/:id';
 }
+
+const economicsV2Enabled = bool.fromEnvironment(
+  'economics_v2_enabled',
+  defaultValue: false,
+);
+
+bool canAccessEconomicsV2({
+  required bool isEnabled,
+  required CycleRole? role,
+  required String? farmId,
+}) =>
+    isEnabled &&
+    farmId != null &&
+    (role == CycleRole.owner || role == CycleRole.editor);
 
 String? resolveAppRedirect({
   required bool isLoading,
@@ -41,6 +59,19 @@ String? resolveAppRedirect({
   if (!hasSession && !onAuthRoute) return AppRoutes.login;
   if (hasSession && onAuthRoute) return AppRoutes.home;
   if (hasSession && matchedLocation == AppRoutes.grafica) {
+    return AppRoutes.finanzas;
+  }
+  return null;
+}
+
+String? resolveEconomicsV2Redirect({
+  required bool isEnabled,
+  required CycleRole role,
+  required String? farmId,
+  required String matchedLocation,
+}) {
+  if (matchedLocation != AppRoutes.productionCycles) return null;
+  if (!canAccessEconomicsV2(isEnabled: isEnabled, role: role, farmId: farmId)) {
     return AppRoutes.finanzas;
   }
   return null;
@@ -68,6 +99,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const RegisterScreen(),
       ),
       GoRoute(path: AppRoutes.grafica, redirect: (_, _) => AppRoutes.finanzas),
+      GoRoute(
+        path: AppRoutes.productionCycles,
+        redirect: (_, state) {
+          final farm = ref.read(selectedFarmProvider);
+          final access = farm == null
+              ? null
+              : ref.read(cycleAccessProvider(farm.id)).value;
+          return resolveEconomicsV2Redirect(
+            isEnabled: economicsV2Enabled,
+            role: access?.role ?? CycleRole.viewer,
+            farmId: farm?.id,
+            matchedLocation: state.matchedLocation,
+          );
+        },
+        builder: (_, __) => const _ProductionCyclesRoute(),
+      ),
 
       // ─── SHELL DE NAVEGACIÓN (Mantiene HomeScreen como contenedor) ───
       StatefulShellRoute.indexedStack(
@@ -153,6 +200,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 class _AuthStateListenable extends ChangeNotifier {
   _AuthStateListenable(Ref ref) {
     ref.listen(authSessionProvider, (_, __) => notifyListeners());
+  }
+}
+
+class _ProductionCyclesRoute extends ConsumerWidget {
+  const _ProductionCyclesRoute();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final farm = ref.watch(selectedFarmProvider);
+    if (farm == null) return const SizedBox.shrink();
+    return CyclesListScreen(farmId: farm.id);
   }
 }
 

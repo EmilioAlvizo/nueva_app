@@ -51,6 +51,182 @@ final class CycleRepositoryProvider
 
 String _$cycleRepositoryHash() => r'eaee28c89994c9d596209b90a8f14830111cd582';
 
+@ProviderFor(economicsV2Repository)
+final economicsV2RepositoryProvider = EconomicsV2RepositoryProvider._();
+
+final class EconomicsV2RepositoryProvider
+    extends
+        $FunctionalProvider<
+          EconomicsV2Repository,
+          EconomicsV2Repository,
+          EconomicsV2Repository
+        >
+    with $Provider<EconomicsV2Repository> {
+  EconomicsV2RepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'economicsV2RepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2RepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<EconomicsV2Repository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EconomicsV2Repository create(Ref ref) {
+    return economicsV2Repository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EconomicsV2Repository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EconomicsV2Repository>(value),
+    );
+  }
+}
+
+String _$economicsV2RepositoryHash() =>
+    r'60b26daf5fe92bb54f1ddafee83e1659614f25cc';
+
+@ProviderFor(economicsV2LifecycleRepository)
+final economicsV2LifecycleRepositoryProvider =
+    EconomicsV2LifecycleRepositoryProvider._();
+
+final class EconomicsV2LifecycleRepositoryProvider
+    extends
+        $FunctionalProvider<
+          EconomicsV2LifecycleRepository,
+          EconomicsV2LifecycleRepository,
+          EconomicsV2LifecycleRepository
+        >
+    with $Provider<EconomicsV2LifecycleRepository> {
+  EconomicsV2LifecycleRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'economicsV2LifecycleRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2LifecycleRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<EconomicsV2LifecycleRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EconomicsV2LifecycleRepository create(Ref ref) {
+    return economicsV2LifecycleRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EconomicsV2LifecycleRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EconomicsV2LifecycleRepository>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$economicsV2LifecycleRepositoryHash() =>
+    r'f653d47cfb5a5eac4112783441cd7a122067582c';
+
+@ProviderFor(economicsV2Cycles)
+final economicsV2CyclesProvider = EconomicsV2CyclesFamily._();
+
+final class EconomicsV2CyclesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<EconomicsV2Cycle>>,
+          List<EconomicsV2Cycle>,
+          FutureOr<List<EconomicsV2Cycle>>
+        >
+    with
+        $FutureModifier<List<EconomicsV2Cycle>>,
+        $FutureProvider<List<EconomicsV2Cycle>> {
+  EconomicsV2CyclesProvider._({
+    required EconomicsV2CyclesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'economicsV2CyclesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2CyclesHash();
+
+  @override
+  String toString() {
+    return r'economicsV2CyclesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<EconomicsV2Cycle>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<EconomicsV2Cycle>> create(Ref ref) {
+    final argument = this.argument as String;
+    return economicsV2Cycles(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2CyclesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2CyclesHash() => r'b0f764c33ba92bb2a632e5a314b327630249c4e0';
+
+final class EconomicsV2CyclesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<EconomicsV2Cycle>>, String> {
+  EconomicsV2CyclesFamily._()
+    : super(
+        retry: null,
+        name: r'economicsV2CyclesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2CyclesProvider call(String farmId) =>
+      EconomicsV2CyclesProvider._(argument: farmId, from: this);
+
+  @override
+  String toString() => r'economicsV2CyclesProvider';
+}
+
 @ProviderFor(cycleCatalogs)
 final cycleCatalogsProvider = CycleCatalogsProvider._();
 
@@ -661,6 +837,99 @@ abstract class _$CycleMutations extends $AsyncNotifier<void> {
             as $ClassProviderElement<
               AnyNotifier<AsyncValue<void>, void>,
               AsyncValue<void>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(EconomicsV2Mutations)
+final economicsV2MutationsProvider = EconomicsV2MutationsProvider._();
+
+final class EconomicsV2MutationsProvider
+    extends $AsyncNotifierProvider<EconomicsV2Mutations, EconomicsV2Result?> {
+  EconomicsV2MutationsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'economicsV2MutationsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2MutationsHash();
+
+  @$internal
+  @override
+  EconomicsV2Mutations create() => EconomicsV2Mutations();
+}
+
+String _$economicsV2MutationsHash() =>
+    r'397ebf31a77aa087cb4764eb5031d0ce7673b192';
+
+abstract class _$EconomicsV2Mutations
+    extends $AsyncNotifier<EconomicsV2Result?> {
+  FutureOr<EconomicsV2Result?> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<EconomicsV2Result?>, EconomicsV2Result?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<EconomicsV2Result?>, EconomicsV2Result?>,
+              AsyncValue<EconomicsV2Result?>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(EconomicsV2LifecycleMutations)
+final economicsV2LifecycleMutationsProvider =
+    EconomicsV2LifecycleMutationsProvider._();
+
+final class EconomicsV2LifecycleMutationsProvider
+    extends $AsyncNotifierProvider<EconomicsV2LifecycleMutations, Object?> {
+  EconomicsV2LifecycleMutationsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'economicsV2LifecycleMutationsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2LifecycleMutationsHash();
+
+  @$internal
+  @override
+  EconomicsV2LifecycleMutations create() => EconomicsV2LifecycleMutations();
+}
+
+String _$economicsV2LifecycleMutationsHash() =>
+    r'e6bcafa5424c3464dad0a5c4df43a77f93242d5a';
+
+abstract class _$EconomicsV2LifecycleMutations extends $AsyncNotifier<Object?> {
+  FutureOr<Object?> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<Object?>, Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<Object?>, Object?>,
+              AsyncValue<Object?>,
               Object?,
               Object?
             >;

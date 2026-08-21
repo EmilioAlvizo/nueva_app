@@ -363,6 +363,180 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{groupName}. Precio de equilibrio por huevo: {price}. {margin}.'**
   String breakEvenCardSemantics(String groupName, String price, String margin);
+
+  /// Propósito de ciclo para producción de huevos
+  ///
+  /// In es, this message translates to:
+  /// **'Postura'**
+  String get economicsV2PurposePostura;
+
+  /// Propósito de ciclo para producción y venta de carne
+  ///
+  /// In es, this message translates to:
+  /// **'Carne'**
+  String get economicsV2PurposeCarne;
+
+  /// Propósito de ciclo para venta de especímenes ornamentales
+  ///
+  /// In es, this message translates to:
+  /// **'Ornamental'**
+  String get economicsV2PurposeOrnamental;
+
+  /// Métrica de costos asignados al ciclo de producción V2
+  ///
+  /// In es, this message translates to:
+  /// **'Costo atribuible'**
+  String get economicsV2AttributableCost;
+
+  /// Métrica de ingresos canónicos del ciclo de producción V2
+  ///
+  /// In es, this message translates to:
+  /// **'Ingreso canónico'**
+  String get economicsV2CanonicalRevenue;
+
+  /// Métrica de equilibrio del ciclo de producción V2
+  ///
+  /// In es, this message translates to:
+  /// **'Punto de equilibrio'**
+  String get economicsV2BreakEven;
+
+  /// Base de cálculo de equilibrio para ciclos de postura
+  ///
+  /// In es, this message translates to:
+  /// **'huevos'**
+  String get economicsV2BasisEggs;
+
+  /// Base de cálculo de equilibrio para ciclos de carne
+  ///
+  /// In es, this message translates to:
+  /// **'animales vendidos'**
+  String get economicsV2BasisAnimalsSold;
+
+  /// Base de cálculo de equilibrio para ciclos ornamentales
+  ///
+  /// In es, this message translates to:
+  /// **'especímenes vendidos'**
+  String get economicsV2BasisSpecimensSold;
+
+  /// Etiqueta accesible para seleccionar el propósito de postura
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar propósito: postura'**
+  String get economicsV2SelectPurposePostura;
+
+  /// Etiqueta accesible para seleccionar el propósito de carne
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar propósito: carne'**
+  String get economicsV2SelectPurposeCarne;
+
+  /// Etiqueta accesible para seleccionar el propósito ornamental
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar propósito: ornamental'**
+  String get economicsV2SelectPurposeOrnamental;
+
+  /// Entrada a los ciclos de producción Economics V2 desde finanzas
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclos de producción'**
+  String get economicsV2ProductionCycles;
+
+  /// Etiqueta accesible para abrir los ciclos de producción Economics V2
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir ciclos de producción'**
+  String get economicsV2OpenProductionCycles;
+
+  /// No description provided for @economicsV2LifecycleTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear ciclo V2'**
+  String get economicsV2LifecycleTitle;
+
+  /// No description provided for @economicsV2LifecyclePurpose.
+  ///
+  /// In es, this message translates to:
+  /// **'Propósito'**
+  String get economicsV2LifecyclePurpose;
+
+  /// No description provided for @economicsV2LifecycleCreate.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear ciclo'**
+  String get economicsV2LifecycleCreate;
+
+  /// No description provided for @economicsV2LifecycleCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclo creado'**
+  String get economicsV2LifecycleCreated;
+
+  /// No description provided for @economicsV2LifecycleAnimal.
+  ///
+  /// In es, this message translates to:
+  /// **'Animal'**
+  String get economicsV2LifecycleAnimal;
+
+  /// No description provided for @economicsV2LifecycleAssignAnimal.
+  ///
+  /// In es, this message translates to:
+  /// **'Asignar animal'**
+  String get economicsV2LifecycleAssignAnimal;
+
+  /// No description provided for @economicsV2LifecycleAnimalAssigned.
+  ///
+  /// In es, this message translates to:
+  /// **'Animal asignado'**
+  String get economicsV2LifecycleAnimalAssigned;
+
+  /// No description provided for @economicsV2LifecycleExpense.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto del gasto'**
+  String get economicsV2LifecycleExpense;
+
+  /// No description provided for @economicsV2LifecycleRecordExpense.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar gasto'**
+  String get economicsV2LifecycleRecordExpense;
+
+  /// No description provided for @economicsV2LifecycleExpenseRecorded.
+  ///
+  /// In es, this message translates to:
+  /// **'Gasto registrado'**
+  String get economicsV2LifecycleExpenseRecorded;
+
+  /// No description provided for @economicsV2LifecycleFeed.
+  ///
+  /// In es, this message translates to:
+  /// **'Mezcla de alimento'**
+  String get economicsV2LifecycleFeed;
+
+  /// No description provided for @economicsV2LifecycleLinkFeed.
+  ///
+  /// In es, this message translates to:
+  /// **'Vincular alimento'**
+  String get economicsV2LifecycleLinkFeed;
+
+  /// No description provided for @economicsV2LifecycleFeedLinked.
+  ///
+  /// In es, this message translates to:
+  /// **'Alimento vinculado'**
+  String get economicsV2LifecycleFeedLinked;
+
+  /// No description provided for @economicsV2LifecycleFailure.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo completar el paso.'**
+  String get economicsV2LifecycleFailure;
+
+  /// No description provided for @economicsV2LifecycleInvalidExpense.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un monto válido.'**
+  String get economicsV2LifecycleInvalidExpense;
 }
 
 class _AppLocalizationsDelegate

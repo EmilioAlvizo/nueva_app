@@ -202,10 +202,6 @@ create or replace function economics_v2.create_cycle_impl() returns void languag
 create or replace function economics_v2.assign_cycle_animal_impl() returns void language plpgsql security definer set search_path = '' as $$ begin raise exception 'Unit 3 lifecycle implementation is not part of this migration'; end; $$;
 create or replace function economics_v2.record_cycle_expense_impl() returns void language plpgsql security definer set search_path = '' as $$ begin raise exception 'Unit 3 lifecycle implementation is not part of this migration'; end; $$;
 create or replace function economics_v2.link_cycle_feed_impl() returns void language plpgsql security definer set search_path = '' as $$ begin raise exception 'Unit 3 lifecycle implementation is not part of this migration'; end; $$;
-drop function economics_v2.calculate_cycle_impl();
-drop function economics_v2.project_cycle_impl();
-drop function economics_v2.finalize_cycle_impl();
-
 create or replace function economics_v2.calculate_cycle_impl(
   p_granja_id uuid, p_cycle_id uuid
 ) returns jsonb

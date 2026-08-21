@@ -148,6 +148,20 @@ void main() {
     expect(find.text('Aún no hay datos de equilibrio'), findsOneWidget);
   });
 
+  testWidgets('keeps legacy balance while V2 entry is hidden by default', (
+    tester,
+  ) async {
+    await _pumpScreen(tester, repository: _ValueRepository([_point]));
+    await _flushAsync(tester);
+
+    expect(
+      _key(AppWidgetKeys.financeBreakEvenCard(_point.mixtureId)),
+      findsOneWidget,
+    );
+    expect(_key(AppWidgetKeys.financeEconomicsV2Entry), findsNothing);
+    expect(find.bySemanticsLabel('Abrir ciclos de producción'), findsNothing);
+  });
+
   testWidgets('renders view-backed cards in the light theme', (tester) async {
     await _pumpScreen(tester, repository: _ValueRepository([_point]));
     await _flushAsync(tester);
