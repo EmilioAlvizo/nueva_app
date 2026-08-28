@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rancho/core/testing/app_widget_keys.dart';
 import 'package:rancho/features/ciclos/domain/cycle_models.dart';
 import 'package:rancho/features/ciclos/domain/cycle_repository.dart';
+import 'package:rancho/features/ciclos/domain/economics_v2_lifecycle_models.dart';
 import 'package:rancho/features/ciclos/domain/economics_v2_models.dart';
 import 'package:rancho/features/ciclos/domain/economics_v2_repository.dart';
 import 'package:rancho/features/ciclos/presentation/providers/cycle_providers.dart';
@@ -135,7 +136,7 @@ void main() {
           .project(
             farmId: 'farm-1',
             cycleId: 'public-v2-cycle',
-            input: const EconomicsV2ProjectionInput(
+            input: const EconomicsV2ProjectionInput.legacy(
               expectedUnits: 12,
               unitPrice: 8,
             ),
@@ -214,6 +215,20 @@ final class _EconomicsV2Repository implements EconomicsV2Repository {
   ];
 
   @override
+  Future<EconomicsV2FarmAccess> getAccess(String farmId) async =>
+      EconomicsV2FarmAccess(
+        farmId: farmId,
+        enabled: true,
+        role: 'owner',
+        canEdit: true,
+      );
+
+  @override
+  Future<List<EconomicsV2CycleSummary>> getCycleSummaries(
+    String farmId,
+  ) async => const [];
+
+  @override
   Future<EconomicsV2Calculation> calculate({
     required String farmId,
     required String cycleId,
@@ -233,20 +248,76 @@ final class _EconomicsV2Repository implements EconomicsV2Repository {
     required String farmId,
     required String cycleId,
     required EconomicsV2ProjectionInput input,
-  }) async => EconomicsV2Projection(
-    cycleId: cycleId,
-    purpose: EconomicsV2Purpose.postura,
-    productionBasis: 'eggs',
-    projectedRevenue: input.expectedUnits * input.unitPrice,
-    projectedTotalCost: 75,
-    projectedMargin: (input.expectedUnits * input.unitPrice) - 75,
-  );
+  }) async {
+    final expectedUnits = input.expectedUnits;
+    final unitPrice = input.unitPrice;
+    if (expectedUnits == null || unitPrice == null) {
+      throw ArgumentError('Legacy projection input is required.');
+    }
+    return EconomicsV2Projection(
+      cycleId: cycleId,
+      purpose: EconomicsV2Purpose.postura,
+      productionBasis: 'eggs',
+      projectedRevenue: expectedUnits * unitPrice,
+      projectedTotalCost: 75,
+      projectedMargin: (expectedUnits * unitPrice) - 75,
+    );
+  }
 
   @override
-  Future<void> finalize({
+  Future<EconomicsV2CycleDetail> getCycleDetail({
     required String farmId,
     required String cycleId,
-  }) async {}
+  }) => throw UnimplementedError();
+
+  @override
+  Future<EconomicsV2CycleMembers> getCycleMembers({
+    required String farmId,
+    required String cycleId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<EconomicsV2CycleFeeds> getCycleFeeds({
+    required String farmId,
+    required String cycleId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<List<EconomicsV2CycleExpense>> getCycleExpenses({
+    required String farmId,
+    required String cycleId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<List<EconomicsV2SavedProjection>> getCycleProjections({
+    required String farmId,
+    required String cycleId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<EconomicsV2CycleReadiness> getCycleReadiness({
+    required String farmId,
+    required String cycleId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<EconomicsV2SavedProjection> saveProjection({
+    required String farmId,
+    required String cycleId,
+    required EconomicsV2ProjectionInput input,
+    String? note,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<EconomicsV2CycleDetail> closeProduction(
+    EconomicsV2CloseProductionRequest request,
+  ) => throw UnimplementedError();
+
+  @override
+  Future<EconomicsV2Finalization> finalize({
+    required String farmId,
+    required String cycleId,
+  }) => throw UnimplementedError();
 }
 
 final _cycle = Cycle(

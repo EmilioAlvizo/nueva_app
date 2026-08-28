@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:rancho/features/ciclos/data/economics_v2_supabase_repository.dart';
 import 'package:rancho/features/ciclos/domain/economics_v2_lifecycle_models.dart';
+import 'package:rancho/features/ciclos/domain/economics_v2_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
@@ -23,6 +24,7 @@ void main() {
           farmId: 'farm-1',
           purposeId: 'purpose-1',
           startsOn: DateTime(2026, 8, 21),
+          endsOn: DateTime(2026, 9, 30),
         ),
       );
       final assignment = await repository.assignAnimal(
@@ -58,10 +60,10 @@ void main() {
       expect(expense.expenseId, 'expense-1');
       expect(feed.feedId, 'feed-1');
       expect(_identities(client), [
-        'crear_ciclo_v2:{"p_granja_id":"farm-1","p_proposito_id":"purpose-1","p_starts_on":"2026-08-21"}',
+        'crear_ciclo_v2_con_fechas:{"p_granja_id":"farm-1","p_proposito_id":"purpose-1","p_starts_on":"2026-08-21","p_ends_on":"2026-09-30"}',
         'asignar_animal_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_animal_id":"animal-1","p_joined_on":"2026-08-22"}',
         'registrar_gasto_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_occurred_on":"2026-08-23","p_amount":12.5,"p_note":"Feed delivery"}',
-        'vincular_alimento_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_mezcla_id":"mixture-1","p_starts_on":"2026-08-24","p_ends_on":"2026-08-31"}',
+        'reemplazar_alimento_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_mezcla_id":"mixture-1","p_starts_on":"2026-08-24","p_ends_on":"2026-08-31"}',
       ]);
     });
 
@@ -93,7 +95,7 @@ void main() {
       expect(feed.feedId, 'feed-2');
       expect(_identities(client), [
         'registrar_gasto_ciclo_v2:{"p_granja_id":"farm-2","p_cycle_id":"cycle-2","p_occurred_on":"2026-09-01","p_amount":0.0,"p_note":null}',
-        'vincular_alimento_ciclo_v2:{"p_granja_id":"farm-2","p_cycle_id":"cycle-2","p_mezcla_id":"mixture-2","p_starts_on":"2026-09-02","p_ends_on":null}',
+        'reemplazar_alimento_ciclo_v2:{"p_granja_id":"farm-2","p_cycle_id":"cycle-2","p_mezcla_id":"mixture-2","p_starts_on":"2026-09-02","p_ends_on":null}',
       ]);
     });
 
@@ -131,6 +133,84 @@ void main() {
               .having((error) => error.hint, 'hint', 'Use an authorized farm.'),
         ),
       );
+    });
+  });
+
+  group('EconomicsV2SupabaseRepository Finance cycles reads', () {
+    test('maps access and ordered summary RPC payloads', () async {
+      final client = _RecordingHttpClient([
+        (
+          200,
+          {
+            'granja_id': 'farm-1',
+            'enabled': true,
+            'role': 'editor',
+            'can_edit': true,
+          },
+        ),
+        (
+          200,
+          [
+            {
+              'cycle_id': 'cycle-1',
+              'granja_id': 'farm-1',
+              'status': 'open',
+              'starts_on': '2026-08-01',
+              'ends_on': null,
+              'purpose_id': 'purpose-1',
+              'purpose_name': 'Postura',
+              'active_animal_count': 4,
+              'exited_animal_count': 1,
+              'direct_expense_total': 42.5,
+              'linked_mixture_count': 2,
+              'latest_linked_group_name': 'Gallinero norte',
+            },
+          ],
+        ),
+      ]);
+      final repository = _repository(client);
+
+      final access = await repository.getAccess('farm-1');
+      final summaries = await repository.getCycleSummaries('farm-1');
+
+      expect(
+        access,
+        const EconomicsV2FarmAccess(
+          farmId: 'farm-1',
+          enabled: true,
+          role: 'editor',
+          canEdit: true,
+        ),
+      );
+      expect(summaries.single.cycleId, 'cycle-1');
+      expect(summaries.single.startsOn, DateTime(2026, 8, 1));
+      expect(summaries.single.endsOn, isNull);
+      expect(summaries.single.activeAnimalCount, 4);
+      expect(summaries.single.exitedAnimalCount, 1);
+      expect(summaries.single.directExpenseTotal, 42.5);
+      expect(summaries.single.linkedMixtureCount, 2);
+      expect(summaries.single.latestLinkedGroupName, 'Gallinero norte');
+      expect(_identities(client), [
+        'obtener_acceso_ciclos_v2:{"p_granja_id":"farm-1"}',
+        'listar_resumen_ciclos_v2:{"p_granja_id":"farm-1"}',
+      ]);
+    });
+
+    test('keeps optional create end date null in the date-aware RPC', () async {
+      final client = _RecordingHttpClient([(200, 'cycle-2')]);
+      final repository = _repository(client);
+
+      await repository.createCycle(
+        EconomicsV2CreateCycleRequest(
+          farmId: 'farm-2',
+          purposeId: 'purpose-2',
+          startsOn: DateTime(2026, 9, 2),
+        ),
+      );
+
+      expect(_identities(client), [
+        'crear_ciclo_v2_con_fechas:{"p_granja_id":"farm-2","p_proposito_id":"purpose-2","p_starts_on":"2026-09-02","p_ends_on":null}',
+      ]);
     });
   });
 }

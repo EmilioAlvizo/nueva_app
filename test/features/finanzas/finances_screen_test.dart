@@ -5,6 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rancho/core/testing/app_widget_keys.dart';
 import 'package:rancho/core/theme/app_theme.dart';
+import 'package:rancho/core/theme/finance_theme.dart';
+import 'package:rancho/features/ciclos/domain/cycle_models.dart';
+import 'package:rancho/features/ciclos/presentation/providers/cycle_providers.dart';
+import 'package:rancho/features/finanzas/data/models/break_even_point_model.dart';
 import 'package:rancho/features/finanzas/domain/entities/break_even_point.dart';
 import 'package:rancho/features/finanzas/domain/repositories/finances_repository.dart';
 import 'package:rancho/features/finanzas/presentation/providers/finances_providers.dart';
@@ -13,30 +17,42 @@ import 'package:rancho/features/finanzas/presentation/widgets/finance_tab_bar.da
 import 'package:rancho/l10n/app_localizations.dart';
 
 void main() {
-  testWidgets('horizontal swipes navigate all four tabs and back', (
+  testWidgets('horizontal swipes navigate all five tabs and back', (
     tester,
   ) async {
-    await _pumpScreen(tester, repository: _ValueRepository(const []));
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 760);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await _pumpScreen(
+      tester,
+      repository: _ValueRepository(const []),
+      textScale: 1.5,
+    );
     await _flushAsync(tester);
 
     expect(find.text('Equilibrio'), findsOneWidget);
     expect(find.text('Ingresos'), findsOneWidget);
     expect(find.text('Gastos'), findsOneWidget);
     expect(find.text('Gráficos'), findsOneWidget);
+    expect(find.text('Ciclos'), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeHeader), findsOneWidget);
+    expect(find.text('Finanzas'), findsOneWidget);
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeBalanceTab);
     expect(_key(AppWidgetKeys.financeEmpty), findsOneWidget);
 
-    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-600, 0));
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeIncomeTab);
     expect(_key(AppWidgetKeys.financeIncomeUnavailable), findsOneWidget);
 
-    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-600, 0));
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
     expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
 
-    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-600, 0));
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeChartsTab);
     expect(_key(AppWidgetKeys.financeChartsUnavailable), findsOneWidget);
@@ -45,17 +61,32 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(600, 0));
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-250, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeCyclesTab);
+    expect(_key(AppWidgetKeys.financeCyclesUnavailable), findsOneWidget);
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+    final finance = FinanceTheme.of(
+      tester.element(_key(AppWidgetKeys.financeHeader)),
+    );
+    expect(scaffold.backgroundColor, finance.cycleCanvas);
+
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeChartsTab);
+    expect(_key(AppWidgetKeys.financeChartsUnavailable), findsOneWidget);
+
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
     expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
 
-    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(600, 0));
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeIncomeTab);
     expect(_key(AppWidgetKeys.financeIncomeUnavailable), findsOneWidget);
 
-    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(600, 0));
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeBalanceTab);
     expect(_key(AppWidgetKeys.financeEmpty), findsOneWidget);
@@ -64,24 +95,46 @@ void main() {
   testWidgets('tab taps stay synchronized with horizontal swipes', (
     tester,
   ) async {
-    await _pumpScreen(tester, repository: _ValueRepository(const []));
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 760);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await _pumpScreen(
+      tester,
+      repository: _ValueRepository(const []),
+      textScale: 1.5,
+    );
     await _flushAsync(tester);
 
+    await tester.ensureVisible(_key(AppWidgetKeys.financeExpensesTab));
     await tester.tap(_key(AppWidgetKeys.financeExpensesTab));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
     expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
 
-    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(600, 0));
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeIncomeTab);
     expect(_key(AppWidgetKeys.financeIncomeUnavailable), findsOneWidget);
 
+    await tester.ensureVisible(_key(AppWidgetKeys.financeChartsTab));
     await tester.tap(_key(AppWidgetKeys.financeChartsTab));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeChartsTab);
     expect(_key(AppWidgetKeys.financeChartsUnavailable), findsOneWidget);
 
+    await tester.ensureVisible(_key(AppWidgetKeys.financeCyclesTab));
+    await tester.tap(_key(AppWidgetKeys.financeCyclesTab));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeCyclesTab);
+    expect(_key(AppWidgetKeys.financeCyclesUnavailable), findsOneWidget);
+
+    await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
+    await tester.pumpAndSettle();
+    _expectFinanceTabSelected(tester, AppWidgetKeys.financeChartsTab);
+
+    await tester.ensureVisible(_key(AppWidgetKeys.financeBalanceTab));
     await tester.tap(_key(AppWidgetKeys.financeBalanceTab));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeBalanceTab);
@@ -194,6 +247,21 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('renders unavailable per-bird metrics as dashes', (tester) async {
+    await _pumpScreen(
+      tester,
+      repository: const _NullablePerBirdMetricsRepository(),
+    );
+    await _flushAsync(tester);
+
+    expect(
+      find.text('0.00 aves • - huevo/(día·ave) • - kg/(día·ave)'),
+      findsOneWidget,
+    );
+    expect(_key(AppWidgetKeys.financeError), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('renders without overflow at 288dp in the dark theme', (
     tester,
   ) async {
@@ -238,7 +306,12 @@ Future<ProviderContainer> _pumpScreen(
   double textScale = 1,
 }) async {
   final container = ProviderContainer.test(
-    overrides: [financesRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      financesRepositoryProvider.overrideWithValue(repository),
+      cycleAccessProvider(
+        'farm-1',
+      ).overrideWithValue(const AsyncData(CycleAccess(CycleRole.viewer))),
+    ],
   );
   await tester.pumpWidget(
     UncontrolledProviderScope(
@@ -298,6 +371,15 @@ final class _ValueRepository implements FinancesRepository {
   Future<List<BreakEvenPoint>> getBreakEvenPoints(String farmId) async => value;
 }
 
+final class _NullablePerBirdMetricsRepository implements FinancesRepository {
+  const _NullablePerBirdMetricsRepository();
+
+  @override
+  Future<List<BreakEvenPoint>> getBreakEvenPoints(String farmId) async => [
+    BreakEvenPointModel.fromJson(_nullablePerBirdMetricsJson).toEntity(),
+  ];
+}
+
 final class _PendingRepository implements FinancesRepository {
   final _completer = Completer<List<BreakEvenPoint>>();
 
@@ -319,3 +401,26 @@ final class _FailOnceRepository implements FinancesRepository {
     return const [];
   }
 }
+
+final _nullablePerBirdMetricsJson = <String, Object?>{
+  'fecha_inicio': '2026-07-01',
+  'fecha_termino': null,
+  'mezcla_id': '416e648e-1dd2-4a2f-8246-e42bcc6f36cb',
+  'grupo_nombre': 'Gallinero',
+  'buenos': 97,
+  'rotos': 2,
+  'total_costo_comidas': 800,
+  'punto_de_equilibrio': 8.2474,
+  'granja_id': '48b129e9-a48b-438a-a401-96d4dd863da5',
+  'grupo_id': '7428302e-9d3b-4967-9baa-4747c98778bc',
+  'fecha_fin_calculada': '2026-07-26',
+  'dias_mezcla': 26,
+  'consumo_total': 80,
+  'aves_promedio_ponderado': 0,
+  'huevos_por_dia': 3.7308,
+  'huevos_por_dia_ave': null,
+  'consumo_por_dia': 3.0769,
+  'consumo_por_dia_ave': null,
+  'precio_venta_promedio': 5,
+  'margen_porcentaje': -39.37,
+};

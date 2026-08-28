@@ -49,7 +49,7 @@ void main() {
           expect((image.image as AssetImage).assetName, expectedAsset);
         }
 
-        expect(selectedColors, hasLength(4));
+        expect(selectedColors, hasLength(5));
 
         await tester.pumpWidget(
           MaterialApp(
@@ -105,5 +105,12 @@ const _items = [
     label: 'Charts',
     asset: 'assets/chart.png',
     keyValue: 'charts',
+  ),
+  FinanceTabItem(
+    tab: FinanceTab.cycles,
+    role: FinanceTabRole.cycles,
+    label: 'Cycles',
+    asset: 'assets/goal.png',
+    keyValue: 'cycles',
   ),
 ];

@@ -83,7 +83,8 @@ begin
     (editor_id, 'authenticated', 'authenticated', 'economics-v2-lifecycle-editor@example.test', now(), now()),
     (viewer_id, 'authenticated', 'authenticated', 'economics-v2-lifecycle-viewer@example.test', now(), now());
   insert into public.perfiles (id, nombre)
-  values (editor_id, 'Lifecycle editor'), (viewer_id, 'Lifecycle viewer');
+  values (editor_id, 'Lifecycle editor'), (viewer_id, 'Lifecycle viewer')
+  on conflict (id) do update set nombre = excluded.nombre;
   insert into public.granjas (id, owner_id, nombre, created_by)
   values
     (farm_a, editor_id, 'Lifecycle farm A', editor_id),

@@ -3,10 +3,12 @@ class EconomicsV2CreateCycleRequest {
     required this.farmId,
     required this.purposeId,
     required this.startsOn,
+    this.endsOn,
   });
 
   final String farmId, purposeId;
   final DateTime startsOn;
+  final DateTime? endsOn;
 }
 
 class EconomicsV2AssignAnimalRequest {
@@ -27,13 +29,26 @@ class EconomicsV2RecordExpenseRequest {
     required this.cycleId,
     required this.occurredOn,
     required this.amount,
+    this.category,
     this.note,
   });
 
   final String farmId, cycleId;
   final DateTime occurredOn;
   final double amount;
+  final String? category;
   final String? note;
+}
+
+class EconomicsV2CloseProductionRequest {
+  const EconomicsV2CloseProductionRequest({
+    required this.farmId,
+    required this.cycleId,
+    required this.closedOn,
+  });
+
+  final String farmId, cycleId;
+  final DateTime closedOn;
 }
 
 class EconomicsV2LinkFeedRequest {

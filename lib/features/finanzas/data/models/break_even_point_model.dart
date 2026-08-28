@@ -43,9 +43,9 @@ final class BreakEvenPointModel {
         'aves_promedio_ponderado',
       ),
       eggsPerDay: _requiredNonNegativeDouble(json, 'huevos_por_dia'),
-      eggsPerDayPerBird: _requiredNonNegativeDouble(json, 'huevos_por_dia_ave'),
+      eggsPerDayPerBird: _nullableNonNegativeDouble(json, 'huevos_por_dia_ave'),
       feedPerDay: _requiredNonNegativeDouble(json, 'consumo_por_dia'),
-      feedPerDayPerBird: _requiredNonNegativeDouble(
+      feedPerDayPerBird: _nullableNonNegativeDouble(
         json,
         'consumo_por_dia_ave',
       ),
@@ -72,9 +72,9 @@ final class BreakEvenPointModel {
   final double totalFeedConsumption;
   final double weightedAverageBirds;
   final double eggsPerDay;
-  final double eggsPerDayPerBird;
+  final double? eggsPerDayPerBird;
   final double feedPerDay;
-  final double feedPerDayPerBird;
+  final double? feedPerDayPerBird;
   final double? breakEvenPrice;
   final double? averageSalePrice;
   final double? marginPercentage;

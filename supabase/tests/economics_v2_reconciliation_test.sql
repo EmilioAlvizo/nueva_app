@@ -29,7 +29,8 @@ select pg_temp.assert_true(
     '20260730212510_restrict_break_even_view_privileges',
     '20260802030239_create_app_release_delivery',
     '20260817011421_economics_v2_schema',
-    '20260821130000_economics_v2_lifecycle_apis'
+    '20260821130000_economics_v2_lifecycle_apis',
+    '20260825210635_restore_authenticated_data_api_and_profiles'
   ]::text[],
   'the disposable sandbox must contain only the ordered repository migration identity'
 );
@@ -54,7 +55,8 @@ declare
 begin
   insert into auth.users (id, aud, role, email, created_at, updated_at)
   values (editor_id, 'authenticated', 'authenticated', 'economics-v2-reconciliation@example.test', now(), now());
-  insert into public.perfiles (id, nombre) values (editor_id, 'Reconciliation editor');
+  insert into public.perfiles (id, nombre) values (editor_id, 'Reconciliation editor')
+  on conflict (id) do update set nombre = excluded.nombre;
   insert into public.granjas (id, owner_id, nombre, created_by)
   values (farm_id, editor_id, 'Reconciliation farm', editor_id);
   insert into public.tipo_animal (id, granja_id, nombre, created_by)

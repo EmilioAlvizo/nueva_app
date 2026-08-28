@@ -24,12 +24,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   testWidgets(
-    'shows the localized V2 panel for empty rows and completes only after each lifecycle future succeeds',
+    'shows the localized empty V2 surface and confirms each lifecycle step only after V2 futures succeed',
     (tester) async {
       final lifecycle = _LifecycleRepository();
       final legacy = _RecordingLegacyCycleRepository();
-
-      await _pump(tester, lifecycle: lifecycle, legacy: legacy);
+      await _pump(tester, lifecycle, legacy);
 
       expect(find.byType(EconomicsV2LifecyclePanel), findsOneWidget);
       expect(
@@ -37,69 +36,48 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Crear ciclo V2'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey(AppWidgetKeys.economicsV2LifecycleCreate)),
-        findsOneWidget,
-      );
-
       await _select(
         tester,
         AppWidgetKeys.economicsV2LifecyclePurpose,
         'Postura',
       );
-      await tester.tap(
-        find.byKey(const ValueKey(AppWidgetKeys.economicsV2LifecycleCreate)),
+      await _invoke(
+        tester,
+        AppWidgetKeys.economicsV2LifecycleCreate,
+        lifecycle.createRequests,
+        'Ciclo creado',
+        () => lifecycle.create.complete(
+          const EconomicsV2CycleCreated(cycleId: 'cycle-1'),
+        ),
       );
-      await tester.pump();
-      expect(lifecycle.createRequests, hasLength(1));
-      expect(find.text('Ciclo creado'), findsNothing);
-
-      lifecycle.create.complete(
-        const EconomicsV2CycleCreated(cycleId: 'cycle-1'),
-      );
-      await tester.pump();
-      expect(find.text('Ciclo creado'), findsOneWidget);
-
       await _select(tester, AppWidgetKeys.economicsV2LifecycleAnimal, 'Ave 21');
-      await tester.tap(
-        find.byKey(
-          const ValueKey(AppWidgetKeys.economicsV2LifecycleAssignAnimal),
+      await _invoke(
+        tester,
+        AppWidgetKeys.economicsV2LifecycleAssignAnimal,
+        lifecycle.assignRequests,
+        'Animal asignado',
+        () => lifecycle.assign.complete(
+          const EconomicsV2AnimalAssigned(
+            cycleId: 'cycle-1',
+            animalId: 'animal-1',
+          ),
         ),
       );
-      await tester.pump();
-      expect(lifecycle.assignRequests, hasLength(1));
-      expect(find.text('Animal asignado'), findsNothing);
-
-      lifecycle.assign.complete(
-        const EconomicsV2AnimalAssigned(
-          cycleId: 'cycle-1',
-          animalId: 'animal-1',
-        ),
-      );
-      await tester.pump();
-      expect(find.text('Animal asignado'), findsOneWidget);
-
       await tester.enterText(
         find.byKey(
           const ValueKey(AppWidgetKeys.economicsV2LifecycleExpenseAmount),
         ),
         '24.50',
       );
-      await tester.tap(
-        find.byKey(
-          const ValueKey(AppWidgetKeys.economicsV2LifecycleRecordExpense),
+      await _invoke(
+        tester,
+        AppWidgetKeys.economicsV2LifecycleRecordExpense,
+        lifecycle.expenseRequests,
+        'Gasto registrado',
+        () => lifecycle.expense.complete(
+          const EconomicsV2ExpenseRecorded(expenseId: 'expense-1'),
         ),
       );
-      await tester.pump();
-      expect(lifecycle.expenseRequests, hasLength(1));
-      expect(find.text('Gasto registrado'), findsNothing);
-
-      lifecycle.expense.complete(
-        const EconomicsV2ExpenseRecorded(expenseId: 'expense-1'),
-      );
-      await tester.pump();
-      expect(find.text('Gasto registrado'), findsOneWidget);
-
       await tester.drag(find.byType(ListView), const Offset(0, -240));
       await tester.pump();
       await _select(
@@ -107,35 +85,28 @@ void main() {
         AppWidgetKeys.economicsV2LifecycleFeed,
         'Mezcla inicio',
       );
-      expect(find.text('Alimento vinculado'), findsNothing);
-      await tester.tap(
-        find.byKey(const ValueKey(AppWidgetKeys.economicsV2LifecycleLinkFeed)),
+      await _invoke(
+        tester,
+        AppWidgetKeys.economicsV2LifecycleLinkFeed,
+        lifecycle.feedRequests,
+        'Alimento vinculado',
+        () => lifecycle.feed.complete(
+          const EconomicsV2FeedLinked(feedId: 'feed-1'),
+        ),
       );
-      await tester.pump();
-      expect(lifecycle.feedRequests, hasLength(1));
-      expect(find.text('Alimento vinculado'), findsNothing);
-
-      lifecycle.feed.complete(const EconomicsV2FeedLinked(feedId: 'feed-1'));
-      await tester.pump();
-      expect(find.text('Alimento vinculado'), findsOneWidget);
       expect(legacy.createCalls, 0);
     },
   );
 
   testWidgets(
-    'keeps the selected input and current step when the server rejects creation',
+    'retains the selected step without false success when PostgREST rejects it',
     (tester) async {
       final lifecycle = _LifecycleRepository()
         ..createError = PostgrestException(
           message: 'Farm access denied',
           code: '42501',
         );
-
-      await _pump(
-        tester,
-        lifecycle: lifecycle,
-        legacy: _RecordingLegacyCycleRepository(),
-      );
+      await _pump(tester, lifecycle, _RecordingLegacyCycleRepository());
       await _select(
         tester,
         AppWidgetKeys.economicsV2LifecyclePurpose,
@@ -145,7 +116,6 @@ void main() {
         find.byKey(const ValueKey(AppWidgetKeys.economicsV2LifecycleCreate)),
       );
       await tester.pump();
-
       expect(find.text('No se pudo completar el paso.'), findsOneWidget);
       expect(find.text('Ciclo creado'), findsNothing);
       expect(
@@ -167,10 +137,10 @@ void main() {
 }
 
 Future<void> _pump(
-  WidgetTester tester, {
-  required _LifecycleRepository lifecycle,
-  required _RecordingLegacyCycleRepository legacy,
-}) async {
+  WidgetTester tester,
+  _LifecycleRepository lifecycle,
+  _RecordingLegacyCycleRepository legacy,
+) async {
   final container = ProviderContainer.test(
     overrides: [
       cycleRepositoryProvider.overrideWithValue(legacy),
@@ -197,21 +167,35 @@ Future<void> _pump(
 }
 
 Future<void> _select(WidgetTester tester, String key, String value) async {
-  final input = find.byKey(ValueKey(key));
-  await tester.tap(input);
+  await tester.tap(find.byKey(ValueKey(key)));
   await tester.pump();
   await tester.tap(find.text(value).last);
   await tester.pump();
 }
 
-const _purposes = [CatalogoItem(id: 'purpose-1', nombre: 'Postura')];
+Future<void> _invoke(
+  WidgetTester tester,
+  String key,
+  List<dynamic> requests,
+  String progress,
+  void Function() complete,
+) async {
+  await tester.tap(find.byKey(ValueKey(key)));
+  await tester.pump();
+  expect(requests, hasLength(1));
+  expect(find.text(progress), findsNothing);
+  complete();
+  await tester.pump();
+  expect(find.text(progress), findsOneWidget);
+}
 
+const _purposes = [CatalogoItem(id: 'purpose-1', nombre: 'Postura')];
 final _animals = [
   Animal(
     id: 'animal-1',
     granjaId: 'farm-1',
     tipoAnimalId: 'type-1',
-    fechaAdquisicion: DateTime(2026, 1, 1),
+    fechaAdquisicion: DateTime(2026),
     activo: true,
     tipoNombre: 'Gallina',
     grupoNombre: 'Grupo A',
@@ -219,90 +203,60 @@ final _animals = [
     propositoId: 'purpose-1',
   ),
 ];
-
 final _mixtures = [
   FoodMixture(
     id: 'mixture-1',
     farmId: 'farm-1',
     groupId: 'group-1',
     groupName: 'Mezcla inicio',
-    startDate: DateTime(2026, 1, 1),
-    updatedAt: DateTime(2026, 1, 1),
+    startDate: DateTime(2026),
+    updatedAt: DateTime(2026),
     ingredients: const [],
   ),
 ];
 
-final class _EmptyV2Repository implements EconomicsV2Repository {
-  @override
-  Future<EconomicsV2Calculation> calculate({
-    required String farmId,
-    required String cycleId,
-  }) => throw UnimplementedError();
-
-  @override
-  Future<void> finalize({
-    required String farmId,
-    required String cycleId,
-  }) async {}
-
+final class _EmptyV2Repository extends Fake implements EconomicsV2Repository {
   @override
   Future<List<EconomicsV2Cycle>> getCycles(String farmId) async => const [];
-
-  @override
-  Future<EconomicsV2Projection> project({
-    required String farmId,
-    required String cycleId,
-    required EconomicsV2ProjectionInput input,
-  }) => throw UnimplementedError();
 }
 
 final class _LifecycleRepository implements EconomicsV2LifecycleRepository {
-  final create = Completer<EconomicsV2CycleCreated>();
-  final assign = Completer<EconomicsV2AnimalAssigned>();
-  final expense = Completer<EconomicsV2ExpenseRecorded>();
-  final feed = Completer<EconomicsV2FeedLinked>();
-  final createRequests = <EconomicsV2CreateCycleRequest>[];
-  final assignRequests = <EconomicsV2AssignAnimalRequest>[];
-  final expenseRequests = <EconomicsV2RecordExpenseRequest>[];
-  final feedRequests = <EconomicsV2LinkFeedRequest>[];
+  final create = Completer<EconomicsV2CycleCreated>(),
+      assign = Completer<EconomicsV2AnimalAssigned>(),
+      expense = Completer<EconomicsV2ExpenseRecorded>(),
+      feed = Completer<EconomicsV2FeedLinked>();
+  final createRequests = <EconomicsV2CreateCycleRequest>[],
+      assignRequests = <EconomicsV2AssignAnimalRequest>[],
+      expenseRequests = <EconomicsV2RecordExpenseRequest>[],
+      feedRequests = <EconomicsV2LinkFeedRequest>[];
   Object? createError;
+  Future<T> _record<T, R>(R request, List<R> requests, Completer<T> pending) {
+    requests.add(request);
+    return pending.future;
+  }
 
   @override
   Future<EconomicsV2CycleCreated> createCycle(
     EconomicsV2CreateCycleRequest request,
-  ) {
-    createRequests.add(request);
-    final error = createError;
-    return error == null ? create.future : Future.error(error);
-  }
-
+  ) => createError == null
+      ? _record(request, createRequests, create)
+      : Future.error(createError!);
   @override
   Future<EconomicsV2AnimalAssigned> assignAnimal(
     EconomicsV2AssignAnimalRequest request,
-  ) {
-    assignRequests.add(request);
-    return assign.future;
-  }
-
+  ) => _record(request, assignRequests, assign);
   @override
   Future<EconomicsV2ExpenseRecorded> recordExpense(
     EconomicsV2RecordExpenseRequest request,
-  ) {
-    expenseRequests.add(request);
-    return expense.future;
-  }
-
+  ) => _record(request, expenseRequests, expense);
   @override
-  Future<EconomicsV2FeedLinked> linkFeed(EconomicsV2LinkFeedRequest request) {
-    feedRequests.add(request);
-    return feed.future;
-  }
+  Future<EconomicsV2FeedLinked> linkFeed(EconomicsV2LinkFeedRequest request) =>
+      _record(request, feedRequests, feed);
 }
 
 final class _RecordingLegacyCycleRepository extends Mock
     implements CycleRepository {
   var createCalls = 0;
-
   @override
   Future<Cycle> createCycle(CycleCreationInput input) {
     createCalls++;

@@ -227,6 +227,676 @@ final class EconomicsV2CyclesFamily extends $Family
   String toString() => r'economicsV2CyclesProvider';
 }
 
+@ProviderFor(economicsV2Access)
+final economicsV2AccessProvider = EconomicsV2AccessFamily._();
+
+final class EconomicsV2AccessProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EconomicsV2FarmAccess>,
+          EconomicsV2FarmAccess,
+          FutureOr<EconomicsV2FarmAccess>
+        >
+    with
+        $FutureModifier<EconomicsV2FarmAccess>,
+        $FutureProvider<EconomicsV2FarmAccess> {
+  EconomicsV2AccessProvider._({
+    required EconomicsV2AccessFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2AccessProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2AccessHash();
+
+  @override
+  String toString() {
+    return r'economicsV2AccessProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<EconomicsV2FarmAccess> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<EconomicsV2FarmAccess> create(Ref ref) {
+    final argument = this.argument as String;
+    return economicsV2Access(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2AccessProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2AccessHash() => r'a37a1f09dfdd6dc96cf863f411d44c8175c0e63f';
+
+final class EconomicsV2AccessFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<EconomicsV2FarmAccess>, String> {
+  EconomicsV2AccessFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2AccessProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2AccessProvider call(String farmId) =>
+      EconomicsV2AccessProvider._(argument: farmId, from: this);
+
+  @override
+  String toString() => r'economicsV2AccessProvider';
+}
+
+@ProviderFor(economicsV2CycleSummaries)
+final economicsV2CycleSummariesProvider = EconomicsV2CycleSummariesFamily._();
+
+final class EconomicsV2CycleSummariesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EconomicsV2CyclesDashboard>,
+          EconomicsV2CyclesDashboard,
+          FutureOr<EconomicsV2CyclesDashboard>
+        >
+    with
+        $FutureModifier<EconomicsV2CyclesDashboard>,
+        $FutureProvider<EconomicsV2CyclesDashboard> {
+  EconomicsV2CycleSummariesProvider._({
+    required EconomicsV2CycleSummariesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2CycleSummariesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2CycleSummariesHash();
+
+  @override
+  String toString() {
+    return r'economicsV2CycleSummariesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<EconomicsV2CyclesDashboard> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<EconomicsV2CyclesDashboard> create(Ref ref) {
+    final argument = this.argument as String;
+    return economicsV2CycleSummaries(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2CycleSummariesProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2CycleSummariesHash() =>
+    r'c391960485fa094f7af184829c1faa82f3c59a3f';
+
+final class EconomicsV2CycleSummariesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<EconomicsV2CyclesDashboard>,
+          String
+        > {
+  EconomicsV2CycleSummariesFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2CycleSummariesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2CycleSummariesProvider call(String farmId) =>
+      EconomicsV2CycleSummariesProvider._(argument: farmId, from: this);
+
+  @override
+  String toString() => r'economicsV2CycleSummariesProvider';
+}
+
+@ProviderFor(economicsV2CycleDetail)
+final economicsV2CycleDetailProvider = EconomicsV2CycleDetailFamily._();
+
+final class EconomicsV2CycleDetailProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EconomicsV2CycleDetail>,
+          EconomicsV2CycleDetail,
+          FutureOr<EconomicsV2CycleDetail>
+        >
+    with
+        $FutureModifier<EconomicsV2CycleDetail>,
+        $FutureProvider<EconomicsV2CycleDetail> {
+  EconomicsV2CycleDetailProvider._({
+    required EconomicsV2CycleDetailFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2CycleDetailProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2CycleDetailHash();
+
+  @override
+  String toString() {
+    return r'economicsV2CycleDetailProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<EconomicsV2CycleDetail> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<EconomicsV2CycleDetail> create(Ref ref) {
+    final argument = this.argument as (String, String);
+    return economicsV2CycleDetail(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2CycleDetailProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2CycleDetailHash() =>
+    r'3fb42e7606e2d28cf7842f2168caf1c6b373bdb8';
+
+final class EconomicsV2CycleDetailFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<EconomicsV2CycleDetail>,
+          (String, String)
+        > {
+  EconomicsV2CycleDetailFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2CycleDetailProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2CycleDetailProvider call(String farmId, String cycleId) =>
+      EconomicsV2CycleDetailProvider._(argument: (farmId, cycleId), from: this);
+
+  @override
+  String toString() => r'economicsV2CycleDetailProvider';
+}
+
+@ProviderFor(economicsV2CycleMembers)
+final economicsV2CycleMembersProvider = EconomicsV2CycleMembersFamily._();
+
+final class EconomicsV2CycleMembersProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EconomicsV2CycleMembers>,
+          EconomicsV2CycleMembers,
+          FutureOr<EconomicsV2CycleMembers>
+        >
+    with
+        $FutureModifier<EconomicsV2CycleMembers>,
+        $FutureProvider<EconomicsV2CycleMembers> {
+  EconomicsV2CycleMembersProvider._({
+    required EconomicsV2CycleMembersFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2CycleMembersProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2CycleMembersHash();
+
+  @override
+  String toString() {
+    return r'economicsV2CycleMembersProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<EconomicsV2CycleMembers> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<EconomicsV2CycleMembers> create(Ref ref) {
+    final argument = this.argument as (String, String);
+    return economicsV2CycleMembers(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2CycleMembersProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2CycleMembersHash() =>
+    r'9b336bf817acbc17c2932e514bbd377fef3cf45a';
+
+final class EconomicsV2CycleMembersFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<EconomicsV2CycleMembers>,
+          (String, String)
+        > {
+  EconomicsV2CycleMembersFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2CycleMembersProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2CycleMembersProvider call(String farmId, String cycleId) =>
+      EconomicsV2CycleMembersProvider._(
+        argument: (farmId, cycleId),
+        from: this,
+      );
+
+  @override
+  String toString() => r'economicsV2CycleMembersProvider';
+}
+
+@ProviderFor(economicsV2CycleFeeds)
+final economicsV2CycleFeedsProvider = EconomicsV2CycleFeedsFamily._();
+
+final class EconomicsV2CycleFeedsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EconomicsV2CycleFeeds>,
+          EconomicsV2CycleFeeds,
+          FutureOr<EconomicsV2CycleFeeds>
+        >
+    with
+        $FutureModifier<EconomicsV2CycleFeeds>,
+        $FutureProvider<EconomicsV2CycleFeeds> {
+  EconomicsV2CycleFeedsProvider._({
+    required EconomicsV2CycleFeedsFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2CycleFeedsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2CycleFeedsHash();
+
+  @override
+  String toString() {
+    return r'economicsV2CycleFeedsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<EconomicsV2CycleFeeds> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<EconomicsV2CycleFeeds> create(Ref ref) {
+    final argument = this.argument as (String, String);
+    return economicsV2CycleFeeds(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2CycleFeedsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2CycleFeedsHash() =>
+    r'9e10be621f1458812e815a39d423d25ecfd2d030';
+
+final class EconomicsV2CycleFeedsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<EconomicsV2CycleFeeds>,
+          (String, String)
+        > {
+  EconomicsV2CycleFeedsFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2CycleFeedsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2CycleFeedsProvider call(String farmId, String cycleId) =>
+      EconomicsV2CycleFeedsProvider._(argument: (farmId, cycleId), from: this);
+
+  @override
+  String toString() => r'economicsV2CycleFeedsProvider';
+}
+
+@ProviderFor(economicsV2CycleExpenses)
+final economicsV2CycleExpensesProvider = EconomicsV2CycleExpensesFamily._();
+
+final class EconomicsV2CycleExpensesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<EconomicsV2CycleExpense>>,
+          List<EconomicsV2CycleExpense>,
+          FutureOr<List<EconomicsV2CycleExpense>>
+        >
+    with
+        $FutureModifier<List<EconomicsV2CycleExpense>>,
+        $FutureProvider<List<EconomicsV2CycleExpense>> {
+  EconomicsV2CycleExpensesProvider._({
+    required EconomicsV2CycleExpensesFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2CycleExpensesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2CycleExpensesHash();
+
+  @override
+  String toString() {
+    return r'economicsV2CycleExpensesProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<EconomicsV2CycleExpense>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<EconomicsV2CycleExpense>> create(Ref ref) {
+    final argument = this.argument as (String, String);
+    return economicsV2CycleExpenses(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2CycleExpensesProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2CycleExpensesHash() =>
+    r'93aa3b3a929d5a4c220792abac33df920b38f6f5';
+
+final class EconomicsV2CycleExpensesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<EconomicsV2CycleExpense>>,
+          (String, String)
+        > {
+  EconomicsV2CycleExpensesFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2CycleExpensesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2CycleExpensesProvider call(String farmId, String cycleId) =>
+      EconomicsV2CycleExpensesProvider._(
+        argument: (farmId, cycleId),
+        from: this,
+      );
+
+  @override
+  String toString() => r'economicsV2CycleExpensesProvider';
+}
+
+@ProviderFor(economicsV2CycleProjections)
+final economicsV2CycleProjectionsProvider =
+    EconomicsV2CycleProjectionsFamily._();
+
+final class EconomicsV2CycleProjectionsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<EconomicsV2SavedProjection>>,
+          List<EconomicsV2SavedProjection>,
+          FutureOr<List<EconomicsV2SavedProjection>>
+        >
+    with
+        $FutureModifier<List<EconomicsV2SavedProjection>>,
+        $FutureProvider<List<EconomicsV2SavedProjection>> {
+  EconomicsV2CycleProjectionsProvider._({
+    required EconomicsV2CycleProjectionsFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2CycleProjectionsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2CycleProjectionsHash();
+
+  @override
+  String toString() {
+    return r'economicsV2CycleProjectionsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<EconomicsV2SavedProjection>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<EconomicsV2SavedProjection>> create(Ref ref) {
+    final argument = this.argument as (String, String);
+    return economicsV2CycleProjections(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2CycleProjectionsProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2CycleProjectionsHash() =>
+    r'f88f2c827931541de334a01912987d9352c18215';
+
+final class EconomicsV2CycleProjectionsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<EconomicsV2SavedProjection>>,
+          (String, String)
+        > {
+  EconomicsV2CycleProjectionsFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2CycleProjectionsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2CycleProjectionsProvider call(String farmId, String cycleId) =>
+      EconomicsV2CycleProjectionsProvider._(
+        argument: (farmId, cycleId),
+        from: this,
+      );
+
+  @override
+  String toString() => r'economicsV2CycleProjectionsProvider';
+}
+
+@ProviderFor(economicsV2CycleReadiness)
+final economicsV2CycleReadinessProvider = EconomicsV2CycleReadinessFamily._();
+
+final class EconomicsV2CycleReadinessProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EconomicsV2CycleReadiness>,
+          EconomicsV2CycleReadiness,
+          FutureOr<EconomicsV2CycleReadiness>
+        >
+    with
+        $FutureModifier<EconomicsV2CycleReadiness>,
+        $FutureProvider<EconomicsV2CycleReadiness> {
+  EconomicsV2CycleReadinessProvider._({
+    required EconomicsV2CycleReadinessFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2CycleReadinessProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2CycleReadinessHash();
+
+  @override
+  String toString() {
+    return r'economicsV2CycleReadinessProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<EconomicsV2CycleReadiness> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<EconomicsV2CycleReadiness> create(Ref ref) {
+    final argument = this.argument as (String, String);
+    return economicsV2CycleReadiness(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2CycleReadinessProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2CycleReadinessHash() =>
+    r'b772ec874b37ab37a0fc87a6cd11f8ff47db9c88';
+
+final class EconomicsV2CycleReadinessFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<EconomicsV2CycleReadiness>,
+          (String, String)
+        > {
+  EconomicsV2CycleReadinessFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2CycleReadinessProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2CycleReadinessProvider call(String farmId, String cycleId) =>
+      EconomicsV2CycleReadinessProvider._(
+        argument: (farmId, cycleId),
+        from: this,
+      );
+
+  @override
+  String toString() => r'economicsV2CycleReadinessProvider';
+}
+
 @ProviderFor(cycleCatalogs)
 final cycleCatalogsProvider = CycleCatalogsProvider._();
 
@@ -869,7 +1539,7 @@ final class EconomicsV2MutationsProvider
 }
 
 String _$economicsV2MutationsHash() =>
-    r'397ebf31a77aa087cb4764eb5031d0ce7673b192';
+    r'ed37d76f01da737c89b0fb7df73c351270475efa';
 
 abstract class _$EconomicsV2Mutations
     extends $AsyncNotifier<EconomicsV2Result?> {
@@ -934,5 +1604,306 @@ abstract class _$EconomicsV2LifecycleMutations extends $AsyncNotifier<Object?> {
               Object?
             >;
     return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(FinanceCyclesWorkflow)
+final financeCyclesWorkflowProvider = FinanceCyclesWorkflowFamily._();
+
+final class FinanceCyclesWorkflowProvider
+    extends
+        $NotifierProvider<FinanceCyclesWorkflow, FinanceCyclesWorkflowState> {
+  FinanceCyclesWorkflowProvider._({
+    required FinanceCyclesWorkflowFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'financeCyclesWorkflowProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$financeCyclesWorkflowHash();
+
+  @override
+  String toString() {
+    return r'financeCyclesWorkflowProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  FinanceCyclesWorkflow create() => FinanceCyclesWorkflow();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FinanceCyclesWorkflowState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FinanceCyclesWorkflowState>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FinanceCyclesWorkflowProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$financeCyclesWorkflowHash() =>
+    r'27ba837df4ac8b9238fd36fab15769418c58fea8';
+
+final class FinanceCyclesWorkflowFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          FinanceCyclesWorkflow,
+          FinanceCyclesWorkflowState,
+          FinanceCyclesWorkflowState,
+          FinanceCyclesWorkflowState,
+          String
+        > {
+  FinanceCyclesWorkflowFamily._()
+    : super(
+        retry: null,
+        name: r'financeCyclesWorkflowProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FinanceCyclesWorkflowProvider call(String farmId) =>
+      FinanceCyclesWorkflowProvider._(argument: farmId, from: this);
+
+  @override
+  String toString() => r'financeCyclesWorkflowProvider';
+}
+
+abstract class _$FinanceCyclesWorkflow
+    extends $Notifier<FinanceCyclesWorkflowState> {
+  late final _$args = ref.$arg as String;
+  String get farmId => _$args;
+
+  FinanceCyclesWorkflowState build(String farmId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref
+            as $Ref<FinanceCyclesWorkflowState, FinanceCyclesWorkflowState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                FinanceCyclesWorkflowState,
+                FinanceCyclesWorkflowState
+              >,
+              FinanceCyclesWorkflowState,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args));
+  }
+}
+
+@ProviderFor(FinanceCycleWorkspaceMutations)
+final financeCycleWorkspaceMutationsProvider =
+    FinanceCycleWorkspaceMutationsFamily._();
+
+final class FinanceCycleWorkspaceMutationsProvider
+    extends $AsyncNotifierProvider<FinanceCycleWorkspaceMutations, void> {
+  FinanceCycleWorkspaceMutationsProvider._({
+    required FinanceCycleWorkspaceMutationsFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: null,
+         name: r'financeCycleWorkspaceMutationsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$financeCycleWorkspaceMutationsHash();
+
+  @override
+  String toString() {
+    return r'financeCycleWorkspaceMutationsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  FinanceCycleWorkspaceMutations create() => FinanceCycleWorkspaceMutations();
+
+  @override
+  bool operator ==(Object other) {
+    return other is FinanceCycleWorkspaceMutationsProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$financeCycleWorkspaceMutationsHash() =>
+    r'2ffdb37f52a8db5846629c46c7853cb0e921518b';
+
+final class FinanceCycleWorkspaceMutationsFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          FinanceCycleWorkspaceMutations,
+          AsyncValue<void>,
+          void,
+          FutureOr<void>,
+          (String, String)
+        > {
+  FinanceCycleWorkspaceMutationsFamily._()
+    : super(
+        retry: null,
+        name: r'financeCycleWorkspaceMutationsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FinanceCycleWorkspaceMutationsProvider call(String farmId, String cycleId) =>
+      FinanceCycleWorkspaceMutationsProvider._(
+        argument: (farmId, cycleId),
+        from: this,
+      );
+
+  @override
+  String toString() => r'financeCycleWorkspaceMutationsProvider';
+}
+
+abstract class _$FinanceCycleWorkspaceMutations extends $AsyncNotifier<void> {
+  late final _$args = ref.$arg as (String, String);
+  String get farmId => _$args.$1;
+  String get cycleId => _$args.$2;
+
+  FutureOr<void> build(String farmId, String cycleId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<void>, void>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<void>, void>,
+              AsyncValue<void>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args.$1, _$args.$2));
+  }
+}
+
+@ProviderFor(FinanceCycleCreation)
+final financeCycleCreationProvider = FinanceCycleCreationFamily._();
+
+final class FinanceCycleCreationProvider
+    extends
+        $AsyncNotifierProvider<FinanceCycleCreation, EconomicsV2CycleCreated?> {
+  FinanceCycleCreationProvider._({
+    required FinanceCycleCreationFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'financeCycleCreationProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$financeCycleCreationHash();
+
+  @override
+  String toString() {
+    return r'financeCycleCreationProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  FinanceCycleCreation create() => FinanceCycleCreation();
+
+  @override
+  bool operator ==(Object other) {
+    return other is FinanceCycleCreationProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$financeCycleCreationHash() =>
+    r'65aa4483eb489e6ee150d64a2c9e8cbb092fd087';
+
+final class FinanceCycleCreationFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          FinanceCycleCreation,
+          AsyncValue<EconomicsV2CycleCreated?>,
+          EconomicsV2CycleCreated?,
+          FutureOr<EconomicsV2CycleCreated?>,
+          String
+        > {
+  FinanceCycleCreationFamily._()
+    : super(
+        retry: null,
+        name: r'financeCycleCreationProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FinanceCycleCreationProvider call(String farmId) =>
+      FinanceCycleCreationProvider._(argument: farmId, from: this);
+
+  @override
+  String toString() => r'financeCycleCreationProvider';
+}
+
+abstract class _$FinanceCycleCreation
+    extends $AsyncNotifier<EconomicsV2CycleCreated?> {
+  late final _$args = ref.$arg as String;
+  String get farmId => _$args;
+
+  FutureOr<EconomicsV2CycleCreated?> build(String farmId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref
+            as $Ref<
+              AsyncValue<EconomicsV2CycleCreated?>,
+              EconomicsV2CycleCreated?
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<EconomicsV2CycleCreated?>,
+                EconomicsV2CycleCreated?
+              >,
+              AsyncValue<EconomicsV2CycleCreated?>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args));
   }
 }

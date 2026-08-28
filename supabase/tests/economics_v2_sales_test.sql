@@ -39,7 +39,8 @@ declare
 begin
   insert into auth.users (id, aud, role, email, created_at, updated_at)
   values (editor_id, 'authenticated', 'authenticated', 'economics-v2-editor-sales@example.test', now(), now());
-  insert into public.perfiles (id, nombre) values (editor_id, 'Editor');
+  insert into public.perfiles (id, nombre) values (editor_id, 'Editor')
+  on conflict (id) do update set nombre = excluded.nombre;
   insert into public.granjas (id, owner_id, nombre, created_by) values (farm_id, editor_id, 'Farm', editor_id);
   insert into public.tipo_animal (id, granja_id, nombre, created_by) values (type_id, farm_id, 'Bird', editor_id);
   insert into public.cat_razon_baja (id, nombre, genera_ingreso) values (reason_id, 'Sale', true);

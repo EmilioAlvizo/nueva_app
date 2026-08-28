@@ -67,6 +67,74 @@ void main() {
     }
   });
 
+  test('cycles use the Finance orange action palette', () {
+    final palette = FinanceTheme.dark.tabPalette(FinanceTabRole.cycles);
+
+    expect(palette.accent, const Color(0xFFFF994A));
+    expect(palette.onAccent, const Color(0xFF2E1604));
+    expect(palette.container, const Color(0xFF4C321D));
+    expect(palette.onContainer, const Color(0xFFFFE9D6));
+  });
+
+  test('cycle semantic roles are preserved by copyWith and lerp', () {
+    const replacement = Color(0xFF010203);
+    final copied = FinanceTheme.light.copyWith(
+      cycleCanvas: replacement,
+      cycleSurface: replacement,
+      cycleSurfaceElevated: replacement,
+      cycleInputSurface: replacement,
+      cyclePrimaryAction: replacement,
+      cycleOnPrimaryAction: replacement,
+      cycleDestructiveAction: replacement,
+      cycleOnDestructiveAction: replacement,
+      cyclePositiveAction: replacement,
+      cycleOnPositiveAction: replacement,
+      cycleOnSurface: replacement,
+      cycleOnSurfaceMuted: replacement,
+      cycleOutline: replacement,
+    );
+
+    expect(copied.cycleCanvas, replacement);
+    expect(copied.cycleSurface, replacement);
+    expect(copied.cycleSurfaceElevated, replacement);
+    expect(copied.cycleInputSurface, replacement);
+    expect(copied.cyclePrimaryAction, replacement);
+    expect(copied.cycleOnPrimaryAction, replacement);
+    expect(copied.cycleDestructiveAction, replacement);
+    expect(copied.cycleOnDestructiveAction, replacement);
+    expect(copied.cyclePositiveAction, replacement);
+    expect(copied.cycleOnPositiveAction, replacement);
+    expect(copied.cycleOnSurface, replacement);
+    expect(copied.cycleOnSurfaceMuted, replacement);
+    expect(copied.cycleOutline, replacement);
+
+    final midpoint = FinanceTheme.light.lerp(FinanceTheme.dark, 0.5);
+    expect(
+      midpoint.cycleCanvas,
+      Color.lerp(
+        FinanceTheme.light.cycleCanvas,
+        FinanceTheme.dark.cycleCanvas,
+        0.5,
+      ),
+    );
+    expect(
+      midpoint.cyclePositiveAction,
+      Color.lerp(
+        FinanceTheme.light.cyclePositiveAction,
+        FinanceTheme.dark.cyclePositiveAction,
+        0.5,
+      ),
+    );
+    expect(
+      midpoint.cycleDestructiveAction,
+      Color.lerp(
+        FinanceTheme.light.cycleDestructiveAction,
+        FinanceTheme.dark.cycleDestructiveAction,
+        0.5,
+      ),
+    );
+  });
+
   test('copyWith and lerp include every break-even semantic field', () {
     const replacement = Color(0xFF010203);
     final copied = FinanceTheme.light.copyWith(

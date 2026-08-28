@@ -12,8 +12,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await Supabase.initialize(
-    url: 'https://wjdazuycudtzycpekxga.supabase.co',
-    anonKey: 'sb_publishable_WQO-DB3TWcrQvk9dVfH7Ng_W36hiG_f',
+    /* url: 'https://wjdazuycudtzycpekxga.supabase.co',
+    anonKey: 'sb_publishable_WQO-DB3TWcrQvk9dVfH7Ng_W36hiG_f', */
+    url: 'https://xagnnkqqtdtvadaseubc.supabase.co',
+    anonKey: 'sb_publishable_ItraVK0Eb5JHGX17QNfZIA_2A7VLfnj',
   );
 
   runApp(

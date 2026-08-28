@@ -4,7 +4,12 @@ import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
 import '../../../../core/theme/finance_theme.dart';
 
-enum FinanceTab { balance, income, expenses, charts }
+enum FinanceTab { balance, income, expenses, charts, cycles }
+
+FinanceTab resolveFinanceInitialTab(String? value) => switch (value) {
+  'cycles' => FinanceTab.cycles,
+  _ => FinanceTab.balance,
+};
 
 final class FinanceTabItem {
   const FinanceTabItem({
@@ -37,14 +42,21 @@ class FinanceTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final finance = FinanceTheme.of(context);
+    final usesCyclePalette = selected == FinanceTab.cycles;
     return SingleChildScrollView(
       key: const ValueKey(AppWidgetKeys.financeTabs),
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colors.surfaceContainer,
+          color: usesCyclePalette
+              ? finance.cycleSurface
+              : colors.surfaceContainer,
           borderRadius: BorderRadius.circular(AppRadii.large),
+          border: usesCyclePalette
+              ? Border.all(color: finance.cycleOutline)
+              : null,
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxs),
@@ -54,6 +66,7 @@ class FinanceTabBar extends StatelessWidget {
                 FinanceTabButton(
                   item: item,
                   selected: selected == item.tab,
+                  usesCyclePalette: usesCyclePalette,
                   onPressed: () => onSelected(item.tab),
                 ),
                 if (item != items.last) const SizedBox(width: AppSpacing.xxs),
@@ -70,19 +83,26 @@ class FinanceTabButton extends StatelessWidget {
   const FinanceTabButton({
     required this.item,
     required this.selected,
+    required this.usesCyclePalette,
     required this.onPressed,
     super.key,
   });
 
   final FinanceTabItem item;
   final bool selected;
+  final bool usesCyclePalette;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final palette = FinanceTheme.of(context).tabPalette(item.role);
-    final foreground = selected ? palette.onAccent : colors.onSurfaceVariant;
+    final finance = FinanceTheme.of(context);
+    final palette = finance.tabPalette(item.role);
+    final foreground = selected
+        ? palette.onAccent
+        : usesCyclePalette
+        ? finance.cycleOnSurfaceMuted
+        : colors.onSurfaceVariant;
     final style = ButtonStyle(
       minimumSize: const WidgetStatePropertyAll(
         Size(AppSizes.minTapTarget, AppSizes.minTapTarget),

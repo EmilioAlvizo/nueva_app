@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../config/feature_flags.dart';
 import '../../features/auth/presentation/providers/auth_session_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -12,9 +13,7 @@ import '../../features/animales/animales_screen.dart';
 import '../../features/granja/granja_provider.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/finanzas/presentation/screens/finances_screen.dart';
-import '../../features/ciclos/domain/cycle_models.dart';
-import '../../features/ciclos/presentation/providers/cycle_providers.dart';
-import '../../features/ciclos/presentation/screens/cycles_list_screen.dart';
+import '../../features/finanzas/presentation/widgets/finance_tab_bar.dart';
 
 // ─── Route names (constants → no magic strings) ───────────────────────────────
 abstract final class AppRoutes {
@@ -29,23 +28,10 @@ abstract final class AppRoutes {
   static const finanzas = '/finanzas';
   static const grafica = '/grafica';
   static const productionCycles = '/production-cycles';
+  static const financeCycles = '/finanzas?tab=cycles';
 
   static const collaborators = '/collaborators/:id';
 }
-
-const economicsV2Enabled = bool.fromEnvironment(
-  'economics_v2_enabled',
-  defaultValue: false,
-);
-
-bool canAccessEconomicsV2({
-  required bool isEnabled,
-  required CycleRole? role,
-  required String? farmId,
-}) =>
-    isEnabled &&
-    farmId != null &&
-    (role == CycleRole.owner || role == CycleRole.editor);
 
 String? resolveAppRedirect({
   required bool isLoading,
@@ -66,15 +52,14 @@ String? resolveAppRedirect({
 
 String? resolveEconomicsV2Redirect({
   required bool isEnabled,
-  required CycleRole role,
   required String? farmId,
   required String matchedLocation,
 }) {
   if (matchedLocation != AppRoutes.productionCycles) return null;
-  if (!canAccessEconomicsV2(isEnabled: isEnabled, role: role, farmId: farmId)) {
+  if (!isEnabled || farmId == null) {
     return AppRoutes.finanzas;
   }
-  return null;
+  return AppRoutes.financeCycles;
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -93,27 +78,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       );
     },
     routes: [
-      GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
+      GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: AppRoutes.register,
-        builder: (_, __) => const RegisterScreen(),
+        builder: (_, _) => const RegisterScreen(),
       ),
       GoRoute(path: AppRoutes.grafica, redirect: (_, _) => AppRoutes.finanzas),
       GoRoute(
         path: AppRoutes.productionCycles,
         redirect: (_, state) {
           final farm = ref.read(selectedFarmProvider);
-          final access = farm == null
-              ? null
-              : ref.read(cycleAccessProvider(farm.id)).value;
           return resolveEconomicsV2Redirect(
             isEnabled: economicsV2Enabled,
-            role: access?.role ?? CycleRole.viewer,
             farmId: farm?.id,
             matchedLocation: state.matchedLocation,
           );
         },
-        builder: (_, __) => const _ProductionCyclesRoute(),
       ),
 
       // ─── SHELL DE NAVEGACIÓN (Mantiene HomeScreen como contenedor) ───
@@ -173,7 +153,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.finanzas,
                 builder: (context, state) => AnimalesTabContainer(
-                  screenBuilder: (granjaId) => FinancesScreen(farmId: granjaId),
+                  screenBuilder: (granjaId) => FinancesScreen(
+                    farmId: granjaId,
+                    initialTab: resolveFinanceInitialTab(
+                      state.uri.queryParameters['tab'],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -199,18 +184,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
 class _AuthStateListenable extends ChangeNotifier {
   _AuthStateListenable(Ref ref) {
-    ref.listen(authSessionProvider, (_, __) => notifyListeners());
-  }
-}
-
-class _ProductionCyclesRoute extends ConsumerWidget {
-  const _ProductionCyclesRoute();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final farm = ref.watch(selectedFarmProvider);
-    if (farm == null) return const SizedBox.shrink();
-    return CyclesListScreen(farmId: farm.id);
+    ref.listen(authSessionProvider, (_, _) => notifyListeners());
   }
 }
 

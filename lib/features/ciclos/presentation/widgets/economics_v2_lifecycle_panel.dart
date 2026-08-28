@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/testing/app_widget_keys.dart';
-import '../../../model/animal/animal.dart';
 import '../../../comida/comida_models.dart';
+import '../../../model/animal/animal.dart';
 import '../../../model/catalogoItem/catalogo_item.dart';
 import '../../domain/economics_v2_lifecycle_models.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class EconomicsV2LifecyclePanel extends StatefulWidget {
   const EconomicsV2LifecyclePanel({
@@ -24,21 +25,17 @@ class EconomicsV2LifecyclePanel extends StatefulWidget {
   final List<CatalogoItem> purposes;
   final List<Animal> animals;
   final List<FoodMixture> mixtures;
-  final Future<EconomicsV2CycleCreated> Function(
-    EconomicsV2CreateCycleRequest request,
-  )
+  final Future<EconomicsV2CycleCreated> Function(EconomicsV2CreateCycleRequest)
   onCreate;
   final Future<EconomicsV2AnimalAssigned> Function(
-    EconomicsV2AssignAnimalRequest request,
+    EconomicsV2AssignAnimalRequest,
   )
   onAssignAnimal;
   final Future<EconomicsV2ExpenseRecorded> Function(
-    EconomicsV2RecordExpenseRequest request,
+    EconomicsV2RecordExpenseRequest,
   )
   onRecordExpense;
-  final Future<EconomicsV2FeedLinked> Function(
-    EconomicsV2LinkFeedRequest request,
-  )
+  final Future<EconomicsV2FeedLinked> Function(EconomicsV2LinkFeedRequest)
   onLinkFeed;
 
   @override
@@ -48,17 +45,11 @@ class EconomicsV2LifecyclePanel extends StatefulWidget {
 
 class _EconomicsV2LifecyclePanelState extends State<EconomicsV2LifecyclePanel> {
   final _expenseController = TextEditingController();
-  String? _purposeId;
-  String? _cycleId;
-  String? _animalId;
-  String? _mixtureId;
-  var _assigned = false;
-  var _expenseRecorded = false;
-  var _feedLinked = false;
+  String? _purposeId, _cycleId, _animalId, _mixtureId, _failure;
+  var _step = 0;
   var _submitting = false;
-  String? _failure;
 
-  List<Animal> get _eligibleAnimals => [
+  List<Animal> get _animals => [
     for (final animal in widget.animals)
       if (animal.granjaId == widget.farmId &&
           animal.activo &&
@@ -76,7 +67,6 @@ class _EconomicsV2LifecyclePanelState extends State<EconomicsV2LifecyclePanel> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final today = DateUtils.dateOnly(DateTime.now());
-
     return Card(
       key: const ValueKey(AppWidgetKeys.economicsV2LifecyclePanel),
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -86,74 +76,42 @@ class _EconomicsV2LifecyclePanelState extends State<EconomicsV2LifecyclePanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.economicsV2LifecycleTitle,
+              _label(l10n, 'title'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              key: const ValueKey(AppWidgetKeys.economicsV2LifecyclePurpose),
-              initialValue: _purposeId,
-              decoration: InputDecoration(
-                labelText: l10n.economicsV2LifecyclePurpose,
-              ),
-              items: [
-                for (final purpose in widget.purposes)
-                  DropdownMenuItem(
-                    value: purpose.id,
-                    child: Text(purpose.nombre),
-                  ),
-              ],
-              onChanged: _submitting
-                  ? null
-                  : (value) => setState(() {
-                      _purposeId = value;
-                      _animalId = null;
-                    }),
+            _choice(
+              AppWidgetKeys.economicsV2LifecyclePurpose,
+              _label(l10n, 'purpose'),
+              _purposeId,
+              [for (final item in widget.purposes) _item(item.id, item.nombre)],
+              (value) => setState(() {
+                _purposeId = value;
+                _animalId = null;
+              }),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
-              key: const ValueKey(AppWidgetKeys.economicsV2LifecycleCreate),
-              onPressed: _purposeId == null || _submitting
-                  ? null
-                  : () => _create(today),
-              child: Text(l10n.economicsV2LifecycleCreate),
+            _action(
+              AppWidgetKeys.economicsV2LifecycleCreate,
+              _label(l10n, 'create'),
+              _purposeId == null ? null : () => _create(today),
             ),
-            if (_cycleId != null) ...[
-              const SizedBox(height: 8),
-              Text(l10n.economicsV2LifecycleCreated),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                key: const ValueKey(AppWidgetKeys.economicsV2LifecycleAnimal),
-                initialValue: _animalId,
-                decoration: InputDecoration(
-                  labelText: l10n.economicsV2LifecycleAnimal,
-                ),
-                items: [
-                  for (final animal in _eligibleAnimals)
-                    DropdownMenuItem(
-                      value: animal.id,
-                      child: Text('Ave ${animal.brazalete ?? animal.id}'),
-                    ),
+            if (_step >= 1) ...[
+              _choice(
+                AppWidgetKeys.economicsV2LifecycleAnimal,
+                _label(l10n, 'animal'),
+                _animalId,
+                [
+                  for (final animal in _animals)
+                    _item(animal.id, 'Ave ${animal.brazalete ?? animal.id}'),
                 ],
-                onChanged: _submitting
-                    ? null
-                    : (value) => setState(() => _animalId = value),
+                (value) => setState(() => _animalId = value),
               ),
-              const SizedBox(height: 12),
-              FilledButton(
-                key: const ValueKey(
-                  AppWidgetKeys.economicsV2LifecycleAssignAnimal,
-                ),
-                onPressed: _animalId == null || _submitting
-                    ? null
-                    : () => _assignAnimal(today),
-                child: Text(l10n.economicsV2LifecycleAssignAnimal),
+              _action(
+                AppWidgetKeys.economicsV2LifecycleAssignAnimal,
+                _label(l10n, 'assign'),
+                _animalId == null ? null : () => _assign(today),
               ),
             ],
-            if (_assigned) ...[
-              const SizedBox(height: 8),
-              Text(l10n.economicsV2LifecycleAnimalAssigned),
-              const SizedBox(height: 12),
+            if (_step >= 2) ...[
               TextField(
                 key: const ValueKey(
                   AppWidgetKeys.economicsV2LifecycleExpenseAmount,
@@ -162,152 +120,165 @@ class _EconomicsV2LifecyclePanelState extends State<EconomicsV2LifecyclePanel> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: InputDecoration(
-                  labelText: l10n.economicsV2LifecycleExpense,
-                ),
+                decoration: InputDecoration(labelText: _label(l10n, 'expense')),
               ),
-              const SizedBox(height: 12),
-              FilledButton(
-                key: const ValueKey(
-                  AppWidgetKeys.economicsV2LifecycleRecordExpense,
-                ),
-                onPressed: _submitting ? null : () => _recordExpense(today),
-                child: Text(l10n.economicsV2LifecycleRecordExpense),
+              _action(
+                AppWidgetKeys.economicsV2LifecycleRecordExpense,
+                _label(l10n, 'record'),
+                () => _expense(today),
               ),
             ],
-            if (_expenseRecorded) ...[
-              const SizedBox(height: 8),
-              Text(l10n.economicsV2LifecycleExpenseRecorded),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                key: const ValueKey(AppWidgetKeys.economicsV2LifecycleFeed),
-                initialValue: _mixtureId,
-                decoration: InputDecoration(
-                  labelText: l10n.economicsV2LifecycleFeed,
-                ),
-                items: [
+            if (_step >= 3) ...[
+              _choice(
+                AppWidgetKeys.economicsV2LifecycleFeed,
+                _label(l10n, 'feed'),
+                _mixtureId,
+                [
                   for (final mixture in widget.mixtures)
-                    DropdownMenuItem(
-                      value: mixture.id,
-                      child: Text(mixture.groupName),
-                    ),
+                    _item(mixture.id, mixture.groupName),
                 ],
-                onChanged: _submitting
-                    ? null
-                    : (value) => setState(() => _mixtureId = value),
+                (value) => setState(() => _mixtureId = value),
               ),
-              const SizedBox(height: 12),
-              FilledButton(
-                key: const ValueKey(AppWidgetKeys.economicsV2LifecycleLinkFeed),
-                onPressed: _mixtureId == null || _submitting
-                    ? null
-                    : () => _linkFeed(today),
-                child: Text(l10n.economicsV2LifecycleLinkFeed),
+              _action(
+                AppWidgetKeys.economicsV2LifecycleLinkFeed,
+                _label(l10n, 'link'),
+                _mixtureId == null ? null : () => _feed(today),
               ),
             ],
-            if (_feedLinked) ...[
-              const SizedBox(height: 8),
-              Text(l10n.economicsV2LifecycleFeedLinked),
-            ],
-            if (_failure != null) ...[
-              const SizedBox(height: 12),
+            if (_step > 0) Text(_progress(l10n)),
+            if (_failure != null)
               Text(
                 _failure!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  Future<void> _create(DateTime today) async {
+  DropdownMenuItem<String> _item(String value, String label) =>
+      DropdownMenuItem(value: value, child: Text(label));
+
+  Widget _choice(
+    String key,
+    String label,
+    String? value,
+    List<DropdownMenuItem<String>> items,
+    ValueChanged<String?> changed,
+  ) => DropdownButtonFormField<String>(
+    key: ValueKey(key),
+    initialValue: value,
+    decoration: InputDecoration(labelText: label),
+    items: items,
+    onChanged: _submitting ? null : changed,
+  );
+
+  Widget _action(String key, String label, VoidCallback? pressed) =>
+      FilledButton(
+        key: ValueKey(key),
+        onPressed: _submitting ? null : pressed,
+        child: Text(label),
+      );
+
+  String _progress(AppLocalizations l10n) => switch (_step) {
+    1 => _label(l10n, 'created'),
+    2 => _label(l10n, 'assigned'),
+    3 => _label(l10n, 'recorded'),
+    _ => _label(l10n, 'linked'),
+  };
+
+  Future<void> _create(DateTime day) {
     final purposeId = _purposeId;
-    if (purposeId == null) return;
-    await _submit(() async {
-      final result = await widget.onCreate(
-        EconomicsV2CreateCycleRequest(
-          farmId: widget.farmId,
-          purposeId: purposeId,
-          startsOn: today,
-        ),
-      );
-      _cycleId = result.cycleId;
-    });
+    return purposeId == null
+        ? Future.value()
+        : _run(() async {
+            _cycleId = (await widget.onCreate(
+              EconomicsV2CreateCycleRequest(
+                farmId: widget.farmId,
+                purposeId: purposeId,
+                startsOn: day,
+              ),
+            )).cycleId;
+          }, 1);
   }
 
-  Future<void> _assignAnimal(DateTime today) async {
-    final cycleId = _cycleId;
-    final animalId = _animalId;
-    if (cycleId == null || animalId == null) return;
-    await _submit(() async {
-      await widget.onAssignAnimal(
-        EconomicsV2AssignAnimalRequest(
-          farmId: widget.farmId,
-          cycleId: cycleId,
-          animalId: animalId,
-          joinedOn: today,
-        ),
-      );
-      _assigned = true;
-    });
+  Future<void> _assign(DateTime day) {
+    final (cycleId, animalId) = (_cycleId, _animalId);
+    return cycleId == null || animalId == null
+        ? Future.value()
+        : _run(
+            () => widget.onAssignAnimal(
+              EconomicsV2AssignAnimalRequest(
+                farmId: widget.farmId,
+                cycleId: cycleId,
+                animalId: animalId,
+                joinedOn: day,
+              ),
+            ),
+            2,
+          );
   }
 
-  Future<void> _recordExpense(DateTime today) async {
-    final cycleId = _cycleId;
+  Future<void> _expense(DateTime day) {
     final amount = double.tryParse(_expenseController.text);
-    if (cycleId == null || amount == null || amount < 0) {
-      setState(
-        () => _failure = context.l10n.economicsV2LifecycleInvalidExpense,
-      );
-      return;
+    if (_cycleId == null || amount == null || amount < 0) {
+      setState(() => _failure = _label(context.l10n, 'invalid'));
+      return Future.value();
     }
-    await _submit(() async {
-      await widget.onRecordExpense(
+    return _run(
+      () => widget.onRecordExpense(
         EconomicsV2RecordExpenseRequest(
           farmId: widget.farmId,
-          cycleId: cycleId,
-          occurredOn: today,
+          cycleId: _cycleId!,
+          occurredOn: day,
           amount: amount,
         ),
-      );
-      _expenseRecorded = true;
-    });
+      ),
+      3,
+    );
   }
 
-  Future<void> _linkFeed(DateTime today) async {
-    final cycleId = _cycleId;
-    final mixtureId = _mixtureId;
-    if (cycleId == null || mixtureId == null) return;
-    await _submit(() async {
-      await widget.onLinkFeed(
-        EconomicsV2LinkFeedRequest(
-          farmId: widget.farmId,
-          cycleId: cycleId,
-          mixtureId: mixtureId,
-          startsOn: today,
-        ),
-      );
-      _feedLinked = true;
-    });
+  Future<void> _feed(DateTime day) {
+    final (cycleId, mixtureId) = (_cycleId, _mixtureId);
+    return cycleId == null || mixtureId == null
+        ? Future.value()
+        : _run(
+            () => widget.onLinkFeed(
+              EconomicsV2LinkFeedRequest(
+                farmId: widget.farmId,
+                cycleId: cycleId,
+                mixtureId: mixtureId,
+                startsOn: day,
+              ),
+            ),
+            4,
+          );
   }
 
-  Future<void> _submit(Future<void> Function() operation) async {
+  Future<void> _run(Future<void> Function() action, int completeStep) async {
     setState(() {
       _submitting = true;
       _failure = null;
     });
     try {
-      await operation();
-      if (!mounted) return;
-      setState(() => _submitting = false);
+      await action();
+      if (mounted) {
+        setState(() {
+          _step = completeStep;
+          _submitting = false;
+        });
+      }
     } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _submitting = false;
-        _failure = context.l10n.economicsV2LifecycleFailure;
-      });
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _failure = _label(context.l10n, 'failure');
+        });
+      }
     }
   }
+
+  String _label(AppLocalizations l10n, String step) =>
+      l10n.economicsV2LifecycleStep(step);
 }

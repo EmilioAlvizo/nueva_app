@@ -11,6 +11,7 @@ abstract final class AppSpacing {
 }
 
 abstract final class AppRadii {
+  static const small = 12.0;
   static const medium = 16.0;
   static const large = 24.0;
   static const full = 999.0;
@@ -37,6 +38,10 @@ abstract final class AppSizes {
   static const financeCompactLineFont = 9.0;
   static const financePeriodFont = 9.0;
   static const maxContentWidth = 1040.0;
+  static const financeFormMaxWidth = 640.0;
+  static const financeCycleContentMaxWidth = 720.0;
+  static const financeCycleMetricBreakpoint = 320.0;
+  static const financeCycleFabClearance = 80.0;
   static const compactMetricBreakpoint = 260.0;
   static const financeHeaderBreakpoint = 280.0;
   static const financePrimaryMetricsBreakpoint = 280.0;

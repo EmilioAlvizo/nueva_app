@@ -101,7 +101,9 @@ begin
   values
     (editor_id, 'authenticated', 'authenticated', 'economics-v2-editor-security@example.test', now(), now()),
     (viewer_id, 'authenticated', 'authenticated', 'economics-v2-viewer-security@example.test', now(), now());
-  insert into public.perfiles (id, nombre) values (editor_id, 'Editor'), (viewer_id, 'Viewer');
+  insert into public.perfiles (id, nombre)
+  values (editor_id, 'Editor'), (viewer_id, 'Viewer')
+  on conflict (id) do update set nombre = excluded.nombre;
   insert into public.granjas (id, owner_id, nombre, created_by)
   values (farm_a, editor_id, 'A', editor_id), (farm_b, editor_id, 'B', editor_id);
   insert into public.miembros_granja (granja_id, user_id, rol)

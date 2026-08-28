@@ -124,6 +124,894 @@ abstract class AppLocalizations {
   /// **'Gráficos'**
   String get financeTabCharts;
 
+  /// Etiqueta de la pestaña de ciclos en finanzas
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclos'**
+  String get financeTabCycles;
+
+  /// Título del panel de ciclos productivos
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclos'**
+  String get financeCyclesTitle;
+
+  /// Descripción del panel de ciclos productivos
+  ///
+  /// In es, this message translates to:
+  /// **'Seguimiento de animales, gastos y mezclas por ciclo productivo.'**
+  String get financeCyclesSubtitle;
+
+  /// Etiqueta accesible del indicador de carga de ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando ciclos'**
+  String get financeCyclesLoadingLabel;
+
+  /// Título mostrado cuando el acceso local no permite consultar ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Los ciclos no están disponibles para este acceso'**
+  String get financeCyclesUnavailableTitle;
+
+  /// Explicación mostrada cuando el acceso local no permite consultar ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Solo propietarios y editores pueden consultar Economics V2 desde esta granja.'**
+  String get financeCyclesUnavailableMessage;
+
+  /// Título del estado de error al cargar ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar los ciclos'**
+  String get financeCyclesErrorTitle;
+
+  /// Mensaje del estado de error al cargar ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa tu conexión e inténtalo de nuevo.'**
+  String get financeCyclesErrorMessage;
+
+  /// Título mostrado cuando Economics V2 está deshabilitado para la granja
+  ///
+  /// In es, this message translates to:
+  /// **'Economics V2 está deshabilitado'**
+  String get financeCyclesDisabledTitle;
+
+  /// Explicación mostrada cuando Economics V2 está deshabilitado para la granja
+  ///
+  /// In es, this message translates to:
+  /// **'Activa Economics V2 para esta granja antes de consultar sus ciclos.'**
+  String get financeCyclesDisabledMessage;
+
+  /// Título del estado sin ciclos productivos
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay ciclos'**
+  String get financeCyclesEmptyTitle;
+
+  /// Explicación del estado sin ciclos productivos
+  ///
+  /// In es, this message translates to:
+  /// **'Crea el primer ciclo para comenzar a registrar su actividad productiva.'**
+  String get financeCyclesEmptyMessage;
+
+  /// Acción para abrir el formulario de creación de ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Crear ciclo'**
+  String get financeCyclesAdd;
+
+  /// Etiqueta del total de ciclos en el resumen
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclos totales'**
+  String get financeCyclesAggregateTotalLabel;
+
+  /// Etiqueta del total de ciclos abiertos en el resumen
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclos abiertos'**
+  String get financeCyclesAggregateOpenLabel;
+
+  /// Etiqueta del total de animales activos en el resumen
+  ///
+  /// In es, this message translates to:
+  /// **'Animales activos'**
+  String get financeCyclesAggregateAnimalsLabel;
+
+  /// Etiqueta del total de gastos directos en el resumen
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos directos'**
+  String get financeCyclesAggregateExpensesLabel;
+
+  /// Cantidad total de ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 ciclo} other{{count} ciclos}}'**
+  String financeCyclesCount(int count);
+
+  /// Cantidad de ciclos abiertos
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 abierto} other{{count} abiertos}}'**
+  String financeCyclesOpenCount(int count);
+
+  /// Cantidad de animales con una asignación activa a un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 animal con asignación activa} other{{count} animales con asignación activa}}'**
+  String financeCyclesActiveAnimals(int count);
+
+  /// Total de gastos directos del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos directos: {amount}'**
+  String financeCyclesDirectExpenses(String amount);
+
+  /// Estado de un ciclo abierto
+  ///
+  /// In es, this message translates to:
+  /// **'Abierto'**
+  String get financeCycleStatusOpen;
+
+  /// Estado de un ciclo cerrado
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrado'**
+  String get financeCycleStatusClosed;
+
+  /// Estado de un ciclo cuya producción está cerrada
+  ///
+  /// In es, this message translates to:
+  /// **'Producción cerrada'**
+  String get financeCycleStatusProductionClosed;
+
+  /// Estado de un ciclo liquidado
+  ///
+  /// In es, this message translates to:
+  /// **'Liquidado'**
+  String get financeCycleStatusSettled;
+
+  /// Periodo de fechas de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'{start} – {end}'**
+  String financeCyclePeriod(String start, String end);
+
+  /// Cantidades de animales con asignación activa y finalizada
+  ///
+  /// In es, this message translates to:
+  /// **'{active} con asignación activa • {exited} salieron'**
+  String financeCycleAnimals(int active, int exited);
+
+  /// Cantidad de mezclas vinculadas al ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{Sin mezclas vinculadas} =1{1 mezcla vinculada} other{{count} mezclas vinculadas}}'**
+  String financeCycleMixtures(int count);
+
+  /// Nombre del grupo asociado a la mezcla más reciente vinculada al ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Grupo de la mezcla más reciente: {name}'**
+  String financeCycleLatestLinkedGroup(String name);
+
+  /// Etiqueta de animales en una tarjeta de ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Animales'**
+  String get financeCycleSummaryAnimalsLabel;
+
+  /// Etiqueta de alimentos en una tarjeta de ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Alimentos'**
+  String get financeCycleSummaryFeedsLabel;
+
+  /// Etiqueta de gastos en una tarjeta de ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos'**
+  String get financeCycleSummaryExpensesLabel;
+
+  /// Acción para abrir el detalle de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Ver detalle'**
+  String get financeCycleViewDetail;
+
+  /// Título del formulario de creación de ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Crear ciclo'**
+  String get financeCycleCreateTitle;
+
+  /// Descripción del formulario de creación de ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Define el propósito y las fechas del nuevo ciclo.'**
+  String get financeCycleCreateSubtitle;
+
+  /// Aviso sobre el estado inicial de un ciclo nuevo
+  ///
+  /// In es, this message translates to:
+  /// **'El ciclo se creará abierto y listo para registrar actividad.'**
+  String get financeCycleInitialOpenInfo;
+
+  /// Etiqueta del selector de propósito del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Propósito'**
+  String get financeCyclePurposeLabel;
+
+  /// Etiqueta del selector de fecha inicial del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de inicio'**
+  String get financeCycleStartDateLabel;
+
+  /// Etiqueta del selector opcional de fecha final del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de término (opcional)'**
+  String get financeCycleEndDateLabel;
+
+  /// Acción para cancelar la creación de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get financeCycleCancel;
+
+  /// Acción para confirmar la creación de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Crear ciclo'**
+  String get financeCycleCreate;
+
+  /// Mensaje de validación del formulario de ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona un propósito y una fecha de inicio válidos.'**
+  String get financeCycleValidation;
+
+  /// Mensaje mostrado cuando falla la creación de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos crear el ciclo. Inténtalo de nuevo.'**
+  String get financeCycleCreateError;
+
+  /// Etiqueta accesible para abrir el espacio de trabajo de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir ciclo {name}'**
+  String financeCycleOpenSemantics(String name);
+
+  /// Acción para volver a la lista de ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Volver a ciclos'**
+  String get financeCycleWorkspaceBack;
+
+  /// Vista de resumen del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen'**
+  String get financeCycleWorkspaceOverview;
+
+  /// Vista de animales del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Animales'**
+  String get financeCycleWorkspaceAnimals;
+
+  /// Vista de alimentación del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Alimentación'**
+  String get financeCycleWorkspaceFeeds;
+
+  /// Vista de gastos del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos'**
+  String get financeCycleWorkspaceExpenses;
+
+  /// Vista de proyecciones del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Proyecciones'**
+  String get financeCycleWorkspaceProjections;
+
+  /// Vista de cierre y liquidación del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Cierre'**
+  String get financeCycleWorkspaceClose;
+
+  /// Métrica de animales activos en el detalle del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Animales activos'**
+  String get financeCycleActiveAnimalsMetric;
+
+  /// Métrica del costo de alimentación en el detalle del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Costo de alimentación'**
+  String get financeCycleFeedCostMetric;
+
+  /// Métrica de gastos directos en el detalle del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos directos'**
+  String get financeCycleDirectExpensesMetric;
+
+  /// Métrica del resultado económico en el detalle del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado'**
+  String get financeCycleResultMetric;
+
+  /// Descripción de la navegación a animales del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Gestiona las asignaciones del ciclo.'**
+  String get financeCycleAnimalsNavigationSubtitle;
+
+  /// Descripción de la navegación a alimentación del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa mezclas y costos de alimentación.'**
+  String get financeCycleFeedsNavigationSubtitle;
+
+  /// Descripción de la navegación a gastos del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Consulta los gastos directos registrados.'**
+  String get financeCycleExpensesNavigationSubtitle;
+
+  /// Descripción de la navegación a proyecciones del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Explora escenarios económicos del ciclo.'**
+  String get financeCycleProjectionsNavigationSubtitle;
+
+  /// Título de la navegación al resultado final del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado final'**
+  String get financeCycleResultNavigationTitle;
+
+  /// Descripción de la navegación al resultado final del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa el cierre y el resultado definitivo.'**
+  String get financeCycleResultNavigationSubtitle;
+
+  /// Cantidad compacta de animales activos
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 activo} other{{count} activos}}'**
+  String financeCycleActiveValue(int count);
+
+  /// Valor compacto para abrir una sección del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Ver'**
+  String get financeCycleNavigationView;
+
+  /// Acción para abrir el flujo de cierre del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar ciclo'**
+  String get financeCycleCloseAction;
+
+  /// Mensaje mostrado cuando falla una lectura del espacio de trabajo
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar los datos del ciclo.'**
+  String get financeCycleWorkspaceLoadError;
+
+  /// Aviso mostrado cuando el servidor solo admite el contrato resumido de ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Este servidor solo permite consultar el resumen del ciclo. Actualiza el contrato de Economics V2 para usar animales, alimentación, gastos, proyecciones y cierre.'**
+  String get financeCycleCompatibilityMessage;
+
+  /// Ingresos acumulados del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresos: {amount}'**
+  String financeCycleRevenue(String amount);
+
+  /// Costo total acumulado del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Costo total: {amount}'**
+  String financeCycleTotalCost(String amount);
+
+  /// Resultado económico acumulado del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado: {amount}'**
+  String financeCycleProfit(String amount);
+
+  /// Fecha de inicio de una asignación
+  ///
+  /// In es, this message translates to:
+  /// **'Desde {date}'**
+  String financeCycleMemberSince(String date);
+
+  /// Métrica de animales asignados activamente al ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Asignados'**
+  String get financeCycleAssignedAnimalsMetric;
+
+  /// Métrica de animales disponibles para asignar
+  ///
+  /// In es, this message translates to:
+  /// **'Disponibles'**
+  String get financeCycleAvailableAnimalsMetric;
+
+  /// Título de las asignaciones de animales del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Asignados al ciclo'**
+  String get financeCycleAnimalsAssignedTitle;
+
+  /// Cantidad de animales asignados al ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 animal asignado} other{{count} animales asignados}}'**
+  String financeCycleAnimalsAssignedCount(int count);
+
+  /// Estado vacío de animales asignados
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay animales asignados a este ciclo.'**
+  String get financeCycleAnimalsAssignedEmpty;
+
+  /// Título de los animales candidatos del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Disponibles para asignar'**
+  String get financeCycleAnimalsAvailableTitle;
+
+  /// Cantidad de animales disponibles para asignar
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 animal disponible} other{{count} animales disponibles}}'**
+  String financeCycleAnimalsAvailableCount(int count);
+
+  /// Estado vacío de animales candidatos
+  ///
+  /// In es, this message translates to:
+  /// **'No hay animales disponibles para asignar.'**
+  String get financeCycleAnimalsAvailableEmpty;
+
+  /// Estado de una asignación activa de animal
+  ///
+  /// In es, this message translates to:
+  /// **'Activo'**
+  String get financeCycleAssignmentActive;
+
+  /// Estado de una asignación finalizada de animal
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizado'**
+  String get financeCycleAssignmentFinished;
+
+  /// Costo de un intervalo de alimentación
+  ///
+  /// In es, this message translates to:
+  /// **'Costo: {amount}'**
+  String financeCycleFeedCost(String amount);
+
+  /// Métrica de alimentaciones vinculadas y activas
+  ///
+  /// In es, this message translates to:
+  /// **'Vinculadas'**
+  String get financeCycleLinkedFeedsMetric;
+
+  /// Métrica de mezclas disponibles para vincular
+  ///
+  /// In es, this message translates to:
+  /// **'Disponibles'**
+  String get financeCycleAvailableFeedsMetric;
+
+  /// Título de los periodos de alimentación vinculados
+  ///
+  /// In es, this message translates to:
+  /// **'Alimentación vinculada'**
+  String get financeCycleFeedsLinkedTitle;
+
+  /// Cantidad de periodos de alimentación vinculados
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 periodo registrado} other{{count} periodos registrados}}'**
+  String financeCycleFeedsLinkedCount(int count);
+
+  /// Estado vacío de alimentación vinculada
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay alimentación vinculada a este ciclo.'**
+  String get financeCycleFeedsLinkedEmpty;
+
+  /// Título de las mezclas candidatas para vincular
+  ///
+  /// In es, this message translates to:
+  /// **'Mezclas disponibles'**
+  String get financeCycleFeedsAvailableTitle;
+
+  /// Cantidad de mezclas disponibles para vincular
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 mezcla disponible} other{{count} mezclas disponibles}}'**
+  String financeCycleFeedsAvailableCount(int count);
+
+  /// Estado vacío de mezclas candidatas
+  ///
+  /// In es, this message translates to:
+  /// **'No hay mezclas disponibles para vincular.'**
+  String get financeCycleFeedsAvailableEmpty;
+
+  /// Periodo de una alimentación vinculada
+  ///
+  /// In es, this message translates to:
+  /// **'{start} – {end}'**
+  String financeCycleFeedPeriod(String start, String end);
+
+  /// Estado de una alimentación activa
+  ///
+  /// In es, this message translates to:
+  /// **'Activa'**
+  String get financeCycleFeedActive;
+
+  /// Estado de una alimentación finalizada
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizada'**
+  String get financeCycleFeedFinished;
+
+  /// Resumen de un gasto del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'{category}: {amount}'**
+  String financeCycleExpenseItem(String category, String amount);
+
+  /// Categoría sustituta para gastos históricos
+  ///
+  /// In es, this message translates to:
+  /// **'Sin categoría'**
+  String get financeCycleUncategorizedExpense;
+
+  /// Métrica del monto total de gastos registrados
+  ///
+  /// In es, this message translates to:
+  /// **'Total registrado'**
+  String get financeCycleExpensesTotalMetric;
+
+  /// Métrica de cantidad de gastos registrados
+  ///
+  /// In es, this message translates to:
+  /// **'Registros'**
+  String get financeCycleExpensesCountMetric;
+
+  /// Título de la lista de gastos del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Historial de gastos'**
+  String get financeCycleExpensesHistoryTitle;
+
+  /// Cantidad de gastos registrados
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 gasto registrado} other{{count} gastos registrados}}'**
+  String financeCycleExpensesRecordedCount(int count);
+
+  /// Estado vacío del historial de gastos
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay gastos registrados en este ciclo.'**
+  String get financeCycleExpensesEmpty;
+
+  /// Fecha de registro de un gasto
+  ///
+  /// In es, this message translates to:
+  /// **'Registrado el {date}'**
+  String financeCycleExpenseDate(String date);
+
+  /// Saldo de una proyección guardada
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo proyectado: {amount}'**
+  String financeCycleProjectionBalance(String amount);
+
+  /// Estado vacío de proyecciones guardadas
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay proyecciones guardadas para este ciclo.'**
+  String get financeCycleProjectionsEmpty;
+
+  /// Fecha de creación de una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Proyección del {date}'**
+  String financeCycleProjectionCreatedOn(String date);
+
+  /// Métrica de ingresos de una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresos proyectados'**
+  String get financeCycleProjectedRevenueMetric;
+
+  /// Métrica de costo total de una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Costo proyectado'**
+  String get financeCycleProjectedCostMetric;
+
+  /// Métrica de saldo de una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo proyectado'**
+  String get financeCycleProjectedBalanceMetric;
+
+  /// Título de los supuestos usados en una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Supuestos'**
+  String get financeCycleProjectionAssumptionsTitle;
+
+  /// Horizonte en días de una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 día} other{{count} días}}'**
+  String financeCycleProjectionDays(int count);
+
+  /// Estado favorable para cerrar la producción
+  ///
+  /// In es, this message translates to:
+  /// **'La producción está lista para cerrarse.'**
+  String get financeCycleReadyToClose;
+
+  /// Estado cuando el ciclo no puede cerrar producción
+  ///
+  /// In es, this message translates to:
+  /// **'Aún faltan requisitos para cerrar la producción.'**
+  String get financeCycleNotReadyToClose;
+
+  /// Estado favorable para liquidar el ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'El ciclo está listo para liquidarse.'**
+  String get financeCycleReadyToSettle;
+
+  /// Título de los requisitos de cierre del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Requisitos de cierre'**
+  String get financeCycleCloseRequirementsTitle;
+
+  /// Criterio de cierre sobre animales asignados
+  ///
+  /// In es, this message translates to:
+  /// **'Animales asignados'**
+  String get financeCycleCloseMembersCriterion;
+
+  /// Criterio de cierre sobre alimentación vinculada
+  ///
+  /// In es, this message translates to:
+  /// **'Alimentación vinculada'**
+  String get financeCycleCloseFeedCriterion;
+
+  /// Criterio de cierre sobre producción vendible
+  ///
+  /// In es, this message translates to:
+  /// **'Producción disponible para venta'**
+  String get financeCycleCloseOutputCriterion;
+
+  /// Criterio de cierre sobre consistencia entre ventas y producción
+  ///
+  /// In es, this message translates to:
+  /// **'Ventas dentro de la producción registrada'**
+  String get financeCycleCloseSalesCriterion;
+
+  /// Criterio de cierre sobre periodos de alimentación abiertos
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{Sin periodos de alimentación abiertos} =1{1 periodo de alimentación abierto} other{{count} periodos de alimentación abiertos}}'**
+  String financeCycleCloseOpenFeedsCriterion(int count);
+
+  /// Estado completo de un criterio de cierre
+  ///
+  /// In es, this message translates to:
+  /// **'Completo'**
+  String get financeCycleCriterionComplete;
+
+  /// Estado pendiente de un criterio de cierre
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get financeCycleCriterionPending;
+
+  /// Título del resultado definitivo de un ciclo liquidado
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado final'**
+  String get financeCycleFinalResultTitle;
+
+  /// Fecha de liquidación definitiva del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclo liquidado el {date}'**
+  String financeCycleSettledOn(String date);
+
+  /// Métrica de ingresos del resultado final
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresos'**
+  String get financeCycleFinalRevenueMetric;
+
+  /// Métrica de costo del resultado final
+  ///
+  /// In es, this message translates to:
+  /// **'Costo total'**
+  String get financeCycleFinalCostMetric;
+
+  /// Métrica de ganancia o pérdida del resultado final
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado'**
+  String get financeCycleFinalProfitMetric;
+
+  /// Requisito de cierre cuando el ciclo no tiene animales
+  ///
+  /// In es, this message translates to:
+  /// **'Agrega al menos un animal al ciclo.'**
+  String get financeCycleReadinessMissingMembers;
+
+  /// Requisito de cierre cuando el ciclo no tiene alimentación
+  ///
+  /// In es, this message translates to:
+  /// **'Vincula al menos una alimentación al ciclo.'**
+  String get financeCycleReadinessMissingFeed;
+
+  /// Requisito de liquidación cuando falta producción vendible
+  ///
+  /// In es, this message translates to:
+  /// **'Registra producción disponible para la venta.'**
+  String get financeCycleReadinessMissingSaleableOutput;
+
+  /// Requisito de liquidación cuando las ventas superan la producción
+  ///
+  /// In es, this message translates to:
+  /// **'Las ventas superan la producción registrada.'**
+  String get financeCycleReadinessSalesExceedOutput;
+
+  /// Requisito de liquidación cuando existen periodos de alimentación abiertos
+  ///
+  /// In es, this message translates to:
+  /// **'Cierra los periodos de alimentación pendientes.'**
+  String get financeCycleReadinessOpenFeedIntervals;
+
+  /// Requisito de liquidación cuando la producción permanece abierta
+  ///
+  /// In es, this message translates to:
+  /// **'La producción aún no se ha cerrado.'**
+  String get financeCycleReadinessProductionNotClosed;
+
+  /// Motivo pendiente para el cierre de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'• {reason}'**
+  String financeCycleReadinessReason(String reason);
+
+  /// Acción para asignar un animal candidato
+  ///
+  /// In es, this message translates to:
+  /// **'Asignar {name}'**
+  String financeCycleAssignAnimal(String name);
+
+  /// Acción para vincular una mezcla candidata
+  ///
+  /// In es, this message translates to:
+  /// **'Vincular {name}'**
+  String financeCycleLinkFeed(String name);
+
+  /// Acción para abrir el formulario de gasto
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar gasto'**
+  String get financeCycleAddExpense;
+
+  /// Etiqueta de categoría del gasto
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría'**
+  String get financeCycleExpenseCategoryLabel;
+
+  /// Etiqueta de monto del gasto
+  ///
+  /// In es, this message translates to:
+  /// **'Monto'**
+  String get financeCycleExpenseAmountLabel;
+
+  /// Etiqueta de nota opcional
+  ///
+  /// In es, this message translates to:
+  /// **'Nota (opcional)'**
+  String get financeCycleNoteLabel;
+
+  /// Acción para guardar datos del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar'**
+  String get financeCycleSave;
+
+  /// Mensaje de validación de formularios del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa los valores ingresados.'**
+  String get financeCycleInvalidForm;
+
+  /// Acción para abrir el formulario de proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva proyección'**
+  String get financeCycleAddProjection;
+
+  /// Precio esperado por unidad en una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Precio unitario esperado'**
+  String get financeCycleProjectionUnitPriceLabel;
+
+  /// Producción diaria esperada
+  ///
+  /// In es, this message translates to:
+  /// **'Producción por día'**
+  String get financeCycleProjectionProductionPerDayLabel;
+
+  /// Costo diario de alimento esperado
+  ///
+  /// In es, this message translates to:
+  /// **'Alimento por día'**
+  String get financeCycleProjectionFeedPerDayLabel;
+
+  /// Otros costos de una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Otros costos'**
+  String get financeCycleProjectionOtherCostsLabel;
+
+  /// Cantidad de días de una proyección
+  ///
+  /// In es, this message translates to:
+  /// **'Horizonte en días'**
+  String get financeCycleProjectionHorizonLabel;
+
+  /// Acción para cerrar la etapa productiva
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar producción'**
+  String get financeCycleCloseProductionAction;
+
+  /// Acción para liquidar definitivamente el ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Liquidar ciclo'**
+  String get financeCycleFinalizeAction;
+
+  /// Mensaje mostrado cuando falla una mutación del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos completar la operación. Inténtalo de nuevo.'**
+  String get financeCycleMutationError;
+
   /// No description provided for @financeBalanceHeading.
   ///
   /// In es, this message translates to:
@@ -448,95 +1336,11 @@ abstract class AppLocalizations {
   /// **'Abrir ciclos de producción'**
   String get economicsV2OpenProductionCycles;
 
-  /// No description provided for @economicsV2LifecycleTitle.
+  /// Etiquetas localizadas para los pasos del ciclo Economics V2
   ///
   /// In es, this message translates to:
-  /// **'Crear ciclo V2'**
-  String get economicsV2LifecycleTitle;
-
-  /// No description provided for @economicsV2LifecyclePurpose.
-  ///
-  /// In es, this message translates to:
-  /// **'Propósito'**
-  String get economicsV2LifecyclePurpose;
-
-  /// No description provided for @economicsV2LifecycleCreate.
-  ///
-  /// In es, this message translates to:
-  /// **'Crear ciclo'**
-  String get economicsV2LifecycleCreate;
-
-  /// No description provided for @economicsV2LifecycleCreated.
-  ///
-  /// In es, this message translates to:
-  /// **'Ciclo creado'**
-  String get economicsV2LifecycleCreated;
-
-  /// No description provided for @economicsV2LifecycleAnimal.
-  ///
-  /// In es, this message translates to:
-  /// **'Animal'**
-  String get economicsV2LifecycleAnimal;
-
-  /// No description provided for @economicsV2LifecycleAssignAnimal.
-  ///
-  /// In es, this message translates to:
-  /// **'Asignar animal'**
-  String get economicsV2LifecycleAssignAnimal;
-
-  /// No description provided for @economicsV2LifecycleAnimalAssigned.
-  ///
-  /// In es, this message translates to:
-  /// **'Animal asignado'**
-  String get economicsV2LifecycleAnimalAssigned;
-
-  /// No description provided for @economicsV2LifecycleExpense.
-  ///
-  /// In es, this message translates to:
-  /// **'Monto del gasto'**
-  String get economicsV2LifecycleExpense;
-
-  /// No description provided for @economicsV2LifecycleRecordExpense.
-  ///
-  /// In es, this message translates to:
-  /// **'Registrar gasto'**
-  String get economicsV2LifecycleRecordExpense;
-
-  /// No description provided for @economicsV2LifecycleExpenseRecorded.
-  ///
-  /// In es, this message translates to:
-  /// **'Gasto registrado'**
-  String get economicsV2LifecycleExpenseRecorded;
-
-  /// No description provided for @economicsV2LifecycleFeed.
-  ///
-  /// In es, this message translates to:
-  /// **'Mezcla de alimento'**
-  String get economicsV2LifecycleFeed;
-
-  /// No description provided for @economicsV2LifecycleLinkFeed.
-  ///
-  /// In es, this message translates to:
-  /// **'Vincular alimento'**
-  String get economicsV2LifecycleLinkFeed;
-
-  /// No description provided for @economicsV2LifecycleFeedLinked.
-  ///
-  /// In es, this message translates to:
-  /// **'Alimento vinculado'**
-  String get economicsV2LifecycleFeedLinked;
-
-  /// No description provided for @economicsV2LifecycleFailure.
-  ///
-  /// In es, this message translates to:
-  /// **'No se pudo completar el paso.'**
-  String get economicsV2LifecycleFailure;
-
-  /// No description provided for @economicsV2LifecycleInvalidExpense.
-  ///
-  /// In es, this message translates to:
-  /// **'Ingresa un monto válido.'**
-  String get economicsV2LifecycleInvalidExpense;
+  /// **'{step, select, title{Crear ciclo V2} purpose{Propósito} create{Crear ciclo} created{Ciclo creado} animal{Animal} assign{Asignar animal} assigned{Animal asignado} expense{Monto del gasto} record{Registrar gasto} recorded{Gasto registrado} feed{Mezcla de alimento} link{Vincular alimento} linked{Alimento vinculado} failure{No se pudo completar el paso.} invalid{Ingresa un monto válido.} other{}}'**
+  String economicsV2LifecycleStep(String step);
 }
 
 class _AppLocalizationsDelegate

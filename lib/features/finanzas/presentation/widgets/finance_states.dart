@@ -11,6 +11,7 @@ class FinanceMessageState extends StatelessWidget {
     this.actionKey,
     this.actionLabel,
     this.onAction,
+    this.actionIcon = Icons.refresh_rounded,
     super.key,
   });
 
@@ -21,6 +22,7 @@ class FinanceMessageState extends StatelessWidget {
   final String? actionKey;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final IconData actionIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +84,7 @@ class FinanceMessageState extends StatelessWidget {
                       AppSizes.minTapTarget,
                     ),
                   ),
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: Icon(actionIcon),
                   label: Text(label),
                 ),
               ],

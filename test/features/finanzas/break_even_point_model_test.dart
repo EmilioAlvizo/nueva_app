@@ -75,6 +75,19 @@ void main() {
       expect(entity.marginPercentage, isNull);
     });
 
+    test('preserves unavailable per-bird metrics as null', () {
+      final entity = BreakEvenPointModel.fromJson({
+        ..._validJson,
+        'aves_promedio_ponderado': 0,
+        'huevos_por_dia_ave': null,
+        'consumo_por_dia_ave': null,
+      }).toEntity();
+
+      expect(entity.weightedAverageBirds, 0);
+      expect(entity.eggsPerDayPerBird, isNull);
+      expect(entity.feedPerDayPerBird, isNull);
+    });
+
     test('rejects malformed required identity and calculated values', () {
       expect(
         () => BreakEvenPointModel.fromJson({..._validJson, 'granja_id': 'bad'}),

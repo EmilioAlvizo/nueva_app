@@ -2,16 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/extensions/primitive_formatting_extensions.dart';
-import '../../../../core/router/app_router.dart';
 import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
 import '../../../../core/theme/finance_theme.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../ciclos/presentation/providers/cycle_providers.dart';
+import '../../../ciclos/presentation/screens/finance_cycles_section.dart';
 import '../../domain/entities/break_even_point.dart';
 import '../providers/finances_providers.dart';
 import '../widgets/break_even_card.dart';
@@ -20,9 +18,14 @@ import '../widgets/finance_states.dart';
 import '../widgets/finance_tab_bar.dart';
 
 class FinancesScreen extends ConsumerStatefulWidget {
-  const FinancesScreen({required this.farmId, super.key});
+  const FinancesScreen({
+    required this.farmId,
+    this.initialTab = FinanceTab.balance,
+    super.key,
+  });
 
   final String farmId;
+  final FinanceTab initialTab;
 
   @override
   ConsumerState<FinancesScreen> createState() => _FinancesScreenState();
@@ -30,12 +33,26 @@ class FinancesScreen extends ConsumerStatefulWidget {
 
 class _FinancesScreenState extends ConsumerState<FinancesScreen> {
   late final PageController _pageController;
-  FinanceTab _selectedTab = FinanceTab.balance;
+  late FinanceTab _selectedTab;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _selectedTab = widget.initialTab;
+    _pageController = PageController(initialPage: widget.initialTab.index);
+  }
+
+  @override
+  void didUpdateWidget(covariant FinancesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTab == widget.initialTab ||
+        _selectedTab == widget.initialTab) {
+      return;
+    }
+    _selectedTab = widget.initialTab;
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(widget.initialTab.index);
+    }
   }
 
   @override
@@ -47,6 +64,8 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final finance = FinanceTheme.of(context);
+    final usesCyclePalette = _selectedTab == FinanceTab.cycles;
     final items = [
       FinanceTabItem(
         tab: FinanceTab.balance,
@@ -76,6 +95,13 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
         asset: 'assets/chart.png',
         keyValue: AppWidgetKeys.financeChartsTab,
       ),
+      FinanceTabItem(
+        tab: FinanceTab.cycles,
+        role: FinanceTabRole.cycles,
+        label: l10n.financeTabCycles,
+        asset: 'assets/chicken.png',
+        keyValue: AppWidgetKeys.financeCyclesTab,
+      ),
     ];
     final pages = [
       FinanceBalanceSection(farmId: widget.farmId),
@@ -100,12 +126,31 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
         note: l10n.financeNoFabricatedData,
         asset: 'assets/chart_filled.png',
       ),
+      FinanceCyclesSection(farmId: widget.farmId),
     ];
 
     return Scaffold(
+      backgroundColor: usesCyclePalette ? finance.cycleCanvas : null,
       body: SafeArea(
         child: Column(
           children: [
+            const SizedBox(height: AppSpacing.xs),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  l10n.financesTitle,
+                  key: const ValueKey(AppWidgetKeys.financeHeader),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: usesCyclePalette
+                        ? finance.cycleOnSurface
+                        : Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: AppSpacing.xs),
             FinanceTabBar(
               items: items,
@@ -165,11 +210,6 @@ class FinanceBalanceSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final points = ref.watch(breakEvenPointsProvider(farmId));
-    final canOpenEconomicsV2 = canAccessEconomicsV2(
-      isEnabled: economicsV2Enabled,
-      role: ref.watch(cycleAccessProvider(farmId)).value?.role,
-      farmId: farmId,
-    );
     final content = switch (points) {
       AsyncLoading() => const Center(
         key: ValueKey(AppWidgetKeys.financeLoading),
@@ -202,26 +242,7 @@ class FinanceBalanceSection extends ConsumerWidget {
         },
       ),
     };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (canOpenEconomicsV2)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Semantics(
-              key: const ValueKey(AppWidgetKeys.financeEconomicsV2Entry),
-              button: true,
-              label: l10n.economicsV2OpenProductionCycles,
-              child: OutlinedButton.icon(
-                onPressed: () => context.go(AppRoutes.productionCycles),
-                icon: const Icon(Icons.auto_graph_outlined),
-                label: Text(l10n.economicsV2ProductionCycles),
-              ),
-            ),
-          ),
-        Expanded(child: content),
-      ],
-    );
+    return content;
   }
 }
 
@@ -250,8 +271,8 @@ abstract final class BreakEvenCardDataMapper {
     };
     final secondaryMetricsText = l10n.financeCompactMetrics(
       point.weightedAverageBirds.formatFixedTwoDecimals(l10n),
-      point.eggsPerDayPerBird.formatFixedTwoDecimals(l10n),
-      point.feedPerDayPerBird.formatFixedTwoDecimals(l10n),
+      _formatPerBirdMetric(point.eggsPerDayPerBird, l10n),
+      _formatPerBirdMetric(point.feedPerDayPerBird, l10n),
     );
 
     return BreakEvenCardViewData(
@@ -297,4 +318,10 @@ abstract final class BreakEvenCardDataMapper {
       ),
     );
   }
+
+  static String _formatPerBirdMetric(double? value, AppLocalizations l10n) =>
+      switch (value) {
+        final value? => value.formatFixedTwoDecimals(l10n),
+        null => '-',
+      };
 }

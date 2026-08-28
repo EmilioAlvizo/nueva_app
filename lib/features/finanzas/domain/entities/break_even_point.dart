@@ -36,9 +36,9 @@ final class BreakEvenPoint {
   final double totalFeedConsumption;
   final double weightedAverageBirds;
   final double eggsPerDay;
-  final double eggsPerDayPerBird;
+  final double? eggsPerDayPerBird;
   final double feedPerDay;
-  final double feedPerDayPerBird;
+  final double? feedPerDayPerBird;
   final double? breakEvenPrice;
   final double? averageSalePrice;
   final double? marginPercentage;

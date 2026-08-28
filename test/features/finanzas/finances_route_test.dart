@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rancho/core/router/app_router.dart';
-import 'package:rancho/features/ciclos/domain/cycle_models.dart';
 import 'package:rancho/features/home/home_screen.dart';
+import 'package:rancho/features/finanzas/presentation/widgets/finance_tab_bar.dart';
 import 'package:rancho/l10n/app_localizations_es.dart';
 
 void main() {
@@ -29,11 +29,10 @@ void main() {
     );
   });
 
-  test('V2 cycle route redirects when access is unavailable', () {
+  test('V2 compatibility route preserves flag and farm guards', () {
     expect(
       resolveEconomicsV2Redirect(
         isEnabled: false,
-        role: CycleRole.owner,
         farmId: 'farm-1',
         matchedLocation: AppRoutes.productionCycles,
       ),
@@ -42,16 +41,14 @@ void main() {
     expect(
       resolveEconomicsV2Redirect(
         isEnabled: true,
-        role: CycleRole.viewer,
         farmId: 'farm-1',
         matchedLocation: AppRoutes.productionCycles,
       ),
-      AppRoutes.finanzas,
+      AppRoutes.financeCycles,
     );
     expect(
       resolveEconomicsV2Redirect(
         isEnabled: true,
-        role: CycleRole.owner,
         farmId: null,
         matchedLocation: AppRoutes.productionCycles,
       ),
@@ -59,25 +56,17 @@ void main() {
     );
   });
 
-  test('V2 cycle route remains available to enabled owners and editors', () {
+  test('V2 compatibility route canonicalizes eligible requests to Finance', () {
     expect(
       resolveEconomicsV2Redirect(
         isEnabled: true,
-        role: CycleRole.owner,
         farmId: 'farm-1',
         matchedLocation: AppRoutes.productionCycles,
       ),
-      isNull,
+      AppRoutes.financeCycles,
     );
-    expect(
-      resolveEconomicsV2Redirect(
-        isEnabled: true,
-        role: CycleRole.editor,
-        farmId: 'farm-1',
-        matchedLocation: AppRoutes.productionCycles,
-      ),
-      isNull,
-    );
+    expect(resolveFinanceInitialTab('cycles'), FinanceTab.cycles);
+    expect(resolveFinanceInitialTab(null), FinanceTab.balance);
   });
 
   test('home branch title identifies Finanzas', () {

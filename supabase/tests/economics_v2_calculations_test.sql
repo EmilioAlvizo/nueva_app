@@ -66,7 +66,8 @@ begin
     (editor_id, 'authenticated', 'authenticated', 'economics-v2-calculations-editor@example.test', now(), now()),
     (outsider_id, 'authenticated', 'authenticated', 'economics-v2-calculations-outsider@example.test', now(), now());
   insert into public.perfiles (id, nombre)
-  values (editor_id, 'Calculations editor'), (outsider_id, 'Calculations outsider');
+  values (editor_id, 'Calculations editor'), (outsider_id, 'Calculations outsider')
+  on conflict (id) do update set nombre = excluded.nombre;
   insert into public.granjas (id, owner_id, nombre, created_by)
   values
     (farm_a, editor_id, 'Calculations farm A', editor_id),
