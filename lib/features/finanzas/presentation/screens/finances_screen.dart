@@ -135,23 +135,6 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
         child: Column(
           children: [
             const SizedBox(height: AppSpacing.xs),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  l10n.financesTitle,
-                  key: const ValueKey(AppWidgetKeys.financeHeader),
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: usesCyclePalette
-                        ? finance.cycleOnSurface
-                        : Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
             FinanceTabBar(
               items: items,
               selected: _selectedTab,

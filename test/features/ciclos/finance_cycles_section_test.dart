@@ -263,7 +263,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('uses the detail summary, navigation rows, and close action', (
+  testWidgets('uses the cycle workspace hierarchy and close action', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 760);
@@ -296,12 +296,64 @@ void main() {
           .first,
     );
     expect(overview.color, theme.cycleSurface);
-    expect(find.text('Ciclo de postura'), findsOneWidget);
+    expect(find.text('Todos los ciclos'), findsOneWidget);
+    expect(find.text('Detalle del ciclo'), findsOneWidget);
+    expect(
+      _key(AppWidgetKeys.financeCycleWorkspaceContextIndicator),
+      findsOneWidget,
+    );
+    expect(
+      _key(AppWidgetKeys.financeCycleWorkspaceDetailContext),
+      findsOneWidget,
+    );
+    expect(find.text('Postura · Gallinero norte'), findsOneWidget);
     expect(find.text('Abierto'), findsOneWidget);
-    expect(find.text('Animales activos'), findsOneWidget);
-    expect(find.text('Costo de alimentación'), findsOneWidget);
-    expect(find.text('Gastos directos'), findsOneWidget);
-    expect(find.text('Resultado'), findsOneWidget);
+    expect(find.text('20 ago 2026 → actual'), findsOneWidget);
+    expect(find.text('Última actualización: 22 ago 2026'), findsOneWidget);
+    expect(find.text('Animales'), findsWidgets);
+    expect(find.text('Gastos'), findsOneWidget);
+    expect(find.text('Mezcla'), findsOneWidget);
+    expect(find.text('Proyección'), findsWidgets);
+    expect(find.text('Alimentación'), findsOneWidget);
+    expect(find.text('Gastos del ciclo'), findsOneWidget);
+    expect(find.text('Resultado final'), findsOneWidget);
+    final overviewMetricKeys = [
+      AppWidgetKeys.financeCycleOverviewAnimalsMetric,
+      AppWidgetKeys.financeCycleOverviewExpensesMetric,
+      AppWidgetKeys.financeCycleOverviewFeedMetric,
+      AppWidgetKeys.financeCycleOverviewProjectionMetric,
+    ];
+    final overviewMetricRects = [
+      for (final key in overviewMetricKeys) tester.getRect(_key(key)),
+    ];
+    final metricTop = overviewMetricRects.first.top;
+    for (final rect in overviewMetricRects.skip(1)) {
+      expect(rect.top, closeTo(metricTop, 1));
+    }
+    for (final (index, rect) in overviewMetricRects.indexed.skip(1)) {
+      expect(rect.left, greaterThan(overviewMetricRects[index - 1].left));
+    }
+    expect(
+      find.descendant(
+        of: _key(AppWidgetKeys.financeCycleOverview),
+        matching: find.byType(Icon),
+      ),
+      findsNothing,
+    );
+    final titleRect = tester.getRect(
+      _key(AppWidgetKeys.financeCycleWorkspaceTitle),
+    );
+    final statusRect = tester.getRect(_key(AppWidgetKeys.financeCycleStatus));
+    final overviewRect = tester.getRect(
+      _key(AppWidgetKeys.financeCycleOverview),
+    );
+    expect(statusRect.left, greaterThan(titleRect.left));
+    expect(statusRect.right, closeTo(overviewRect.right, 1));
+    expect(statusRect.center.dy, closeTo(titleRect.center.dy, 2));
+    expect(
+      tester.getSize(_key(AppWidgetKeys.financeCycleWorkspaceBack)).height,
+      greaterThanOrEqualTo(48),
+    );
     for (final key in [
       AppWidgetKeys.financeCycleAnimalsTab,
       AppWidgetKeys.financeCycleFeedsTab,
@@ -547,11 +599,16 @@ void main() {
       await _openCycle(tester);
 
       expect(_key(AppWidgetKeys.financeCycleWorkspace), findsOneWidget);
-      expect(_key(AppWidgetKeys.financeCycleOverview), findsOneWidget);
       expect(
         tester.getSize(_key(AppWidgetKeys.financeCycleWorkspaceBack)).height,
         greaterThanOrEqualTo(48),
       );
+      await tester.drag(
+        _key(AppWidgetKeys.financeCycleWorkspace),
+        const Offset(0, -300),
+      );
+      await tester.pump();
+      expect(_key(AppWidgetKeys.financeCycleOverview), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       final destinations =

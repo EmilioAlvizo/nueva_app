@@ -227,70 +227,61 @@ class FinanceCycleWorkspaceView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final finance = FinanceTheme.of(context);
-    final title = detail.name ?? detail.purposeName;
+    final title = switch (detail.latestGroupNameSnapshot) {
+      final groupName? => l10n.financeCycleWorkspaceTitle(
+        detail.purposeName,
+        groupName,
+      ),
+      null => detail.name ?? detail.purposeName,
+    };
     final status = FinanceCycleStatusLabelMapper.map(detail.status, l10n);
     final end = switch (detail) {
       EconomicsV2CycleDetail(:final settledOn?) => settledOn,
       EconomicsV2CycleDetail(:final productionClosedOn?) => productionClosedOn,
-      EconomicsV2CycleDetail(:final plannedEndsOn?) => plannedEndsOn,
       _ => null,
     };
-    final period = l10n.financeCyclePeriod(
+    final endLabel = detail.status == EconomicsV2CycleStatus.open
+        ? l10n.financeCycleWorkspaceOngoing
+        : end?.formatShortDate(l10n) ?? l10n.notAvailableLabel;
+    final period = l10n.financeCycleWorkspacePeriod(
       detail.startsOn.formatShortDate(l10n),
-      end?.formatShortDate(l10n) ?? l10n.ongoingLabel,
+      endLabel,
     );
     return FinanceCycleCanvas(
       child: ListView(
         key: const ValueKey(AppWidgetKeys.financeCycleWorkspace),
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: IconButton.outlined(
-              key: const ValueKey(AppWidgetKeys.financeCycleWorkspaceBack),
-              tooltip: l10n.financeCycleWorkspaceBack,
-              color: finance.cycleOnSurface,
-              onPressed: onBack,
-              icon: const Icon(Icons.arrow_back_rounded),
+          FinanceCycleContextSelector(
+            allCyclesLabel: l10n.financeCycleWorkspaceAllCycles,
+            detailLabel: l10n.financeCycleWorkspaceDetail,
+            onBack: onBack,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          FinanceCycleWorkspaceHeader(
+            title: title,
+            period: period,
+            status: FinanceCycleStatusPill(
+              key: const ValueKey(AppWidgetKeys.financeCycleStatus),
+              label: status,
+              isActive: detail.status == EconomicsV2CycleStatus.open,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          FinanceCycleSectionHeader(title: title, subtitle: detail.purposeName),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              FinanceCycleStatusPill(
-                keyValue: AppWidgetKeys.financeCycleStatus,
-                label: status,
-                isActive: detail.status == EconomicsV2CycleStatus.open,
-              ),
-              Text(
-                period,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: finance.cycleOnSurfaceMuted,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.lg),
           if (isCompatibilityMode) ...[
             FinanceCycleCompatibilityNotice(
               message: l10n.financeCycleCompatibilityMessage,
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
-          if (selectedView != FinanceCyclesView.overview) ...[
+          /* if (selectedView != FinanceCyclesView.overview) ...[
             FinanceCycleWorkspaceNavigation(
               selectedView: selectedView,
               onSelectView: onSelectView,
               isCompatibilityMode: isCompatibilityMode,
             ),
             const SizedBox(height: AppSpacing.md),
-          ],
+          ], */
           if (mutationFailed) ...[
             FinanceCyclePanel(
               message: l10n.financeCycleMutationError,
@@ -430,31 +421,38 @@ class FinanceCycleOverviewView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FinanceCycleSurfaceCard(
+        FinanceCycleOverviewSummary(
           key: const ValueKey(AppWidgetKeys.financeCycleOverview),
-          child: FinanceCycleMetricGroup(
-            metrics: [
-              FinanceCycleMetricTile(
-                label: l10n.financeCycleActiveAnimalsMetric,
-                value: detail.activeAnimalCount.formatInteger(l10n),
-                icon: Icons.pets_outlined,
+          metrics: [
+            FinanceCycleOverviewMetric(
+              key: const ValueKey(
+                AppWidgetKeys.financeCycleOverviewAnimalsMetric,
               ),
-              FinanceCycleMetricTile(
-                label: l10n.financeCycleFeedCostMetric,
-                value: detail.feedCost.formatCurrency(l10n),
-                icon: Icons.grass_outlined,
+              label: l10n.financeCycleOverviewAnimalsMetric,
+              value: detail.activeAnimalCount.formatInteger(l10n),
+            ),
+            FinanceCycleOverviewMetric(
+              key: const ValueKey(
+                AppWidgetKeys.financeCycleOverviewExpensesMetric,
               ),
-              FinanceCycleMetricTile(
-                label: l10n.financeCycleDirectExpensesMetric,
-                value: detail.directExpenseTotal.formatCurrency(l10n),
-                icon: Icons.receipt_long_outlined,
+              label: l10n.financeCycleOverviewExpensesMetric,
+              value: detail.directExpenseTotal.formatCurrency(l10n),
+            ),
+            FinanceCycleOverviewMetric(
+              key: const ValueKey(AppWidgetKeys.financeCycleOverviewFeedMetric),
+              label: l10n.financeCycleOverviewFeedMetric,
+              value: detail.feedCost.formatCurrency(l10n),
+            ),
+            FinanceCycleOverviewMetric(
+              key: const ValueKey(
+                AppWidgetKeys.financeCycleOverviewProjectionMetric,
               ),
-              FinanceCycleMetricTile(
-                label: l10n.financeCycleResultMetric,
-                value: detail.profit.formatCurrency(l10n),
-                icon: Icons.insights_rounded,
-              ),
-            ],
+              label: l10n.financeCycleOverviewProjectionMetric,
+              value: detail.profit.formatCurrency(l10n),
+            ),
+          ],
+          lastUpdated: l10n.financeCycleOverviewLastUpdated(
+            detail.updatedAt?.formatShortDate(l10n) ?? l10n.notAvailableLabel,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -483,7 +481,7 @@ class FinanceCycleOverviewView extends StatelessWidget {
         FinanceCycleNavigationRow(
           keyValue: AppWidgetKeys.financeCycleExpensesTab,
           icon: Icons.receipt_long_outlined,
-          title: l10n.financeCycleWorkspaceExpenses,
+          title: l10n.financeCycleExpensesNavigationTitle,
           subtitle: l10n.financeCycleExpensesNavigationSubtitle,
           value: detail.directExpenseTotal.formatCurrency(l10n),
           onPressed: destination == null
@@ -494,9 +492,9 @@ class FinanceCycleOverviewView extends StatelessWidget {
         FinanceCycleNavigationRow(
           keyValue: AppWidgetKeys.financeCycleProjectionsTab,
           icon: Icons.trending_up_rounded,
-          title: l10n.financeCycleWorkspaceProjections,
+          title: l10n.financeCycleProjectionNavigationTitle,
           subtitle: l10n.financeCycleProjectionsNavigationSubtitle,
-          value: l10n.financeCycleNavigationView,
+          value: detail.profit.formatCurrency(l10n),
           onPressed: destination == null
               ? null
               : () => destination(FinanceCyclesView.projections),

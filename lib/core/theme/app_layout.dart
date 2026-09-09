@@ -41,6 +41,7 @@ abstract final class AppSizes {
   static const financeFormMaxWidth = 640.0;
   static const financeCycleContentMaxWidth = 720.0;
   static const financeCycleMetricBreakpoint = 320.0;
+  static const financeCycleDestinationMinHeight = 88.0;
   static const financeCycleFabClearance = 80.0;
   static const compactMetricBreakpoint = 260.0;
   static const financeHeaderBreakpoint = 280.0;

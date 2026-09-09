@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
 import '../../../../core/theme/finance_theme.dart';
 
@@ -29,6 +30,193 @@ class FinanceCycleCanvas extends StatelessWidget {
           child: child,
         ),
       ),
+    );
+  }
+}
+
+class FinanceCycleContextSelector extends StatelessWidget {
+  const FinanceCycleContextSelector({
+    required this.allCyclesLabel,
+    required this.detailLabel,
+    required this.onBack,
+    super.key,
+  });
+
+  final String allCyclesLabel;
+  final String detailLabel;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: AppSpacing.xs,
+    runSpacing: AppSpacing.xs,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      FinanceCycleContextPill(
+        keyValue: AppWidgetKeys.financeCycleWorkspaceBack,
+        label: allCyclesLabel,
+        icon: Icons.chevron_left_rounded,
+        isSelected: true,
+        onPressed: onBack,
+      ),
+      const FinanceCycleContextIndicator(),
+      FinanceCycleContextPill(
+        keyValue: AppWidgetKeys.financeCycleWorkspaceDetailContext,
+        label: detailLabel,
+        isSelected: false,
+      ),
+    ],
+  );
+}
+
+class FinanceCycleContextPill extends StatelessWidget {
+  const FinanceCycleContextPill({
+    required this.keyValue,
+    required this.label,
+    required this.isSelected,
+    this.icon,
+    this.onPressed,
+    super.key,
+  });
+
+  final String keyValue;
+  final String label;
+  final bool isSelected;
+  final IconData? icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final finance = FinanceTheme.of(context);
+    final foreground = isSelected
+        ? finance.cycleOnSurface
+        : finance.cycleOnSurfaceMuted;
+    return Semantics(
+      key: ValueKey(keyValue),
+      button: onPressed != null,
+      enabled: onPressed != null,
+      label: label,
+      excludeSemantics: true,
+      child: Material(
+        color: isSelected ? finance.cycleSurfaceElevated : finance.cycleCanvas,
+        shape: StadiumBorder(
+          side: isSelected
+              ? BorderSide.none
+              : BorderSide(color: finance.cycleOnSurfaceMuted),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AppSizes.minTapTarget),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon case final icon?) ...[
+                    Icon(icon, size: AppSizes.smallIcon, color: foreground),
+                    const SizedBox(width: AppSpacing.xxs),
+                  ],
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: foreground,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FinanceCycleContextIndicator extends StatelessWidget {
+  const FinanceCycleContextIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox(
+      key: const ValueKey(AppWidgetKeys.financeCycleWorkspaceContextIndicator),
+      width: AppSpacing.lg,
+      height: AppSpacing.xxs,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: FinanceTheme.of(context).cyclePrimaryAction,
+          borderRadius: BorderRadius.circular(AppRadii.full),
+        ),
+      ),
+    ),
+  );
+}
+
+class FinanceCycleWorkspaceHeader extends StatelessWidget {
+  const FinanceCycleWorkspaceHeader({
+    required this.title,
+    required this.period,
+    required this.status,
+    super.key,
+  });
+
+  final String title;
+  final String period;
+  final Widget status;
+
+  @override
+  Widget build(BuildContext context) {
+    final finance = FinanceTheme.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final usesInlineStatus =
+            constraints.maxWidth / textScale >=
+            AppSizes.financeHeaderBreakpoint;
+        final titleWidget = Text(
+          title,
+          key: const ValueKey(AppWidgetKeys.financeCycleWorkspaceTitle),
+          style: textTheme.headlineSmall?.copyWith(
+            color: finance.cycleOnSurface,
+            fontWeight: FontWeight.w800,
+          ),
+        );
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (usesInlineStatus)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: titleWidget),
+                  const SizedBox(width: AppSpacing.sm),
+                  status,
+                ],
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  titleWidget,
+                  const SizedBox(height: AppSpacing.xs),
+                  status,
+                ],
+              ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              period,
+              style: textTheme.bodyMedium?.copyWith(
+                color: finance.cycleOnSurfaceMuted,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -191,6 +379,108 @@ class FinanceCycleMetricGroup extends StatelessWidget {
       );
     },
   );
+}
+
+class FinanceCycleOverviewMetric extends StatelessWidget {
+  const FinanceCycleOverviewMetric({
+    required this.label,
+    required this.value,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final finance = FinanceTheme.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    return Semantics(
+      label: '$label: $value',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: textTheme.titleMedium?.copyWith(
+              color: finance.cycleOnSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: textTheme.bodySmall?.copyWith(
+              color: finance.cycleOnSurfaceMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FinanceCycleOverviewMetricGroup extends StatelessWidget {
+  const FinanceCycleOverviewMetricGroup({required this.metrics, super.key});
+
+  final List<FinanceCycleOverviewMetric> metrics;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final textScale = MediaQuery.textScalerOf(context).scale(1);
+      final columns =
+          constraints.maxWidth / textScale >=
+              AppSizes.financeCycleMetricBreakpoint
+          ? 4
+          : 2;
+      final gaps = AppSpacing.xs * (columns - 1);
+      final itemWidth = (constraints.maxWidth - gaps) / columns;
+      return Wrap(
+        spacing: AppSpacing.xs,
+        runSpacing: AppSpacing.sm,
+        children: [
+          for (final metric in metrics)
+            SizedBox(width: itemWidth, child: metric),
+        ],
+      );
+    },
+  );
+}
+
+class FinanceCycleOverviewSummary extends StatelessWidget {
+  const FinanceCycleOverviewSummary({
+    required this.metrics,
+    required this.lastUpdated,
+    super.key,
+  });
+
+  final List<FinanceCycleOverviewMetric> metrics;
+  final String lastUpdated;
+
+  @override
+  Widget build(BuildContext context) {
+    final finance = FinanceTheme.of(context);
+    return FinanceCycleSurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FinanceCycleOverviewMetricGroup(metrics: metrics),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            lastUpdated,
+            key: const ValueKey(AppWidgetKeys.financeCycleOverviewUpdated),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: finance.cycleOnSurfaceMuted),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class FinanceCycleContentSection extends StatelessWidget {
@@ -404,16 +694,18 @@ class FinanceCycleNavigationRow extends StatelessWidget {
       key: ValueKey(keyValue),
       color: finance.cycleSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.medium),
+        borderRadius: BorderRadius.circular(AppRadii.large),
         side: BorderSide(color: finance.cycleOutline),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onPressed,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: AppSizes.minTapTarget),
+          constraints: const BoxConstraints(
+            minHeight: AppSizes.financeCycleDestinationMinHeight,
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
                 DecoratedBox(

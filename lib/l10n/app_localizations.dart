@@ -394,6 +394,36 @@ abstract class AppLocalizations {
   /// **'Volver a ciclos'**
   String get financeCycleWorkspaceBack;
 
+  /// Etiqueta del selector para volver a todos los ciclos
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los ciclos'**
+  String get financeCycleWorkspaceAllCycles;
+
+  /// Etiqueta contextual del detalle del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle del ciclo'**
+  String get financeCycleWorkspaceDetail;
+
+  /// Título del detalle formado por el propósito y el grupo vinculados
+  ///
+  /// In es, this message translates to:
+  /// **'{purpose} · {group}'**
+  String financeCycleWorkspaceTitle(String purpose, String group);
+
+  /// Periodo contextual del espacio de trabajo del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'{start} → {end}'**
+  String financeCycleWorkspacePeriod(String start, String end);
+
+  /// Extremo actual de un ciclo que continúa abierto
+  ///
+  /// In es, this message translates to:
+  /// **'actual'**
+  String get financeCycleWorkspaceOngoing;
+
   /// Vista de resumen del ciclo
   ///
   /// In es, this message translates to:
@@ -454,6 +484,36 @@ abstract class AppLocalizations {
   /// **'Resultado'**
   String get financeCycleResultMetric;
 
+  /// Métrica compacta de animales del resumen del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Animales'**
+  String get financeCycleOverviewAnimalsMetric;
+
+  /// Métrica compacta de gastos del resumen del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos'**
+  String get financeCycleOverviewExpensesMetric;
+
+  /// Métrica compacta de alimentación del resumen del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Mezcla'**
+  String get financeCycleOverviewFeedMetric;
+
+  /// Métrica compacta del resultado proyectado del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Proyección'**
+  String get financeCycleOverviewProjectionMetric;
+
+  /// Fecha de la última actualización del resumen del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Última actualización: {date}'**
+  String financeCycleOverviewLastUpdated(String date);
+
   /// Descripción de la navegación a animales del ciclo
   ///
   /// In es, this message translates to:
@@ -471,6 +531,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Consulta los gastos directos registrados.'**
   String get financeCycleExpensesNavigationSubtitle;
+
+  /// Título de la navegación a los gastos del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos del ciclo'**
+  String get financeCycleExpensesNavigationTitle;
+
+  /// Título de la navegación a la proyección del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Proyección'**
+  String get financeCycleProjectionNavigationTitle;
 
   /// Descripción de la navegación a proyecciones del ciclo
   ///

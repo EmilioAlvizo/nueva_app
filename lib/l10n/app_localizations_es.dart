@@ -212,6 +212,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get financeCycleWorkspaceBack => 'Volver a ciclos';
 
   @override
+  String get financeCycleWorkspaceAllCycles => 'Todos los ciclos';
+
+  @override
+  String get financeCycleWorkspaceDetail => 'Detalle del ciclo';
+
+  @override
+  String financeCycleWorkspaceTitle(String purpose, String group) {
+    return '$purpose · $group';
+  }
+
+  @override
+  String financeCycleWorkspacePeriod(String start, String end) {
+    return '$start → $end';
+  }
+
+  @override
+  String get financeCycleWorkspaceOngoing => 'actual';
+
+  @override
   String get financeCycleWorkspaceOverview => 'Resumen';
 
   @override
@@ -242,6 +261,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get financeCycleResultMetric => 'Resultado';
 
   @override
+  String get financeCycleOverviewAnimalsMetric => 'Animales';
+
+  @override
+  String get financeCycleOverviewExpensesMetric => 'Gastos';
+
+  @override
+  String get financeCycleOverviewFeedMetric => 'Mezcla';
+
+  @override
+  String get financeCycleOverviewProjectionMetric => 'Proyección';
+
+  @override
+  String financeCycleOverviewLastUpdated(String date) {
+    return 'Última actualización: $date';
+  }
+
+  @override
   String get financeCycleAnimalsNavigationSubtitle =>
       'Gestiona las asignaciones del ciclo.';
 
@@ -252,6 +288,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get financeCycleExpensesNavigationSubtitle =>
       'Consulta los gastos directos registrados.';
+
+  @override
+  String get financeCycleExpensesNavigationTitle => 'Gastos del ciclo';
+
+  @override
+  String get financeCycleProjectionNavigationTitle => 'Proyección';
 
   @override
   String get financeCycleProjectionsNavigationSubtitle =>

@@ -39,9 +39,24 @@ abstract final class AppWidgetKeys {
   static const financeCycleInitialInfo = 'finances.cycles.form.initial-info';
   static const financeCycleWorkspace = 'finances.cycles.workspace';
   static const financeCycleWorkspaceBack = 'finances.cycles.workspace.back';
+  static const financeCycleWorkspaceContextIndicator =
+      'finances.cycles.workspace.context-indicator';
+  static const financeCycleWorkspaceDetailContext =
+      'finances.cycles.workspace.detail-context';
+  static const financeCycleWorkspaceTitle = 'finances.cycles.workspace.title';
   static const financeCycleCompatibilityNotice =
       'finances.cycles.workspace.compatibility-notice';
   static const financeCycleOverview = 'finances.cycles.workspace.overview';
+  static const financeCycleOverviewAnimalsMetric =
+      'finances.cycles.workspace.overview.metric.animals';
+  static const financeCycleOverviewExpensesMetric =
+      'finances.cycles.workspace.overview.metric.expenses';
+  static const financeCycleOverviewFeedMetric =
+      'finances.cycles.workspace.overview.metric.feed';
+  static const financeCycleOverviewProjectionMetric =
+      'finances.cycles.workspace.overview.metric.projection';
+  static const financeCycleOverviewUpdated =
+      'finances.cycles.workspace.overview.updated';
   static const financeCycleStatus = 'finances.cycles.workspace.status';
   static const financeCycleCloseAction =
       'finances.cycles.workspace.close-action';
