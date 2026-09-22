@@ -568,9 +568,7 @@ class EggSaleCard extends StatelessWidget {
                       Container(
                         key: const Key('egg-sale-date-footer'),
                         width: double.infinity,
-                        color: isDark
-                          ? AppColors.fecha
-                          : AppColors.fechaLg,
+                        color: footerColor,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 9,

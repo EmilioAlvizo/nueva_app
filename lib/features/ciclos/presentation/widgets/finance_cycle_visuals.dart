@@ -4,7 +4,7 @@ import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
 import '../../../../core/theme/finance_theme.dart';
 
-enum FinanceCycleActionVariant { primary, secondary, destructive }
+enum FinanceCycleActionVariant { primary, positive, secondary, destructive }
 
 enum FinanceCyclePanelVariant { info, warning, result }
 
@@ -939,6 +939,10 @@ class FinanceCycleActionButton extends StatelessWidget {
         finance.cyclePrimaryAction,
         finance.cycleOnPrimaryAction,
       ),
+      FinanceCycleActionVariant.positive => (
+        finance.cyclePositiveAction,
+        finance.cycleOnPositiveAction,
+      ),
       FinanceCycleActionVariant.secondary => (
         finance.cycleSurfaceElevated,
         finance.cycleOnSurface,
@@ -965,6 +969,7 @@ class FinanceCycleActionButton extends StatelessWidget {
       key: ValueKey(keyValue),
       container: true,
       button: true,
+      enabled: onPressed != null,
       label: semanticLabel,
       excludeSemantics: semanticLabel != null,
       child: SizedBox(

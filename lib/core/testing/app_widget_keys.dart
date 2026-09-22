@@ -61,12 +61,37 @@ abstract final class AppWidgetKeys {
   static const financeCycleCloseAction =
       'finances.cycles.workspace.close-action';
   static const financeCycleAnimals = 'finances.cycles.workspace.animals';
+  static const financeCycleAnimalsUnavailable =
+      'finances.cycles.workspace.animals.unavailable';
   static const financeCycleAnimalsSummary =
       'finances.cycles.workspace.animals.summary';
   static const financeCycleAnimalsAssigned =
       'finances.cycles.workspace.animals.assigned';
   static const financeCycleAnimalsAvailable =
       'finances.cycles.workspace.animals.available';
+  static const financeCycleAnimalsAdd = 'finances.cycles.workspace.animals.add';
+  static const financeCycleAnimalSearch =
+      'finances.cycles.workspace.animals.search';
+  static const financeCycleAnimalFilterAll =
+      'finances.cycles.workspace.animals.filter.all';
+  static const financeCycleAnimalFilterGrouped =
+      'finances.cycles.workspace.animals.filter.grouped';
+  static const financeCycleAnimalFilterUngrouped =
+      'finances.cycles.workspace.animals.filter.ungrouped';
+  static const financeCycleAnimalsSelectionStatus =
+      'finances.cycles.workspace.animals.selection-status';
+  static const financeCycleAnimalsClear =
+      'finances.cycles.workspace.animals.clear';
+  static const financeCycleAnimalsContinue =
+      'finances.cycles.workspace.animals.continue';
+  static const financeCycleAnimalsJoinedOn =
+      'finances.cycles.workspace.animals.joined-on';
+  static const financeCycleAnimalsCancel =
+      'finances.cycles.workspace.animals.cancel';
+  static const financeCycleAnimalsConfirm =
+      'finances.cycles.workspace.animals.confirm';
+  static const financeCycleAnimalsPending =
+      'finances.cycles.workspace.animals.pending';
   static const financeCycleFeeds = 'finances.cycles.workspace.feeds';
   static const financeCycleFeedsSummary =
       'finances.cycles.workspace.feeds.summary';
@@ -166,6 +191,10 @@ abstract final class AppWidgetKeys {
 
   static String financeCycleAssignAnimal(String animalId) {
     return 'finances.cycles.workspace.animals.assign.$animalId';
+  }
+
+  static String financeCycleAnimalCandidate(String animalId) {
+    return 'finances.cycles.workspace.animals.candidate.$animalId';
   }
 
   static String financeCycleLinkFeed(String mixtureId) {

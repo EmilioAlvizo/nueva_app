@@ -9,6 +9,10 @@ abstract interface class EconomicsV2LifecycleRepository {
     EconomicsV2AssignAnimalRequest request,
   );
 
+  Future<EconomicsV2AnimalsAssigned> assignAnimals(
+    EconomicsV2AssignAnimalsRequest request,
+  );
+
   Future<EconomicsV2ExpenseRecorded> recordExpense(
     EconomicsV2RecordExpenseRequest request,
   );

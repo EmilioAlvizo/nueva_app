@@ -139,12 +139,17 @@ void _expectLoading(ProviderContainer container) => expect(
 final class _LifecycleRepository implements EconomicsV2LifecycleRepository {
   final createCycleRequests = <EconomicsV2CreateCycleRequest>[];
   final assignAnimalRequests = <EconomicsV2AssignAnimalRequest>[];
+  final assignAnimalsRequests = <EconomicsV2AssignAnimalsRequest>[];
   final recordExpenseRequests = <EconomicsV2RecordExpenseRequest>[];
   final linkFeedRequests = <EconomicsV2LinkFeedRequest>[];
   final created = const EconomicsV2CycleCreated(cycleId: 'cycle-1');
   final assigned = const EconomicsV2AnimalAssigned(
     cycleId: 'cycle-1',
     animalId: 'animal-1',
+  );
+  final animalsAssigned = const EconomicsV2AnimalsAssigned(
+    cycleId: 'cycle-1',
+    animalIds: ['animal-1', 'animal-2'],
   );
   final recorded = const EconomicsV2ExpenseRecorded(expenseId: 'expense-1');
   final linked = const EconomicsV2FeedLinked(feedId: 'feed-1');
@@ -165,6 +170,14 @@ final class _LifecycleRepository implements EconomicsV2LifecycleRepository {
   ) {
     assignAnimalRequests.add(request);
     return Future.value(assigned);
+  }
+
+  @override
+  Future<EconomicsV2AnimalsAssigned> assignAnimals(
+    EconomicsV2AssignAnimalsRequest request,
+  ) {
+    assignAnimalsRequests.add(request);
+    return Future.value(animalsAssigned);
   }
 
   @override

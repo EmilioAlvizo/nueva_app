@@ -29,8 +29,7 @@ class FinanceCyclesSection extends ConsumerWidget {
 
     final localAccess = ref.watch(cycleAccessProvider(farmId));
     return switch (localAccess) {
-      AsyncData(:final value) when value.canEdit =>
-        FinanceAuthorizedCyclesSection(farmId: farmId, now: now),
+      AsyncData() => FinanceAuthorizedCyclesSection(farmId: farmId, now: now),
       AsyncData() || AsyncError() => const FinanceCyclesUnavailableState(),
       AsyncLoading() => const FinanceCyclesLoadingState(),
     };
@@ -51,6 +50,13 @@ class FinanceAuthorizedCyclesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final access = ref.watch(economicsV2AccessProvider(farmId));
+    ref.listen(economicsV2AccessProvider(farmId), (_, next) {
+      if (next case AsyncData(:final value) when !value.canEdit) {
+        ref
+            .read(financeCyclesWorkflowProvider(farmId).notifier)
+            .resetAnimalAssignment();
+      }
+    });
     return switch (access) {
       AsyncLoading() => const FinanceCyclesLoadingState(),
       AsyncError() => FinanceCyclesAccessMessage(
@@ -103,6 +109,7 @@ class FinanceCyclesContentSection extends ConsumerWidget {
         farmId: farmId,
         cycleId: cycleId,
         view: view,
+        canEdit: canEdit,
         now: now,
       );
     }

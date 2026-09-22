@@ -46,3 +46,37 @@ extension NumFormatting on num {
     return this >= 0 ? '+$formatted' : formatted;
   }
 }
+
+extension StringSearchNormalization on String {
+  String normalizedForSearch() {
+    var normalized = toLowerCase();
+    const replacements = {
+      'á': 'a',
+      'à': 'a',
+      'ä': 'a',
+      'â': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ë': 'e',
+      'ê': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'ï': 'i',
+      'î': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'ö': 'o',
+      'ô': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'ü': 'u',
+      'û': 'u',
+      'ñ': 'n',
+      'ç': 'c',
+    };
+    for (final entry in replacements.entries) {
+      normalized = normalized.replaceAll(entry.key, entry.value);
+    }
+    return normalized.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+}

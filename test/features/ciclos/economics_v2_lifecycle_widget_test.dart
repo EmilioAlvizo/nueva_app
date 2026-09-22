@@ -223,10 +223,12 @@ final class _EmptyV2Repository extends Fake implements EconomicsV2Repository {
 final class _LifecycleRepository implements EconomicsV2LifecycleRepository {
   final create = Completer<EconomicsV2CycleCreated>(),
       assign = Completer<EconomicsV2AnimalAssigned>(),
+      assignMany = Completer<EconomicsV2AnimalsAssigned>(),
       expense = Completer<EconomicsV2ExpenseRecorded>(),
       feed = Completer<EconomicsV2FeedLinked>();
   final createRequests = <EconomicsV2CreateCycleRequest>[],
       assignRequests = <EconomicsV2AssignAnimalRequest>[],
+      assignManyRequests = <EconomicsV2AssignAnimalsRequest>[],
       expenseRequests = <EconomicsV2RecordExpenseRequest>[],
       feedRequests = <EconomicsV2LinkFeedRequest>[];
   Object? createError;
@@ -245,6 +247,10 @@ final class _LifecycleRepository implements EconomicsV2LifecycleRepository {
   Future<EconomicsV2AnimalAssigned> assignAnimal(
     EconomicsV2AssignAnimalRequest request,
   ) => _record(request, assignRequests, assign);
+  @override
+  Future<EconomicsV2AnimalsAssigned> assignAnimals(
+    EconomicsV2AssignAnimalsRequest request,
+  ) => _record(request, assignManyRequests, assignMany);
   @override
   Future<EconomicsV2ExpenseRecorded> recordExpense(
     EconomicsV2RecordExpenseRequest request,

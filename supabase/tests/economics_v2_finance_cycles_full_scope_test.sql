@@ -14,8 +14,10 @@ select pg_temp.assert_true(
   and to_regprocedure('public.listar_animales_ciclo_v2(uuid,uuid)') is not null
   and to_regprocedure('public.listar_alimentos_ciclo_v2(uuid,uuid)') is not null
   and to_regprocedure('public.listar_gastos_ciclo_v2(uuid,uuid)') is not null
-  and to_regprocedure('public.listar_proyecciones_ciclo_v2(uuid,uuid)') is not null
-  and to_regprocedure('public.obtener_preparacion_cierre_ciclo_v2(uuid,uuid)') is not null
+    and to_regprocedure('public.listar_proyecciones_ciclo_v2(uuid,uuid)') is not null
+    and to_regprocedure('public.obtener_preparacion_cierre_ciclo_v2(uuid,uuid)') is not null
+  and to_regprocedure('public.asignar_animal_ciclo_v2(uuid,uuid,uuid,date)') is not null
+  and to_regprocedure('public.asignar_animales_ciclo_v2(uuid,uuid[],date)') is not null
   and to_regprocedure('public.reemplazar_alimento_ciclo_v2(uuid,uuid,uuid,date,date)') is not null
   and to_regprocedure('public.registrar_gasto_ciclo_v2_con_categoria(uuid,uuid,date,numeric,text,text)') is not null
   and to_regprocedure('public.guardar_proyeccion_ciclo_v2(uuid,uuid,jsonb,text)') is not null
@@ -34,8 +36,10 @@ select pg_temp.assert_true(
        'listar_animales_ciclo_v2',
        'listar_alimentos_ciclo_v2',
        'listar_gastos_ciclo_v2',
-       'listar_proyecciones_ciclo_v2',
-       'obtener_preparacion_cierre_ciclo_v2',
+        'listar_proyecciones_ciclo_v2',
+        'obtener_preparacion_cierre_ciclo_v2',
+        'asignar_animal_ciclo_v2',
+        'asignar_animales_ciclo_v2',
        'reemplazar_alimento_ciclo_v2',
        'registrar_gasto_ciclo_v2_con_categoria',
        'guardar_proyeccion_ciclo_v2',
@@ -54,7 +58,7 @@ select pg_temp.assert_true(
         )) privilege
         where privilege.grantee = 0
           and privilege.privilege_type = 'EXECUTE'
-      )) = 11,
+       )) = 13,
   'Finance cycle public APIs must be fixed-path invokers executable only by authenticated'
 );
 
@@ -68,8 +72,10 @@ select pg_temp.assert_true(
        'read_cycle_members_impl',
        'read_cycle_feeds_impl',
        'read_cycle_expenses_impl',
-       'read_cycle_projections_impl',
-       'read_cycle_readiness_impl',
+        'read_cycle_projections_impl',
+        'read_cycle_readiness_impl',
+        'assign_cycle_animal_impl',
+        'assign_cycle_animals_impl',
        'replace_cycle_feed_impl',
        'record_cycle_expense_with_category_impl',
        'save_cycle_projection_impl',
@@ -88,7 +94,7 @@ select pg_temp.assert_true(
        )) privilege
        where privilege.grantee = 0
          and privilege.privilege_type = 'EXECUTE'
-     )) = 11,
+       )) = 13,
   'Finance cycle private implementations must be fixed-path definers executable only by authenticated'
 );
 
@@ -113,6 +119,18 @@ select pg_temp.assert_true(
   'Cycle creation implementation must remain a private fixed-path definer'
 );
 
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from pg_constraint constraint_record
+    where constraint_record.conrelid = 'economics_v2.cycle_animals'::regclass
+      and constraint_record.contype = 'p'
+      and pg_get_constraintdef(constraint_record.oid)
+        = 'PRIMARY KEY (cycle_id, animal_id)'
+  ),
+  'Cycle membership must retain its composite primary key'
+);
+
 do $full_scope$
 <<full_scope>>
 declare
@@ -125,12 +143,18 @@ declare
   group_id uuid := '00000000-0000-0000-0000-000000008401';
   animal_one uuid := '00000000-0000-0000-0000-000000008501';
   animal_two uuid := '00000000-0000-0000-0000-000000008502';
+  animal_same_cycle_exit uuid := '00000000-0000-0000-0000-000000008503';
+  animal_active_elsewhere uuid := '00000000-0000-0000-0000-000000008504';
+  animal_invalid_purpose uuid := '00000000-0000-0000-0000-000000008505';
+  animal_batch_one uuid := '00000000-0000-0000-0000-000000008506';
+  animal_batch_two uuid := '00000000-0000-0000-0000-000000008507';
   food_one uuid := '00000000-0000-0000-0000-000000008601';
   food_two uuid := '00000000-0000-0000-0000-000000008602';
   mixture_one uuid := '00000000-0000-0000-0000-000000008701';
   mixture_two uuid := '00000000-0000-0000-0000-000000008702';
   purpose_id uuid;
   cycle_id uuid;
+  other_cycle_id uuid;
   first_feed_id uuid;
   second_feed_id uuid;
   expense_id uuid;
@@ -173,8 +197,26 @@ begin
     id, granja_id, tipo_animal_id, grupo_id, proposito_id,
     brazalete, fecha_adquisicion, created_by
   ) values
-    (animal_one, farm_id, type_id, group_id, purpose_id, 101, current_date - 10, editor_id),
-    (animal_two, farm_id, type_id, group_id, purpose_id, 102, current_date - 10, editor_id);
+     (animal_one, farm_id, type_id, group_id, purpose_id, 101, current_date - 10, editor_id),
+     (animal_two, farm_id, type_id, group_id, purpose_id, 102, current_date - 10, editor_id),
+     (animal_same_cycle_exit, farm_id, type_id, group_id, purpose_id, 103, current_date - 10, editor_id),
+     (animal_active_elsewhere, farm_id, type_id, group_id, purpose_id, 104, current_date - 10, editor_id),
+     (animal_batch_one, farm_id, type_id, group_id, purpose_id, 106, current_date - 10, editor_id),
+     (animal_batch_two, farm_id, type_id, group_id, purpose_id, 107, current_date - 10, editor_id);
+
+  insert into public.animales (
+    id, granja_id, tipo_animal_id, grupo_id, proposito_id,
+    brazalete, fecha_adquisicion, created_by
+  ) values (
+    animal_invalid_purpose,
+    farm_id,
+    type_id,
+    group_id,
+    null,
+    105,
+    current_date - 10,
+    editor_id
+  );
   insert into public.cat_comida (id, granja_id, nombre, created_by)
   values
     (food_one, farm_id, 'Feed one', editor_id),
@@ -200,6 +242,14 @@ begin
   perform public.asignar_animal_ciclo_v2(
     farm_id, cycle_id, animal_one, current_date - 7
   );
+  select public.crear_ciclo_v2_con_fechas(
+    farm_id, purpose_id, current_date - 6, current_date + 7
+  ) into other_cycle_id;
+  perform public.asignar_animales_ciclo_v2(
+    other_cycle_id,
+    array[animal_batch_one, animal_batch_two],
+    current_date - 6
+  );
   select public.reemplazar_alimento_ciclo_v2(
     farm_id, cycle_id, mixture_one, current_date - 6, null
   ) into first_feed_id;
@@ -208,12 +258,65 @@ begin
   ) into second_feed_id;
   reset role;
 
+  insert into economics_v2.cycle_animals (cycle_id, animal_id, joined_on, left_on)
+  values (cycle_id, animal_same_cycle_exit, current_date - 7, current_date - 1);
+  insert into economics_v2.cycle_animals (cycle_id, animal_id, joined_on)
+  values (other_cycle_id, animal_active_elsewhere, current_date - 6);
+
   perform pg_temp.assert_true(
     (select starts_on = current_date - 6 and ends_on = current_date - 3
      from economics_v2.cycle_feeds where id = first_feed_id)
     and (select starts_on = current_date - 3 and ends_on is null
-         from economics_v2.cycle_feeds where id = second_feed_id),
-    'feed replacement must close the prior half-open interval exactly at the new start'
+         from economics_v2.cycle_feeds where id = second_feed_id)
+    and (select count(*) = 2
+         from economics_v2.cycle_animals membership
+         where membership.cycle_id = other_cycle_id
+           and membership.animal_id in (animal_batch_one, animal_batch_two)),
+    'feed replacement and successful batch assignment must persist their complete results'
+  );
+
+  set local role authenticated;
+  begin
+    perform public.asignar_animales_ciclo_v2(cycle_id, '{}'::uuid[], current_date);
+    raise exception 'empty batch input must be rejected';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.asignar_animales_ciclo_v2(
+      cycle_id,
+      array[animal_two, null]::uuid[],
+      current_date
+    );
+    raise exception 'null batch member must be rejected';
+  exception when null_value_not_allowed then null;
+  end;
+  begin
+    perform public.asignar_animales_ciclo_v2(
+      cycle_id,
+      array[animal_two, animal_two],
+      current_date
+    );
+    raise exception 'duplicate batch member must be rejected';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.asignar_animales_ciclo_v2(
+      cycle_id,
+      array[animal_two, animal_invalid_purpose],
+      current_date
+    );
+    raise exception 'a later invalid member must abort the entire batch';
+  exception when invalid_parameter_value then null;
+  end;
+  reset role;
+  perform pg_temp.assert_true(
+    not exists (
+      select 1
+      from economics_v2.cycle_animals membership
+      where membership.cycle_id = cycle_id
+        and membership.animal_id in (animal_two, animal_invalid_purpose)
+    ),
+    'an uncaught later assignment failure must roll back earlier batch members'
   );
 
   update public.grupos set nombre = 'Renamed group' where id = group_id;
@@ -226,14 +329,34 @@ begin
 
   perform pg_temp.assert_true(
     feeds -> 'intervals' -> 0 ->> 'group_name_snapshot' = 'Original group'
-    and detail ->> 'status' = 'open'
-    and jsonb_array_length(members -> 'members') = 1
-    and jsonb_array_length(members -> 'candidates') = 1
+     and detail ->> 'status' = 'open'
+     and jsonb_array_length(members -> 'members') = 1
+     and jsonb_array_length(members -> 'candidates') = 1
+     and members -> 'candidates' @> jsonb_build_array(
+       jsonb_build_object('animal_id', animal_two)
+     )
     and (detail ->> 'direct_expense_total')::numeric = 0
     and readiness ->> 'can_close_production' = 'true',
     'reads must use real scoped data, preserve historical group snapshots, and allow zero direct expense'
   );
 
+  set local role authenticated;
+  begin
+    perform public.asignar_animal_ciclo_v2(
+      farm_id, cycle_id, animal_same_cycle_exit, current_date
+    );
+    raise exception 'same-cycle re-entry must be rejected';
+  exception when unique_violation then null;
+  end;
+  reset role;
+  perform pg_temp.assert_true(
+    (select count(*) = 1
+     from economics_v2.cycle_animals membership
+     where membership.cycle_id = cycle_id
+       and membership.animal_id = animal_same_cycle_exit
+       and membership.left_on = current_date - 1),
+    'historical same-cycle membership must remain one exited row'
+  );
   set local role authenticated;
   begin
     perform public.registrar_gasto_ciclo_v2_con_categoria(
@@ -308,6 +431,13 @@ begin
   exception when insufficient_privilege or check_violation then null;
   end;
   begin
+    perform public.asignar_animales_ciclo_v2(
+      cycle_id, array[animal_two], current_date
+    );
+    raise exception 'post-settlement batch membership edits must be rejected';
+  exception when insufficient_privilege or check_violation then null;
+  end;
+  begin
     perform public.registrar_gasto_ciclo_v2_con_categoria(
       farm_id, cycle_id, current_date, 1, 'Other', 'Late expense'
     );
@@ -346,15 +476,48 @@ begin
     raise exception 'cross-farm detail access must be rejected';
   exception when insufficient_privilege then null;
   end;
+  begin
+    perform public.listar_animales_ciclo_v2(farm_id, cycle_id);
+    raise exception 'cross-farm member reads must be rejected';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.asignar_animal_ciclo_v2(farm_id, cycle_id, animal_two, current_date);
+    raise exception 'cross-farm assignment must be rejected';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.asignar_animales_ciclo_v2(
+      cycle_id, array[animal_two], current_date
+    );
+    raise exception 'cross-farm batch assignment must be rejected';
+  exception when insufficient_privilege then null;
+  end;
   reset role;
 
   perform set_config('request.jwt.claim.sub', viewer_id::text, true);
   set local role authenticated;
   select public.obtener_detalle_ciclo_v2(farm_id, cycle_id) into detail;
+  select public.listar_animales_ciclo_v2(farm_id, cycle_id) into members;
   perform pg_temp.assert_true(
-    detail ->> 'cycle_id' = cycle_id::text,
-    'viewer must retain farm-scoped read access'
+    detail ->> 'cycle_id' = cycle_id::text
+    and members -> 'members' @> jsonb_build_array(
+      jsonb_build_object('animal_id', animal_one)
+    ),
+    'viewer must retain farm-scoped detail and member reads'
   );
+  begin
+    perform public.asignar_animal_ciclo_v2(farm_id, cycle_id, animal_two, current_date);
+    raise exception 'viewer assignment must be rejected';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.asignar_animales_ciclo_v2(
+      cycle_id, array[animal_two], current_date
+    );
+    raise exception 'viewer batch assignment must be rejected';
+  exception when insufficient_privilege then null;
+  end;
   begin
     perform public.registrar_gasto_ciclo_v2_con_categoria(
       farm_id, cycle_id, current_date, 1, 'Other', 'Viewer expense'

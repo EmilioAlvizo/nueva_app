@@ -664,6 +664,168 @@ abstract class AppLocalizations {
   /// **'No hay animales disponibles para asignar.'**
   String get financeCycleAnimalsAvailableEmpty;
 
+  /// Título de la vista de integrantes del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Animales del ciclo'**
+  String get financeCycleAnimalsTitle;
+
+  /// Descripción de la vista de integrantes del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Consulta los animales activos y el historial de salidas.'**
+  String get financeCycleAnimalsSubtitle;
+
+  /// Métrica de integrantes activos del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Activos'**
+  String get financeCycleAnimalsActiveMetric;
+
+  /// Métrica de integrantes que salieron del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Salieron'**
+  String get financeCycleAnimalsExitedMetric;
+
+  /// Acción para iniciar la selección de animales
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar animales'**
+  String get financeCycleAnimalsAdd;
+
+  /// Aviso para ciclos cuya fecha de inicio aún no ha llegado
+  ///
+  /// In es, this message translates to:
+  /// **'Podrás agregar animales cuando comience el ciclo.'**
+  String get financeCycleAnimalsFutureStart;
+
+  /// Título de la selección múltiple de animales
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar animales'**
+  String get financeCycleAnimalsSelectionTitle;
+
+  /// Descripción de la selección múltiple de animales
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona uno o más animales disponibles.'**
+  String get financeCycleAnimalsSelectionSubtitle;
+
+  /// Etiqueta del buscador de candidatos
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por animal o grupo'**
+  String get financeCycleAnimalsSearchLabel;
+
+  /// Filtro que muestra todos los candidatos
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get financeCycleAnimalsFilterAll;
+
+  /// Filtro de candidatos que pertenecen a un grupo
+  ///
+  /// In es, this message translates to:
+  /// **'Con grupo'**
+  String get financeCycleAnimalsFilterGrouped;
+
+  /// Filtro de candidatos sin grupo
+  ///
+  /// In es, this message translates to:
+  /// **'Sin grupo'**
+  String get financeCycleAnimalsFilterUngrouped;
+
+  /// Estado vacío de la selección filtrada
+  ///
+  /// In es, this message translates to:
+  /// **'No hay animales que coincidan con la búsqueda y el filtro.'**
+  String get financeCycleAnimalsNoResults;
+
+  /// Cantidad de animales seleccionados
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{Ningún animal seleccionado} =1{1 seleccionado} other{{count} seleccionados}}'**
+  String financeCycleAnimalsSelectedCount(int count);
+
+  /// Acción para eliminar toda la selección
+  ///
+  /// In es, this message translates to:
+  /// **'Limpiar selección'**
+  String get financeCycleAnimalsClear;
+
+  /// Acción para revisar la cantidad seleccionada
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{Continuar con 1 animal} other{Continuar con {count} animales}}'**
+  String financeCycleAnimalsContinue(int count);
+
+  /// Etiqueta accesible de un candidato seleccionable
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar {name}'**
+  String financeCycleAnimalsSelectAnimal(String name);
+
+  /// Valor sustituto para un animal sin grupo
+  ///
+  /// In es, this message translates to:
+  /// **'Sin grupo'**
+  String get financeCycleAnimalsWithoutGroup;
+
+  /// Título de la confirmación de ingreso múltiple
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar ingreso'**
+  String get financeCycleAnimalsConfirmationTitle;
+
+  /// Descripción de la confirmación de ingreso múltiple
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa los animales y la fecha antes de confirmar.'**
+  String get financeCycleAnimalsConfirmationSubtitle;
+
+  /// Cantidad proyectada de integrantes activos tras el ingreso
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 animal activo después del ingreso} other{{count} animales activos después del ingreso}}'**
+  String financeCycleAnimalsProjectedActive(int count);
+
+  /// Título del resumen de animales seleccionados
+  ///
+  /// In es, this message translates to:
+  /// **'Animales seleccionados'**
+  String get financeCycleAnimalsSelectedTitle;
+
+  /// Etiqueta de la fecha común de ingreso
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de ingreso'**
+  String get financeCycleAnimalsJoinedOnLabel;
+
+  /// Nota sobre las restricciones de la fecha común de ingreso
+  ///
+  /// In es, this message translates to:
+  /// **'La fecha de ingreso común debe estar dentro del período del ciclo y no puede ser futura.'**
+  String get financeCycleAnimalsJoinedOnConstraint;
+
+  /// Acción para regresar desde la confirmación
+  ///
+  /// In es, this message translates to:
+  /// **'Volver a la selección'**
+  String get financeCycleAnimalsCancel;
+
+  /// Acción para confirmar el ingreso atómico de la cantidad seleccionada
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{Agregar 1 animal al ciclo} other{Agregar {count} animales al ciclo}}'**
+  String financeCycleAnimalsConfirm(int count);
+
+  /// Estado accesible mientras se asignan los animales
+  ///
+  /// In es, this message translates to:
+  /// **'Asignando animales'**
+  String get financeCycleAnimalsConfirmPending;
+
   /// Estado de una asignación activa de animal
   ///
   /// In es, this message translates to:

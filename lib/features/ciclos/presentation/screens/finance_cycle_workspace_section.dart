@@ -11,12 +11,14 @@ import '../../domain/economics_v2_models.dart';
 import '../providers/cycle_providers.dart';
 import '../widgets/finance_cycle_visuals.dart';
 import '../widgets/finance_cycles_states.dart';
+import 'finance_cycle_animals_section.dart';
 
 class FinanceCycleWorkspaceSection extends ConsumerWidget {
   const FinanceCycleWorkspaceSection({
     required this.farmId,
     required this.cycleId,
     required this.view,
+    required this.canEdit,
     this.now,
     super.key,
   });
@@ -24,11 +26,22 @@ class FinanceCycleWorkspaceSection extends ConsumerWidget {
   final String farmId;
   final String cycleId;
   final FinanceCyclesView view;
+  final bool canEdit;
   final DateTime Function()? now;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(economicsV2CycleDetailProvider(farmId, cycleId));
+    ref.listen(economicsV2CycleDetailProvider(farmId, cycleId), (_, next) {
+      final value = next.value;
+      if (value == null ||
+          value.isCompatibilityMode ||
+          value.status != EconomicsV2CycleStatus.open) {
+        ref
+            .read(financeCyclesWorkflowProvider(farmId).notifier)
+            .resetAnimalAssignment();
+      }
+    });
     final mutation = ref.watch(
       financeCycleWorkspaceMutationsProvider(farmId, cycleId),
     );
@@ -43,9 +56,6 @@ class FinanceCycleWorkspaceSection extends ConsumerWidget {
         selectedView: view,
         onBack: () =>
             ref.read(financeCyclesWorkflowProvider(farmId).notifier).showList(),
-        onSelectView: (destination) => ref
-            .read(financeCyclesWorkflowProvider(farmId).notifier)
-            .showCycleView(destination),
         mutationFailed: mutation.hasError,
         isCompatibilityMode: value.isCompatibilityMode,
         body: FinanceCycleWorkspaceBody(
@@ -53,6 +63,7 @@ class FinanceCycleWorkspaceSection extends ConsumerWidget {
           cycleId: cycleId,
           view: view,
           detail: value,
+          canEdit: canEdit,
           isPending: mutation.isLoading,
           now: now,
         ),
@@ -67,6 +78,7 @@ class FinanceCycleWorkspaceBody extends ConsumerWidget {
     required this.cycleId,
     required this.view,
     required this.detail,
+    required this.canEdit,
     required this.isPending,
     this.now,
     super.key,
@@ -76,6 +88,7 @@ class FinanceCycleWorkspaceBody extends ConsumerWidget {
   final String cycleId;
   final FinanceCyclesView view;
   final EconomicsV2CycleDetail detail;
+  final bool canEdit;
   final bool isPending;
   final DateTime Function()? now;
 
@@ -88,24 +101,28 @@ class FinanceCycleWorkspaceBody extends ConsumerWidget {
           .read(financeCyclesWorkflowProvider(farmId).notifier)
           .showCycleView(destination),
     ),
-    FinanceCyclesView.animals => FinanceCycleWorkspaceAsyncBody(
-      viewKey: AppWidgetKeys.financeCycleAnimals,
-      value: ref.watch(economicsV2CycleMembersProvider(farmId, cycleId)),
-      onRetry: () =>
-          ref.invalidate(economicsV2CycleMembersProvider(farmId, cycleId)),
-      builder: (members) => FinanceCycleAnimalsView(
-        members: members,
-        isPending: isPending,
-        onAssign: (animalId) => ref
-            .read(
-              financeCycleWorkspaceMutationsProvider(farmId, cycleId).notifier,
-            )
-            .assignAnimal(
-              animalId: animalId,
-              joinedOn: _actionDate(detail.startsOn),
+    FinanceCyclesView.animals =>
+      detail.isCompatibilityMode
+          ? const FinanceCycleAnimalsUnavailableView()
+          : FinanceCycleWorkspaceAsyncBody(
+              viewKey: AppWidgetKeys.financeCycleAnimals,
+              value: ref.watch(
+                economicsV2CycleMembersProvider(farmId, cycleId),
+              ),
+              onRetry: () => ref.invalidate(
+                economicsV2CycleMembersProvider(farmId, cycleId),
+              ),
+              builder: (members) => FinanceCycleAnimalsSection(
+                farmId: farmId,
+                cycleId: cycleId,
+                detail: detail,
+                members: members,
+                canAssign:
+                    canEdit && detail.status == EconomicsV2CycleStatus.open,
+                isPending: isPending,
+                now: now,
+              ),
             ),
-      ),
-    ),
     FinanceCyclesView.feeds => FinanceCycleWorkspaceAsyncBody(
       viewKey: AppWidgetKeys.financeCycleFeeds,
       value: ref.watch(economicsV2CycleFeedsProvider(farmId, cycleId)),
@@ -210,7 +227,6 @@ class FinanceCycleWorkspaceView extends StatelessWidget {
     required this.selectedView,
     required this.body,
     required this.onBack,
-    required this.onSelectView,
     required this.isCompatibilityMode,
     this.mutationFailed = false,
     super.key,
@@ -220,7 +236,6 @@ class FinanceCycleWorkspaceView extends StatelessWidget {
   final FinanceCyclesView selectedView;
   final Widget body;
   final VoidCallback onBack;
-  final ValueChanged<FinanceCyclesView> onSelectView;
   final bool isCompatibilityMode;
   final bool mutationFailed;
 
@@ -258,30 +273,24 @@ class FinanceCycleWorkspaceView extends StatelessWidget {
             onBack: onBack,
           ),
           const SizedBox(height: AppSpacing.lg),
-          FinanceCycleWorkspaceHeader(
-            title: title,
-            period: period,
-            status: FinanceCycleStatusPill(
-              key: const ValueKey(AppWidgetKeys.financeCycleStatus),
-              label: status,
-              isActive: detail.status == EconomicsV2CycleStatus.open,
+          if (selectedView == FinanceCyclesView.overview) ...[
+            FinanceCycleWorkspaceHeader(
+              title: title,
+              period: period,
+              status: FinanceCycleStatusPill(
+                key: const ValueKey(AppWidgetKeys.financeCycleStatus),
+                label: status,
+                isActive: detail.status == EconomicsV2CycleStatus.open,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           if (isCompatibilityMode) ...[
             FinanceCycleCompatibilityNotice(
               message: l10n.financeCycleCompatibilityMessage,
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
-          /* if (selectedView != FinanceCyclesView.overview) ...[
-            FinanceCycleWorkspaceNavigation(
-              selectedView: selectedView,
-              onSelectView: onSelectView,
-              isCompatibilityMode: isCompatibilityMode,
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ], */
           if (mutationFailed) ...[
             FinanceCyclePanel(
               message: l10n.financeCycleMutationError,
@@ -320,84 +329,6 @@ class FinanceCycleCompatibilityNotice extends StatelessWidget {
       variant: FinanceCyclePanelVariant.warning,
     ),
   );
-}
-
-class FinanceCycleWorkspaceNavigation extends StatelessWidget {
-  const FinanceCycleWorkspaceNavigation({
-    required this.selectedView,
-    required this.onSelectView,
-    required this.isCompatibilityMode,
-    super.key,
-  });
-
-  final FinanceCyclesView selectedView;
-  final ValueChanged<FinanceCyclesView> onSelectView;
-  final bool isCompatibilityMode;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final destinations = [
-      (
-        view: FinanceCyclesView.overview,
-        key: AppWidgetKeys.financeCycleOverviewTab,
-        icon: Icons.dashboard_outlined,
-        label: l10n.financeCycleWorkspaceOverview,
-      ),
-      (
-        view: FinanceCyclesView.animals,
-        key: AppWidgetKeys.financeCycleAnimalsTab,
-        icon: Icons.pets_outlined,
-        label: l10n.financeCycleWorkspaceAnimals,
-      ),
-      (
-        view: FinanceCyclesView.feeds,
-        key: AppWidgetKeys.financeCycleFeedsTab,
-        icon: Icons.grass_outlined,
-        label: l10n.financeCycleWorkspaceFeeds,
-      ),
-      (
-        view: FinanceCyclesView.expenses,
-        key: AppWidgetKeys.financeCycleExpensesTab,
-        icon: Icons.receipt_long_outlined,
-        label: l10n.financeCycleWorkspaceExpenses,
-      ),
-      (
-        view: FinanceCyclesView.projections,
-        key: AppWidgetKeys.financeCycleProjectionsTab,
-        icon: Icons.trending_up_rounded,
-        label: l10n.financeCycleWorkspaceProjections,
-      ),
-      (
-        view: FinanceCyclesView.close,
-        key: AppWidgetKeys.financeCycleCloseTab,
-        icon: Icons.task_alt_rounded,
-        label: l10n.financeCycleWorkspaceClose,
-      ),
-    ];
-    return Wrap(
-      spacing: AppSpacing.xs,
-      runSpacing: AppSpacing.xs,
-      children: [
-        for (final destination in destinations)
-          IconButton.filledTonal(
-            key: ValueKey(destination.key),
-            tooltip:
-                isCompatibilityMode &&
-                    destination.view != FinanceCyclesView.overview
-                ? l10n.financeCycleCompatibilityMessage
-                : destination.label,
-            isSelected: selectedView == destination.view,
-            onPressed:
-                isCompatibilityMode &&
-                    destination.view != FinanceCyclesView.overview
-                ? null
-                : () => onSelectView(destination.view),
-            icon: Icon(destination.icon),
-          ),
-      ],
-    );
-  }
 }
 
 class FinanceCycleOverviewView extends StatelessWidget {
@@ -462,9 +393,7 @@ class FinanceCycleOverviewView extends StatelessWidget {
           title: l10n.financeCycleWorkspaceAnimals,
           subtitle: l10n.financeCycleAnimalsNavigationSubtitle,
           value: l10n.financeCycleActiveValue(detail.activeAnimalCount),
-          onPressed: destination == null
-              ? null
-              : () => destination(FinanceCyclesView.animals),
+          onPressed: () => onSelectView(FinanceCyclesView.animals),
         ),
         const SizedBox(height: AppSpacing.sm),
         FinanceCycleNavigationRow(
@@ -525,112 +454,19 @@ class FinanceCycleOverviewView extends StatelessWidget {
   }
 }
 
-class FinanceCycleAnimalsView extends StatelessWidget {
-  const FinanceCycleAnimalsView({
-    required this.members,
-    required this.isPending,
-    required this.onAssign,
-    super.key,
-  });
-
-  final EconomicsV2CycleMembers members;
-  final bool isPending;
-  final ValueChanged<String> onAssign;
+class FinanceCycleAnimalsUnavailableView extends StatelessWidget {
+  const FinanceCycleAnimalsUnavailableView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final activeMemberCount = members.members
-        .where((member) => member.isActive)
-        .length;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        FinanceCycleSurfaceCard(
-          key: const ValueKey(AppWidgetKeys.financeCycleAnimalsSummary),
-          child: FinanceCycleMetricGroup(
-            metrics: [
-              FinanceCycleMetricTile(
-                label: l10n.financeCycleAssignedAnimalsMetric,
-                value: activeMemberCount.formatInteger(l10n),
-                icon: Icons.pets_outlined,
-              ),
-              FinanceCycleMetricTile(
-                label: l10n.financeCycleAvailableAnimalsMetric,
-                value: members.candidates.length.formatInteger(l10n),
-                icon: Icons.add_circle_outline_rounded,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        FinanceCycleContentSection(
-          key: const ValueKey(AppWidgetKeys.financeCycleAnimalsAssigned),
-          title: l10n.financeCycleAnimalsAssignedTitle,
-          subtitle: l10n.financeCycleAnimalsAssignedCount(
-            members.members.length,
-          ),
-          children: [
-            if (members.members.isEmpty)
-              FinanceCyclePanel(
-                message: l10n.financeCycleAnimalsAssignedEmpty,
-                variant: FinanceCyclePanelVariant.info,
-              ),
-            for (final member in members.members)
-              FinanceCycleRecordTile(
-                icon: Icons.pets_outlined,
-                title: member.label,
-                details: [
-                  l10n.financeCycleMemberSince(
-                    member.joinedOn.formatShortDate(l10n),
-                  ),
-                  ?member.groupNameSnapshot,
-                ],
-                badge: FinanceCycleStatusPill(
-                  label: member.isActive
-                      ? l10n.financeCycleAssignmentActive
-                      : l10n.financeCycleAssignmentFinished,
-                  isActive: member.isActive,
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        FinanceCycleContentSection(
-          key: const ValueKey(AppWidgetKeys.financeCycleAnimalsAvailable),
-          title: l10n.financeCycleAnimalsAvailableTitle,
-          subtitle: l10n.financeCycleAnimalsAvailableCount(
-            members.candidates.length,
-          ),
-          children: [
-            if (members.candidates.isEmpty)
-              FinanceCyclePanel(
-                message: l10n.financeCycleAnimalsAvailableEmpty,
-                variant: FinanceCyclePanelVariant.info,
-              ),
-            for (final candidate in members.candidates) ...[
-              FinanceCycleRecordTile(
-                icon: Icons.pets_outlined,
-                title: candidate.label,
-                details: [?candidate.groupName],
-              ),
-              FinanceCycleActionButton(
-                keyValue: AppWidgetKeys.financeCycleAssignAnimal(
-                  candidate.animalId,
-                ),
-                label: l10n.financeCycleAssignAnimal(candidate.label),
-                variant: FinanceCycleActionVariant.primary,
-                onPressed: isPending
-                    ? null
-                    : () => onAssign(candidate.animalId),
-                icon: Icons.add_rounded,
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    liveRegion: true,
+    child: FinanceCyclePanel(
+      key: const ValueKey(AppWidgetKeys.financeCycleAnimalsUnavailable),
+      message: context.l10n.financeCycleCompatibilityMessage,
+      variant: FinanceCyclePanelVariant.warning,
+    ),
+  );
 }
 
 class FinanceCycleFeedsView extends StatelessWidget {

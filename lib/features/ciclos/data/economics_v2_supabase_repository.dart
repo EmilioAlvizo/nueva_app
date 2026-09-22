@@ -251,6 +251,24 @@ class EconomicsV2SupabaseRepository
   }
 
   @override
+  Future<EconomicsV2AnimalsAssigned> assignAnimals(
+    EconomicsV2AssignAnimalsRequest request,
+  ) async {
+    await _client.rpc<void>(
+      'asignar_animales_ciclo_v2',
+      params: {
+        'p_cycle_id': request.cycleId,
+        'p_animal_ids': request.animalIds,
+        'p_joined_on': _date(request.joinedOn),
+      },
+    );
+    return EconomicsV2AnimalsAssigned(
+      cycleId: request.cycleId,
+      animalIds: request.animalIds,
+    );
+  }
+
+  @override
   Future<EconomicsV2ExpenseRecorded> recordExpense(
     EconomicsV2RecordExpenseRequest request,
   ) async {

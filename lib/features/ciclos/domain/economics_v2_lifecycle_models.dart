@@ -23,6 +23,18 @@ class EconomicsV2AssignAnimalRequest {
   final DateTime joinedOn;
 }
 
+class EconomicsV2AssignAnimalsRequest {
+  const EconomicsV2AssignAnimalsRequest({
+    required this.cycleId,
+    required this.animalIds,
+    required this.joinedOn,
+  });
+
+  final String cycleId;
+  final List<String> animalIds;
+  final DateTime joinedOn;
+}
+
 class EconomicsV2RecordExpenseRequest {
   const EconomicsV2RecordExpenseRequest({
     required this.farmId,
@@ -77,6 +89,16 @@ class EconomicsV2AnimalAssigned {
   });
 
   final String cycleId, animalId;
+}
+
+class EconomicsV2AnimalsAssigned {
+  const EconomicsV2AnimalsAssigned({
+    required this.cycleId,
+    required this.animalIds,
+  });
+
+  final String cycleId;
+  final List<String> animalIds;
 }
 
 class EconomicsV2ExpenseRecorded {

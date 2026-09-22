@@ -256,6 +256,13 @@ class EconomicsV2LifecycleMutations extends _$EconomicsV2LifecycleMutations {
         ref.read(economicsV2LifecycleRepositoryProvider).assignAnimal(request),
   );
 
+  Future<EconomicsV2AnimalsAssigned> assignAnimals(
+    EconomicsV2AssignAnimalsRequest request,
+  ) => _run(
+    () =>
+        ref.read(economicsV2LifecycleRepositoryProvider).assignAnimals(request),
+  );
+
   Future<EconomicsV2ExpenseRecorded> recordExpense(
     EconomicsV2RecordExpenseRequest request,
   ) => _run(
@@ -307,24 +314,57 @@ enum FinanceCyclesView {
   close,
 }
 
+enum FinanceCycleAnimalsStep { members, selection, confirmation }
+
+enum FinanceCycleAnimalFilter { all, grouped, ungrouped }
+
 final class FinanceCyclesWorkflowState {
-  const FinanceCyclesWorkflowState({
+  FinanceCyclesWorkflowState({
     this.view = FinanceCyclesView.list,
     this.cycleId,
-  });
+    this.animalsStep = FinanceCycleAnimalsStep.members,
+    List<String> selectedAnimalIds = const [],
+    this.animalSearchQuery = '',
+    this.animalFilter = FinanceCycleAnimalFilter.all,
+    this.joinedOn,
+  }) : selectedAnimalIds = List.unmodifiable(selectedAnimalIds);
 
   final FinanceCyclesView view;
   final String? cycleId;
+  final FinanceCycleAnimalsStep animalsStep;
+  final List<String> selectedAnimalIds;
+  final String animalSearchQuery;
+  final FinanceCycleAnimalFilter animalFilter;
+  final DateTime? joinedOn;
+
+  FinanceCyclesWorkflowState copyWith({
+    FinanceCyclesView? view,
+    String? cycleId,
+    FinanceCycleAnimalsStep? animalsStep,
+    List<String>? selectedAnimalIds,
+    String? animalSearchQuery,
+    FinanceCycleAnimalFilter? animalFilter,
+    DateTime? joinedOn,
+    bool clearJoinedOn = false,
+  }) => FinanceCyclesWorkflowState(
+    view: view ?? this.view,
+    cycleId: cycleId ?? this.cycleId,
+    animalsStep: animalsStep ?? this.animalsStep,
+    selectedAnimalIds: selectedAnimalIds ?? this.selectedAnimalIds,
+    animalSearchQuery: animalSearchQuery ?? this.animalSearchQuery,
+    animalFilter: animalFilter ?? this.animalFilter,
+    joinedOn: clearJoinedOn ? null : joinedOn ?? this.joinedOn,
+  );
 }
 
 @riverpod
 class FinanceCyclesWorkflow extends _$FinanceCyclesWorkflow {
   @override
   FinanceCyclesWorkflowState build(String farmId) =>
-      const FinanceCyclesWorkflowState();
+      FinanceCyclesWorkflowState();
 
   void showCreate() =>
-      state = const FinanceCyclesWorkflowState(view: FinanceCyclesView.create);
+      state = FinanceCyclesWorkflowState(view: FinanceCyclesView.create);
 
   void openCycle(String cycleId) => state = FinanceCyclesWorkflowState(
     view: FinanceCyclesView.overview,
@@ -344,11 +384,85 @@ class FinanceCyclesWorkflow extends _$FinanceCyclesWorkflow {
     state = FinanceCyclesWorkflowState(view: view, cycleId: cycleId);
   }
 
-  void showList() => state = const FinanceCyclesWorkflowState();
+  void startAnimalSelection() {
+    if (state.view != FinanceCyclesView.animals) return;
+    state = state.copyWith(
+      animalsStep: FinanceCycleAnimalsStep.selection,
+      selectedAnimalIds: const [],
+      animalSearchQuery: '',
+      animalFilter: FinanceCycleAnimalFilter.all,
+      clearJoinedOn: true,
+    );
+  }
+
+  void setAnimalSearchQuery(String query) {
+    if (state.animalsStep != FinanceCycleAnimalsStep.selection) return;
+    state = state.copyWith(animalSearchQuery: query);
+  }
+
+  void setAnimalFilter(FinanceCycleAnimalFilter filter) {
+    if (state.animalsStep != FinanceCycleAnimalsStep.selection) return;
+    state = state.copyWith(animalFilter: filter);
+  }
+
+  void toggleAnimal(String animalId) {
+    if (state.animalsStep != FinanceCycleAnimalsStep.selection) return;
+    final selected = [...state.selectedAnimalIds];
+    selected.contains(animalId)
+        ? selected.remove(animalId)
+        : selected.add(animalId);
+    state = state.copyWith(selectedAnimalIds: selected);
+  }
+
+  void clearSelectedAnimals() {
+    if (state.animalsStep != FinanceCycleAnimalsStep.selection) return;
+    state = state.copyWith(selectedAnimalIds: const []);
+  }
+
+  void continueAnimalSelection(DateTime joinedOn) {
+    if (state.animalsStep != FinanceCycleAnimalsStep.selection ||
+        state.selectedAnimalIds.isEmpty) {
+      return;
+    }
+    state = state.copyWith(
+      animalsStep: FinanceCycleAnimalsStep.confirmation,
+      joinedOn: joinedOn,
+    );
+  }
+
+  void setAnimalJoinedOn(DateTime joinedOn) {
+    if (state.animalsStep != FinanceCycleAnimalsStep.confirmation) return;
+    state = state.copyWith(joinedOn: joinedOn);
+  }
+
+  void backAnimalAssignment() {
+    state = switch (state.animalsStep) {
+      FinanceCycleAnimalsStep.confirmation => state.copyWith(
+        animalsStep: FinanceCycleAnimalsStep.selection,
+        clearJoinedOn: true,
+      ),
+      FinanceCycleAnimalsStep.selection => _resetAnimalAssignmentState(),
+      FinanceCycleAnimalsStep.members => state,
+    };
+  }
+
+  void resetAnimalAssignment() => state = _resetAnimalAssignmentState();
+
+  FinanceCyclesWorkflowState _resetAnimalAssignmentState() => state.copyWith(
+    animalsStep: FinanceCycleAnimalsStep.members,
+    selectedAnimalIds: const [],
+    animalSearchQuery: '',
+    animalFilter: FinanceCycleAnimalFilter.all,
+    clearJoinedOn: true,
+  );
+
+  void showList() => state = FinanceCyclesWorkflowState();
 }
 
 @riverpod
 class FinanceCycleWorkspaceMutations extends _$FinanceCycleWorkspaceMutations {
+  var _assignmentNeedsReconciliation = false;
+
   @override
   Future<void> build(String farmId, String cycleId) async {}
 
@@ -368,6 +482,59 @@ class FinanceCycleWorkspaceMutations extends _$FinanceCycleWorkspaceMutations {
         ),
     refresh: _refreshMembers,
   );
+
+  Future<bool> assignAnimals({
+    required List<String> animalIds,
+    required DateTime joinedOn,
+  }) async {
+    if (animalIds.isEmpty) return false;
+    if (state.isLoading) return false;
+    state = const AsyncLoading();
+    if (_assignmentNeedsReconciliation) {
+      return _reconcileAssignedAnimals();
+    }
+    try {
+      await ref
+          .read(economicsV2LifecycleRepositoryProvider)
+          .assignAnimals(
+            EconomicsV2AssignAnimalsRequest(
+              cycleId: cycleId,
+              animalIds: animalIds,
+              joinedOn: joinedOn,
+            ),
+          );
+      if (!ref.mounted) return false;
+      _assignmentNeedsReconciliation = true;
+      return _reconcileAssignedAnimals();
+    } catch (error, stackTrace) {
+      if (!ref.mounted) return false;
+      try {
+        await _refreshMembers();
+      } on Object {
+        // Preserve the mutation failure as the actionable error.
+      }
+      if (!ref.mounted) return false;
+      state = AsyncError(error, stackTrace);
+      return false;
+    }
+  }
+
+  Future<bool> _reconcileAssignedAnimals() async {
+    try {
+      await _refreshMembers();
+      if (!ref.mounted) return false;
+      _assignmentNeedsReconciliation = false;
+      state = const AsyncData(null);
+      ref
+          .read(financeCyclesWorkflowProvider(farmId).notifier)
+          .resetAnimalAssignment();
+      return true;
+    } catch (error, stackTrace) {
+      if (!ref.mounted) return false;
+      state = AsyncError(error, stackTrace);
+      return false;
+    }
+  }
 
   Future<bool> linkFeed({
     required String mixtureId,
@@ -464,7 +631,12 @@ class FinanceCycleWorkspaceMutations extends _$FinanceCycleWorkspaceMutations {
   Future<void> _refreshMembers() async {
     _invalidateCommon();
     ref.invalidate(economicsV2CycleMembersProvider(farmId, cycleId));
-    await ref.read(economicsV2CycleMembersProvider(farmId, cycleId).future);
+    await Future.wait([
+      ref.read(economicsV2CycleMembersProvider(farmId, cycleId).future),
+      ref.read(economicsV2CycleDetailProvider(farmId, cycleId).future),
+      ref.read(economicsV2CycleSummariesProvider(farmId).future),
+    ]);
+    if (!ref.mounted) return;
   }
 
   Future<void> _refreshFeeds() async {

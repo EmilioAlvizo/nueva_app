@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,20 +15,314 @@ import 'package:rancho/features/ciclos/domain/economics_v2_models.dart';
 import 'package:rancho/features/ciclos/domain/economics_v2_repository.dart';
 import 'package:rancho/features/ciclos/presentation/providers/cycle_providers.dart';
 import 'package:rancho/features/ciclos/presentation/screens/finance_cycles_section.dart';
+import 'package:rancho/features/ciclos/presentation/widgets/finance_cycle_animals_views.dart';
+import 'package:rancho/features/ciclos/presentation/widgets/finance_cycle_visuals.dart';
 import 'package:rancho/features/model/catalogoItem/catalogo_item.dart';
 import 'package:rancho/l10n/app_localizations.dart';
 
 void main() {
-  testWidgets('does not start V2 reads when locally ineligible', (
+  testWidgets('completes the three-screen atomic animal assignment flow', (
     tester,
   ) async {
-    final repository = _EconomicsRepository();
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _EconomicsRepository()..summaries = [_summary];
+    final lifecycle = _LifecycleRepository();
+    await _pumpSection(
+      tester,
+      repository: repository,
+      lifecycle: lifecycle,
+      role: CycleRole.editor,
+      textScaler: const TextScaler.linear(2),
+      now: () => DateTime(2026, 8, 20),
+    );
+    await _flush(tester);
+    final scope = tester.widget<UncontrolledProviderScope>(
+      find.byType(UncontrolledProviderScope),
+    );
+    scope.container
+        .read(financeCyclesWorkflowProvider('farm-1').notifier)
+        .openCycle('cycle-1');
+    await _flush(tester);
+    await _tapForward(tester, AppWidgetKeys.financeCycleAnimalsTab);
+    await _flush(tester);
+
+    expect(find.text('Animales del ciclo'), findsOneWidget);
+    expect(find.text('Activos'), findsOneWidget);
+    expect(find.text('Salieron'), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleAnimalsAdd), findsOneWidget);
+    final financeTheme = FinanceTheme.of(
+      tester.element(_key(AppWidgetKeys.financeCycleAnimalsAdd)),
+    );
+    expect(
+      _actionButton(
+        tester,
+        AppWidgetKeys.financeCycleAnimalsAdd,
+      ).style?.backgroundColor?.resolve(const {}),
+      financeTheme.cyclePositiveAction,
+    );
+    expect(tester.takeException(), isNull);
+
+    await _tapForward(tester, AppWidgetKeys.financeCycleAnimalsAdd);
+    await _flush(tester);
+    expect(find.text('Agregar animales'), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleAnimalSearch), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleAnimalFilterGrouped), findsOneWidget);
+    expect(
+      _key(AppWidgetKeys.financeCycleAnimalFilterUngrouped),
+      findsOneWidget,
+    );
+    final availableCount = find.text('3 animales disponibles');
+    expect(availableCount, findsOneWidget);
+    expect(
+      tester.getTopLeft(availableCount).dy,
+      greaterThan(
+        tester
+            .getBottomLeft(_key(AppWidgetKeys.financeCycleAnimalFilterAll))
+            .dy,
+      ),
+    );
+    expect(
+      tester.getBottomLeft(availableCount).dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              _key(AppWidgetKeys.financeCycleAnimalCandidate('animal-2')),
+            )
+            .dy,
+      ),
+    );
+
+    await tester.enterText(
+      _key(AppWidgetKeys.financeCycleAnimalSearch),
+      'galpon nandu',
+    );
+    await tester.pump();
+    expect(find.text('Ave Ñandú #103'), findsOneWidget);
+    expect(find.text('Ave #102'), findsNothing);
+    expect(find.text('1 animal disponible'), findsOneWidget);
+    await tester.enterText(_key(AppWidgetKeys.financeCycleAnimalSearch), '');
+    await tester.pump();
+    expect(find.text('3 animales disponibles'), findsOneWidget);
+
+    await _tapForward(
+      tester,
+      AppWidgetKeys.financeCycleAnimalCandidate('animal-2'),
+    );
+    await _tapForward(
+      tester,
+      AppWidgetKeys.financeCycleAnimalCandidate('animal-3'),
+    );
+    await tester.pump();
+    expect(find.text('2 seleccionados'), findsOneWidget);
+    expect(find.text('Continuar con 2 animales'), findsOneWidget);
+    expect(
+      _actionButton(
+        tester,
+        AppWidgetKeys.financeCycleAnimalsContinue,
+      ).style?.backgroundColor?.resolve(const {}),
+      financeTheme.cyclePositiveAction,
+    );
+    await _tapForward(tester, AppWidgetKeys.financeCycleAnimalsContinue);
+    await _flush(tester);
+
+    expect(find.text('Confirmar ingreso'), findsOneWidget);
+    expect(find.text('6 animales activos después del ingreso'), findsOneWidget);
+    expect(
+      find.text(
+        'La fecha de ingreso común debe estar dentro del período del ciclo y '
+        'no puede ser futura.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Agregar 2 animales al ciclo'), findsOneWidget);
+    expect(
+      _actionButton(
+        tester,
+        AppWidgetKeys.financeCycleAnimalsConfirm,
+      ).style?.backgroundColor?.resolve(const {}),
+      financeTheme.cyclePositiveAction,
+    );
+    expect(_key(AppWidgetKeys.financeCycleAnimalsJoinedOn), findsOneWidget);
+    await _tapForward(tester, AppWidgetKeys.financeCycleAnimalsConfirm);
+    await _flush(tester);
+    await _flush(tester);
+
+    expect(lifecycle.batchAssignRequests, hasLength(1));
+    expect(lifecycle.batchAssignRequests.single.animalIds, [
+      'animal-2',
+      'animal-3',
+    ]);
+    expect(
+      lifecycle.batchAssignRequests.single.joinedOn,
+      DateTime(2026, 8, 20),
+    );
+    expect(repository.memberCalls, 2);
+    expect(find.text('Animales del ciclo'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('pluralizes singular animal assignment actions', (tester) async {
+    const candidate = EconomicsV2AnimalCandidate(
+      animalId: 'animal-2',
+      label: 'Ave #102',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('es'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: FinanceCycleAnimalSelectionView(
+              candidates: const [candidate],
+              selectedAnimalIds: const {'animal-2'},
+              query: '',
+              filter: FinanceCycleAnimalFilter.all,
+              hasGroupedCandidates: false,
+              hasUngroupedCandidates: true,
+              onQueryChanged: (_) {},
+              onFilterChanged: (_) {},
+              onToggleAnimal: (_) {},
+              onClear: () {},
+              onContinue: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('1 animal disponible'), findsOneWidget);
+    expect(find.text('Continuar con 1 animal'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('es'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: FinanceCycleAnimalConfirmationView(
+              candidates: const [candidate],
+              joinedOn: DateTime(2026, 8, 20),
+              projectedActiveCount: 5,
+              isPending: false,
+              onSelectDate: () {},
+              onCancel: () {},
+              onConfirm: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Agregar 1 animal al ciclo'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('allows viewers to inspect animals without assignment actions', (
+    tester,
+  ) async {
+    final repository = _EconomicsRepository()
+      ..access = const EconomicsV2FarmAccess(
+        farmId: 'farm-1',
+        enabled: true,
+        role: 'viewer',
+        canEdit: false,
+      )
+      ..summaries = [_summary];
     await _pumpSection(tester, repository: repository, role: CycleRole.viewer);
     await _flush(tester);
 
-    expect(_key(AppWidgetKeys.financeCyclesUnavailable), findsOneWidget);
-    expect(repository.accessCalls, 0);
-    expect(repository.summaryCalls, 0);
+    expect(_key(AppWidgetKeys.financeCycleSummary('cycle-1')), findsOneWidget);
+    await _openCycle(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsTab);
+    await _flush(tester);
+
+    expect(_key(AppWidgetKeys.financeCycleAnimals), findsOneWidget);
+    expect(find.text('Ave #101'), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleAnimalsAdd), findsNothing);
+    expect(repository.memberCalls, 1);
+  });
+
+  testWidgets('blocks animal assignment before a future cycle starts', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final repository = _EconomicsRepository()..summaries = [_summary];
+    await _pumpSection(tester, repository: repository, role: CycleRole.editor);
+    await _flush(tester);
+    await _openCycle(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsTab);
+    await _flush(tester);
+
+    expect(
+      find.text('Podrás agregar animales cuando comience el ciclo.'),
+      findsOneWidget,
+    );
+    final node = tester.getSemantics(
+      _key(AppWidgetKeys.financeCycleAnimalsAdd),
+    );
+    expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+    semantics.dispose();
+  });
+
+  testWidgets('clears confirmation when edit permission is revoked', (
+    tester,
+  ) async {
+    final repository = _EconomicsRepository()..summaries = [_summary];
+    await _pumpSection(
+      tester,
+      repository: repository,
+      role: CycleRole.editor,
+      now: () => DateTime(2026, 8, 20),
+    );
+    await _flush(tester);
+    await _openCycle(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsTab);
+    await _flush(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsAdd);
+    await _flush(tester);
+    await _tapVisible(
+      tester,
+      AppWidgetKeys.financeCycleAnimalCandidate('animal-2'),
+    );
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsContinue);
+    await _flush(tester);
+    expect(find.text('Confirmar ingreso'), findsOneWidget);
+
+    repository.access = const EconomicsV2FarmAccess(
+      farmId: 'farm-1',
+      enabled: true,
+      role: 'viewer',
+      canEdit: false,
+    );
+    final scope = tester.widget<UncontrolledProviderScope>(
+      find.byType(UncontrolledProviderScope),
+    );
+    scope.container.invalidate(economicsV2AccessProvider('farm-1'));
+    await _flush(tester);
+    await _flush(tester);
+
+    expect(find.text('Animales del ciclo'), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleAnimalsAdd), findsNothing);
+    expect(
+      scope.container
+          .read(financeCyclesWorkflowProvider('farm-1'))
+          .selectedAnimalIds,
+      isEmpty,
+    );
   });
 
   testWidgets('does not start V2 reads when the build flag is disabled', (
@@ -306,6 +601,9 @@ void main() {
       _key(AppWidgetKeys.financeCycleWorkspaceDetailContext),
       findsOneWidget,
     );
+    expect(_key(AppWidgetKeys.financeCycleWorkspaceTitle), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleStatus), findsOneWidget);
+    expect(find.byType(FinanceCycleWorkspaceHeader), findsOneWidget);
     expect(find.text('Postura · Gallinero norte'), findsOneWidget);
     expect(find.text('Abierto'), findsOneWidget);
     expect(find.text('20 ago 2026 → actual'), findsOneWidget);
@@ -340,16 +638,6 @@ void main() {
       ),
       findsNothing,
     );
-    final titleRect = tester.getRect(
-      _key(AppWidgetKeys.financeCycleWorkspaceTitle),
-    );
-    final statusRect = tester.getRect(_key(AppWidgetKeys.financeCycleStatus));
-    final overviewRect = tester.getRect(
-      _key(AppWidgetKeys.financeCycleOverview),
-    );
-    expect(statusRect.left, greaterThan(titleRect.left));
-    expect(statusRect.right, closeTo(overviewRect.right, 1));
-    expect(statusRect.center.dy, closeTo(titleRect.center.dy, 2));
     expect(
       tester.getSize(_key(AppWidgetKeys.financeCycleWorkspaceBack)).height,
       greaterThanOrEqualTo(48),
@@ -388,6 +676,38 @@ void main() {
   });
 
   testWidgets(
+    'opens Animals from overview without workspace icon-menu destinations',
+    (tester) async {
+      final repository = _EconomicsRepository()..summaries = [_summary];
+      await _pumpSection(
+        tester,
+        repository: repository,
+        role: CycleRole.editor,
+      );
+      await _flush(tester);
+      await _openCycle(tester);
+
+      final destinationKeys = [
+        AppWidgetKeys.financeCycleAnimalsTab,
+        AppWidgetKeys.financeCycleFeedsTab,
+        AppWidgetKeys.financeCycleExpensesTab,
+        AppWidgetKeys.financeCycleProjectionsTab,
+        AppWidgetKeys.financeCycleCloseTab,
+      ];
+      for (final key in destinationKeys) {
+        expect(_key(key), findsOneWidget);
+      }
+
+      await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsTab);
+      await _flush(tester);
+
+      expect(_key(AppWidgetKeys.financeCycleAnimals), findsOneWidget);
+      _expectSubviewChromeAbsent(destinationKeys);
+      expect(_key(AppWidgetKeys.financeCycleWorkspaceBack), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'uses semantic animal and feeding sections with full-width actions',
     (tester) async {
       tester.view.physicalSize = const Size(390, 760);
@@ -399,6 +719,7 @@ void main() {
         tester,
         repository: repository,
         role: CycleRole.editor,
+        now: () => DateTime(2026, 8, 20),
       );
       await _flush(tester);
       await _openCycle(tester);
@@ -411,25 +732,21 @@ void main() {
       for (final key in [
         AppWidgetKeys.financeCycleAnimalsSummary,
         AppWidgetKeys.financeCycleAnimalsAssigned,
-        AppWidgetKeys.financeCycleAnimalsAvailable,
       ]) {
         expect(_surfaceMaterial(tester, key).color, animalsTheme.cycleSurface);
       }
       expect(find.text('Asignados al ciclo'), findsOneWidget);
-      expect(find.text('Disponibles para asignar'), findsOneWidget);
+      expect(find.text('Animales del ciclo'), findsOneWidget);
       expect(
-        tester
-            .getSize(_key(AppWidgetKeys.financeCycleAssignAnimal('animal-2')))
-            .width,
+        tester.getSize(_key(AppWidgetKeys.financeCycleAnimalsAdd)).width,
         greaterThanOrEqualTo(326),
       );
       expect(
-        tester
-            .getSize(_key(AppWidgetKeys.financeCycleAssignAnimal('animal-2')))
-            .height,
+        tester.getSize(_key(AppWidgetKeys.financeCycleAnimalsAdd)).height,
         greaterThanOrEqualTo(48),
       );
 
+      await _reopenCycleOverview(tester);
       await _tapVisible(tester, AppWidgetKeys.financeCycleFeedsTab);
       await _flush(tester);
       final feedsTheme = FinanceTheme.of(
@@ -453,6 +770,72 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('exposes an enabled assignment action semantic contract', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final repository = _EconomicsRepository()..summaries = [_summary];
+    await _pumpSection(
+      tester,
+      repository: repository,
+      role: CycleRole.editor,
+      now: () => DateTime(2026, 8, 20),
+    );
+    await _flush(tester);
+    await _openCycle(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsTab);
+    await _flush(tester);
+
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsAdd);
+    await _flush(tester);
+    final assignmentAction = _key(
+      AppWidgetKeys.financeCycleAnimalCandidate('animal-2'),
+    );
+    final node = tester.getSemantics(assignmentAction);
+    expect(node.label, 'Seleccionar Ave #102');
+    expect(node.flagsCollection.isButton, isTrue);
+    expect(node.flagsCollection.isEnabled, Tristate.isTrue);
+    semantics.dispose();
+  });
+
+  testWidgets('exposes a disabled assignment action while pending', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('es'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: FinanceCycleAnimalConfirmationView(
+            candidates: const [
+              EconomicsV2AnimalCandidate(
+                animalId: 'animal-2',
+                label: 'Ave #102',
+              ),
+            ],
+            joinedOn: DateTime(2026, 8, 20),
+            projectedActiveCount: 5,
+            isPending: true,
+            onSelectDate: () {},
+            onCancel: () {},
+            onConfirm: () {},
+          ),
+        ),
+      ),
+    );
+
+    final node = tester.getSemantics(
+      _key(AppWidgetKeys.financeCycleAnimalsConfirm),
+    );
+    expect(node.label, 'Asignando animales');
+    expect(node.flagsCollection.isButton, isTrue);
+    expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+    semantics.dispose();
+  });
 
   testWidgets(
     'uses semantic expense and projection summaries with real metrics',
@@ -493,6 +876,7 @@ void main() {
         greaterThanOrEqualTo(326),
       );
 
+      await _reopenCycleOverview(tester);
       await _tapVisible(tester, AppWidgetKeys.financeCycleProjectionsTab);
       await _flush(tester);
       final projectionKey = AppWidgetKeys.financeCycleProjectionCard(
@@ -623,10 +1007,8 @@ void main() {
             (
               tabKey: AppWidgetKeys.financeCycleAnimalsTab,
               viewKey: AppWidgetKeys.financeCycleAnimals,
-              inspectionKeys: [
-                AppWidgetKeys.financeCycleAssignAnimal('animal-2'),
-              ],
-              actionKeys: {AppWidgetKeys.financeCycleAssignAnimal('animal-2')},
+              inspectionKeys: [AppWidgetKeys.financeCycleAnimalsAdd],
+              actionKeys: {AppWidgetKeys.financeCycleAnimalsAdd},
             ),
             (
               tabKey: AppWidgetKeys.financeCycleFeedsTab,
@@ -663,6 +1045,9 @@ void main() {
         await _tapWorkspaceDestination(tester, destination.tabKey);
         await tester.pump();
         expect(_key(destination.viewKey), findsOneWidget);
+        _expectSubviewChromeAbsent([
+          for (final item in destinations) item.tabKey,
+        ]);
         for (final inspectionKey in destination.inspectionKeys) {
           await tester.scrollUntilVisible(
             _key(inspectionKey),
@@ -677,6 +1062,7 @@ void main() {
           }
         }
         expect(tester.takeException(), isNull);
+        await _reopenCycleOverview(tester);
       }
 
       await _tapWorkspaceDestination(
@@ -690,7 +1076,7 @@ void main() {
   );
 
   testWidgets(
-    'marks compatibility mode and disables unsupported workspace destinations',
+    'keeps compatibility animals inspectable without member reads or actions',
     (tester) async {
       final repository = _EconomicsRepository()
         ..summaries = [_summary]
@@ -708,7 +1094,6 @@ void main() {
         findsOneWidget,
       );
       for (final key in [
-        AppWidgetKeys.financeCycleAnimalsTab,
         AppWidgetKeys.financeCycleFeedsTab,
         AppWidgetKeys.financeCycleExpensesTab,
         AppWidgetKeys.financeCycleProjectionsTab,
@@ -719,6 +1104,26 @@ void main() {
         );
         expect(ink.onTap, isNull);
       }
+      await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsTab);
+      await _flush(tester);
+      expect(
+        _key(AppWidgetKeys.financeCycleAnimalsUnavailable),
+        findsOneWidget,
+      );
+      expect(
+        _key(AppWidgetKeys.financeCycleAssignAnimal('animal-2')),
+        findsNothing,
+      );
+      expect(_key(AppWidgetKeys.financeCycleOverviewTab), findsNothing);
+      for (final key in [
+        AppWidgetKeys.financeCycleAnimalsTab,
+        AppWidgetKeys.financeCycleFeedsTab,
+        AppWidgetKeys.financeCycleExpensesTab,
+        AppWidgetKeys.financeCycleProjectionsTab,
+        AppWidgetKeys.financeCycleCloseTab,
+      ]) {
+        expect(_key(key), findsNothing);
+      }
       expect(repository.memberCalls, 0);
       expect(repository.feedCalls, 0);
       expect(repository.expenseCalls, 0);
@@ -726,6 +1131,24 @@ void main() {
       expect(repository.readinessCalls, 0);
     },
   );
+
+  testWidgets('keeps closed-cycle animals inspectable without assignment', (
+    tester,
+  ) async {
+    final repository = _EconomicsRepository()
+      ..summaries = [_summary]
+      ..detail = _closedDetail;
+    await _pumpSection(tester, repository: repository, role: CycleRole.editor);
+    await _flush(tester);
+    await _openCycle(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsTab);
+    await _flush(tester);
+
+    expect(_key(AppWidgetKeys.financeCycleAnimals), findsOneWidget);
+    expect(find.text('Ave #101'), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleAnimalsAdd), findsNothing);
+    expect(repository.memberCalls, 1);
+  });
 
   testWidgets('submits typed workspace actions and refreshes focused reads', (
     tester,
@@ -737,21 +1160,28 @@ void main() {
       repository: repository,
       lifecycle: lifecycle,
       role: CycleRole.editor,
+      now: () => DateTime(2026, 8, 20),
     );
     await _flush(tester);
     await _openCycle(tester);
 
     await tester.tap(_key(AppWidgetKeys.financeCycleAnimalsTab));
     await _flush(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsAdd);
+    await _flush(tester);
     await _tapVisible(
       tester,
-      AppWidgetKeys.financeCycleAssignAnimal('animal-2'),
+      AppWidgetKeys.financeCycleAnimalCandidate('animal-2'),
     );
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsContinue);
+    await _flush(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsConfirm);
     await _flush(tester);
     await _flush(tester);
-    expect(lifecycle.assignRequests.single.animalId, 'animal-2');
+    expect(lifecycle.batchAssignRequests.single.animalIds, ['animal-2']);
     expect(repository.memberCalls, 2);
 
+    await _reopenCycleOverview(tester);
     await _tapWorkspaceDestination(tester, AppWidgetKeys.financeCycleFeedsTab);
     await _flush(tester);
     await _tapVisible(tester, AppWidgetKeys.financeCycleLinkFeed('mixture-2'));
@@ -760,6 +1190,7 @@ void main() {
     expect(lifecycle.feedRequests.single.mixtureId, 'mixture-2');
     expect(repository.feedCalls, 2);
 
+    await _reopenCycleOverview(tester);
     await _tapWorkspaceDestination(
       tester,
       AppWidgetKeys.financeCycleExpensesTab,
@@ -786,6 +1217,7 @@ void main() {
     expect(lifecycle.expenseRequests.single.category, 'Veterinaria');
     expect(repository.expenseCalls, 2);
 
+    await _reopenCycleOverview(tester);
     await _tapWorkspaceDestination(
       tester,
       AppWidgetKeys.financeCycleProjectionsTab,
@@ -915,13 +1347,38 @@ void main() {
 
 Finder _key(String value) => find.byKey(ValueKey(value));
 
+void _expectSubviewChromeAbsent(List<String> destinationKeys) {
+  expect(find.byType(FinanceCycleWorkspaceHeader), findsNothing);
+  expect(_key(AppWidgetKeys.financeCycleWorkspaceTitle), findsNothing);
+  expect(_key(AppWidgetKeys.financeCycleStatus), findsNothing);
+  expect(_key(AppWidgetKeys.financeCycleOverviewTab), findsNothing);
+  for (final key in destinationKeys) {
+    expect(_key(key), findsNothing);
+  }
+}
+
 Material _surfaceMaterial(WidgetTester tester, String key) =>
     tester.widget<Material>(
       find.descendant(of: _key(key), matching: find.byType(Material)).first,
     );
 
+FilledButton _actionButton(WidgetTester tester, String key) =>
+    tester.widget<FilledButton>(
+      find.descendant(of: _key(key), matching: find.byType(FilledButton)),
+    );
+
 Future<void> _openCycle(WidgetTester tester) async {
-  await _tapVisible(tester, AppWidgetKeys.financeCycleOpen('cycle-1'));
+  final open = _key(AppWidgetKeys.financeCycleOpen('cycle-1'));
+  if (open.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      open,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
+  await tester.ensureVisible(open);
+  await tester.pump();
+  await tester.tap(open);
   await _flush(tester);
 }
 
@@ -932,9 +1389,36 @@ Future<void> _tapVisible(WidgetTester tester, String key) async {
 }
 
 Future<void> _tapWorkspaceDestination(WidgetTester tester, String key) async {
+  final target = _key(key);
+  final scrollable = find.byType(Scrollable).first;
+  final dragOffset = key == AppWidgetKeys.financeCycleWorkspaceBack
+      ? const Offset(0, 300)
+      : const Offset(0, -300);
+  var attempts = 0;
+  while (target.evaluate().isEmpty && attempts < 10) {
+    await tester.drag(scrollable, dragOffset);
+    await tester.pump();
+    attempts++;
+  }
+  expect(target, findsOneWidget);
+  await tester.ensureVisible(target);
+  await tester.pump();
+  await tester.tap(target);
+}
+
+Future<void> _reopenCycleOverview(WidgetTester tester) async {
+  await _tapWorkspaceDestination(
+    tester,
+    AppWidgetKeys.financeCycleWorkspaceBack,
+  );
+  await tester.pump();
+  await _openCycle(tester);
+}
+
+Future<void> _tapForward(WidgetTester tester, String key) async {
   await tester.scrollUntilVisible(
     _key(key),
-    -300,
+    300,
     scrollable: find.byType(Scrollable).first,
   );
   await tester.pump();
@@ -948,6 +1432,7 @@ Future<void> _pumpSection(
   _LifecycleRepository? lifecycle,
   bool isFeatureEnabled = true,
   TextScaler textScaler = TextScaler.noScaling,
+  DateTime Function()? now,
 }) async {
   final container = ProviderContainer.test(
     overrides: [
@@ -979,7 +1464,7 @@ Future<void> _pumpSection(
           body: FinanceCyclesSection(
             farmId: 'farm-1',
             isFeatureEnabled: isFeatureEnabled,
-            now: () => DateTime(2026, 8, 1),
+            now: now ?? () => DateTime(2026, 8, 1),
           ),
         ),
       ),
@@ -1073,6 +1558,12 @@ final class _EconomicsRepository extends Fake implements EconomicsV2Repository {
           label: 'Ave #102',
           groupName: 'Gallinero norte',
         ),
+        EconomicsV2AnimalCandidate(
+          animalId: 'animal-3',
+          label: 'Ave Ñandú #103',
+          groupName: 'Galpón Ñandú',
+        ),
+        EconomicsV2AnimalCandidate(animalId: 'animal-4', label: 'Ave #104'),
       ],
     );
   }
@@ -1321,6 +1812,29 @@ final _compatibilityDetail = EconomicsV2CycleDetail(
   isCompatibilityMode: true,
 );
 
+final _closedDetail = EconomicsV2CycleDetail(
+  cycleId: 'cycle-1',
+  farmId: 'farm-1',
+  name: 'Ciclo de postura',
+  status: EconomicsV2CycleStatus.productionClosed,
+  startsOn: _startsOn,
+  productionClosedOn: DateTime(2026, 8, 22),
+  purposeId: 'purpose-1',
+  purposeName: 'Postura',
+  purpose: EconomicsV2Purpose.postura,
+  activeAnimalCount: 4,
+  exitedAnimalCount: 1,
+  feedCost: 20,
+  directExpenseTotal: 42.5,
+  revenue: 100,
+  totalCost: 62.5,
+  profit: 37.5,
+  marginPercentage: 37.5,
+  unitCost: 3.125,
+  latestGroupNameSnapshot: 'Gallinero norte',
+  updatedAt: DateTime(2026, 8, 22),
+);
+
 final class _LifecycleRepository extends Fake
     implements EconomicsV2LifecycleRepository {
   _LifecycleRepository({this.onCreate});
@@ -1328,6 +1842,7 @@ final class _LifecycleRepository extends Fake
   final VoidCallback? onCreate;
   final requests = <EconomicsV2CreateCycleRequest>[];
   final assignRequests = <EconomicsV2AssignAnimalRequest>[];
+  final batchAssignRequests = <EconomicsV2AssignAnimalsRequest>[];
   final feedRequests = <EconomicsV2LinkFeedRequest>[];
   final expenseRequests = <EconomicsV2RecordExpenseRequest>[];
   final _completer = Completer<EconomicsV2CycleCreated>();
@@ -1349,6 +1864,17 @@ final class _LifecycleRepository extends Fake
     return EconomicsV2AnimalAssigned(
       cycleId: request.cycleId,
       animalId: request.animalId,
+    );
+  }
+
+  @override
+  Future<EconomicsV2AnimalsAssigned> assignAnimals(
+    EconomicsV2AssignAnimalsRequest request,
+  ) async {
+    batchAssignRequests.add(request);
+    return EconomicsV2AnimalsAssigned(
+      cycleId: request.cycleId,
+      animalIds: request.animalIds,
     );
   }
 

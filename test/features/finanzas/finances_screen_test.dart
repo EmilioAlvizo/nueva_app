@@ -7,6 +7,8 @@ import 'package:rancho/core/testing/app_widget_keys.dart';
 import 'package:rancho/core/theme/app_theme.dart';
 import 'package:rancho/core/theme/finance_theme.dart';
 import 'package:rancho/features/ciclos/domain/cycle_models.dart';
+import 'package:rancho/features/ciclos/domain/economics_v2_models.dart';
+import 'package:rancho/features/ciclos/domain/economics_v2_repository.dart';
 import 'package:rancho/features/ciclos/presentation/providers/cycle_providers.dart';
 import 'package:rancho/features/finanzas/data/models/break_even_point_model.dart';
 import 'package:rancho/features/finanzas/domain/entities/break_even_point.dart';
@@ -37,8 +39,6 @@ void main() {
     expect(find.text('Gastos'), findsOneWidget);
     expect(find.text('Gráficos'), findsOneWidget);
     expect(find.text('Ciclos'), findsOneWidget);
-    expect(_key(AppWidgetKeys.financeHeader), findsOneWidget);
-    expect(find.text('Finanzas'), findsOneWidget);
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeBalanceTab);
     expect(_key(AppWidgetKeys.financeEmpty), findsOneWidget);
 
@@ -64,10 +64,10 @@ void main() {
     await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeCyclesTab);
-    expect(_key(AppWidgetKeys.financeCyclesUnavailable), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCyclesEmpty), findsOneWidget);
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
     final finance = FinanceTheme.of(
-      tester.element(_key(AppWidgetKeys.financeHeader)),
+      tester.element(_key(AppWidgetKeys.financeCyclesEmpty)),
     );
     expect(scaffold.backgroundColor, finance.cycleCanvas);
 
@@ -128,7 +128,7 @@ void main() {
     await tester.tap(_key(AppWidgetKeys.financeCyclesTab));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeCyclesTab);
-    expect(_key(AppWidgetKeys.financeCyclesUnavailable), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCyclesEmpty), findsOneWidget);
 
     await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
     await tester.pumpAndSettle();
@@ -311,6 +311,9 @@ Future<ProviderContainer> _pumpScreen(
       cycleAccessProvider(
         'farm-1',
       ).overrideWithValue(const AsyncData(CycleAccess(CycleRole.viewer))),
+      economicsV2RepositoryProvider.overrideWithValue(
+        _ViewerEconomicsRepository(),
+      ),
     ],
   );
   await tester.pumpWidget(
@@ -337,6 +340,23 @@ Future<ProviderContainer> _pumpScreen(
 Future<void> _flushAsync(WidgetTester tester) async {
   await tester.pump();
   await tester.pump();
+}
+
+final class _ViewerEconomicsRepository extends Fake
+    implements EconomicsV2Repository {
+  @override
+  Future<EconomicsV2FarmAccess> getAccess(String farmId) async =>
+      EconomicsV2FarmAccess(
+        farmId: farmId,
+        enabled: true,
+        role: 'viewer',
+        canEdit: false,
+      );
+
+  @override
+  Future<List<EconomicsV2CycleSummary>> getCycleSummaries(
+    String farmId,
+  ) async => const [];
 }
 
 final _point = BreakEvenPoint(

@@ -3,7 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rancho/features/animales/animales_provider.dart';
 import 'package:rancho/features/animales/animales_repository.dart'
-    show AnimalesRepository, ConteoGrupo, NoGroupOverview;
+    show
+        AltaDistribution,
+        AltaGroupSegment,
+        AnimalesRepository,
+        ConteoGrupo,
+        NoGroupOverview,
+        NoGroupTypeOverview;
 import 'package:rancho/features/animales/animales_screen.dart';
 import 'package:rancho/features/model/altaAnimales/altaAnimales.dart';
 import 'package:rancho/features/model/animal/animal.dart';
@@ -34,7 +40,7 @@ void main() {
       expect(positions, orderedEquals([...positions]..sort()));
     });
 
-    testWidgets('renders the Sin grupo card with counts and latest altas', (
+    testWidgets('renders no-group type summaries and alta distribution', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -44,11 +50,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Sin grupo'), findsOneWidget);
-      expect(find.text('2 activos'), findsOneWidget);
-      expect(find.text('1 bajas'), findsOneWidget);
-      expect(find.text('3 animales'), findsOneWidget);
-      expect(find.text('2 animales'), findsOneWidget);
-      expect(find.text('1 animal'), findsOneWidget);
+      expect(find.text('Gallinas'), findsOneWidget);
+      expect(find.text('3 animales sin asignar a un grupo'), findsOneWidget);
+      expect(find.text('Ver altas'), findsOneWidget);
+
+      await tester.tap(find.text('Ver altas'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 de 3 aquí'), findsOneWidget);
+      expect(find.text('2 vivos · 1 baja'), findsOneWidget);
     });
   });
 }
@@ -68,8 +78,11 @@ class _ScreenTestApp extends StatelessWidget {
 }
 
 class _ScreenFakeRepository extends AnimalesRepository {
-  _ScreenFakeRepository({required this.noGroupOverview})
-    : groups = const [], super(_buildClient());
+  _ScreenFakeRepository({
+    required this.noGroupOverview,
+    this.distributions = const [],
+  }) : groups = const [],
+       super(_buildClient());
 
   factory _ScreenFakeRepository.empty() => _ScreenFakeRepository(
     noGroupOverview: const NoGroupOverview(
@@ -79,15 +92,45 @@ class _ScreenFakeRepository extends AnimalesRepository {
     ),
   );
 
-  factory _ScreenFakeRepository.withNoGroupData() => _ScreenFakeRepository(
-    noGroupOverview: NoGroupOverview(
-      activeCount: 2,
-      deadCount: 1,
-      latestAltas: [_alta('alta-3', 3), _alta('alta-2', 2), _alta('alta-1', 1)],
-    ),
-  );
+  factory _ScreenFakeRepository.withNoGroupData() {
+    final alta = _alta('alta-3', 3);
+    return _ScreenFakeRepository(
+      noGroupOverview: NoGroupOverview(
+        activeCount: 2,
+        inactiveCount: 1,
+        latestAltas: [alta],
+        typeSummaries: [
+          NoGroupTypeOverview(
+            tipoAnimalId: 'type-1',
+            activeCount: 2,
+            inactiveCount: 1,
+            latestAltas: [alta],
+          ),
+        ],
+      ),
+      distributions: [
+        AltaDistribution(
+          alta: alta,
+          segments: [
+            AltaGroupSegment(
+              alta: alta,
+              grupoId: null,
+              cantidadAqui: 3,
+              vivosAqui: 2,
+              inactivosAqui: 1,
+              bajasAqui: 1,
+              brazaletes: const [],
+              isDistributed: false,
+              requiresBajasDeletion: true,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   final NoGroupOverview noGroupOverview;
+  final List<AltaDistribution> distributions;
   final List<Grupo> groups;
 
   @override
@@ -110,6 +153,10 @@ class _ScreenFakeRepository extends AnimalesRepository {
   @override
   Future<NoGroupOverview> getNoGroupOverview(String granjaId) async =>
       noGroupOverview;
+
+  @override
+  Future<List<AltaDistribution>> getAltaDistributions(String granjaId) async =>
+      distributions;
 
   @override
   Future<List<AltaAnimales>> vistaAltasAnimales(String grupoId) async =>

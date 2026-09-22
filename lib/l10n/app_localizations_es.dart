@@ -394,6 +394,128 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay animales disponibles para asignar.';
 
   @override
+  String get financeCycleAnimalsTitle => 'Animales del ciclo';
+
+  @override
+  String get financeCycleAnimalsSubtitle =>
+      'Consulta los animales activos y el historial de salidas.';
+
+  @override
+  String get financeCycleAnimalsActiveMetric => 'Activos';
+
+  @override
+  String get financeCycleAnimalsExitedMetric => 'Salieron';
+
+  @override
+  String get financeCycleAnimalsAdd => 'Agregar animales';
+
+  @override
+  String get financeCycleAnimalsFutureStart =>
+      'Podrás agregar animales cuando comience el ciclo.';
+
+  @override
+  String get financeCycleAnimalsSelectionTitle => 'Agregar animales';
+
+  @override
+  String get financeCycleAnimalsSelectionSubtitle =>
+      'Selecciona uno o más animales disponibles.';
+
+  @override
+  String get financeCycleAnimalsSearchLabel => 'Buscar por animal o grupo';
+
+  @override
+  String get financeCycleAnimalsFilterAll => 'Todos';
+
+  @override
+  String get financeCycleAnimalsFilterGrouped => 'Con grupo';
+
+  @override
+  String get financeCycleAnimalsFilterUngrouped => 'Sin grupo';
+
+  @override
+  String get financeCycleAnimalsNoResults =>
+      'No hay animales que coincidan con la búsqueda y el filtro.';
+
+  @override
+  String financeCycleAnimalsSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seleccionados',
+      one: '1 seleccionado',
+      zero: 'Ningún animal seleccionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeCycleAnimalsClear => 'Limpiar selección';
+
+  @override
+  String financeCycleAnimalsContinue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Continuar con $count animales',
+      one: 'Continuar con 1 animal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String financeCycleAnimalsSelectAnimal(String name) {
+    return 'Seleccionar $name';
+  }
+
+  @override
+  String get financeCycleAnimalsWithoutGroup => 'Sin grupo';
+
+  @override
+  String get financeCycleAnimalsConfirmationTitle => 'Confirmar ingreso';
+
+  @override
+  String get financeCycleAnimalsConfirmationSubtitle =>
+      'Revisa los animales y la fecha antes de confirmar.';
+
+  @override
+  String financeCycleAnimalsProjectedActive(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count animales activos después del ingreso',
+      one: '1 animal activo después del ingreso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeCycleAnimalsSelectedTitle => 'Animales seleccionados';
+
+  @override
+  String get financeCycleAnimalsJoinedOnLabel => 'Fecha de ingreso';
+
+  @override
+  String get financeCycleAnimalsJoinedOnConstraint =>
+      'La fecha de ingreso común debe estar dentro del período del ciclo y no puede ser futura.';
+
+  @override
+  String get financeCycleAnimalsCancel => 'Volver a la selección';
+
+  @override
+  String financeCycleAnimalsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Agregar $count animales al ciclo',
+      one: 'Agregar 1 animal al ciclo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeCycleAnimalsConfirmPending => 'Asignando animales';
+
+  @override
   String get financeCycleAssignmentActive => 'Activo';
 
   @override

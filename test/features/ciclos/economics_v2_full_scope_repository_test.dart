@@ -176,6 +176,7 @@ void main() {
   test('writes canonical payloads and returns source-of-truth results', () async {
     final client = _RecordingHttpClient([
       (200, null),
+      (200, null),
       (200, 'feed-2'),
       (200, 'expense-2'),
       (200, _projectionJson),
@@ -184,6 +185,13 @@ void main() {
     ]);
     final repository = _repository(client);
 
+    await repository.assignAnimals(
+      EconomicsV2AssignAnimalsRequest(
+        cycleId: 'cycle-1',
+        animalIds: const ['animal-2', 'animal-3'],
+        joinedOn: DateTime(2026, 8, 20),
+      ),
+    );
     await repository.assignAnimal(
       EconomicsV2AssignAnimalRequest(
         farmId: 'farm-1',
@@ -239,6 +247,7 @@ void main() {
     expect(finalized.status, EconomicsV2CycleStatus.settled);
     expect(finalized.calculationVersion, 'v2');
     expect(_identities(client), [
+      'asignar_animales_ciclo_v2:{"p_cycle_id":"cycle-1","p_animal_ids":["animal-2","animal-3"],"p_joined_on":"2026-08-20"}',
       'asignar_animal_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_animal_id":"animal-2","p_joined_on":"2026-08-20"}',
       'reemplazar_alimento_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_mezcla_id":"mixture-2","p_starts_on":"2026-08-21","p_ends_on":null}',
       'registrar_gasto_ciclo_v2_con_categoria:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_occurred_on":"2026-08-22","p_amount":18.75,"p_category":"Veterinary","p_note":"Routine treatment"}',
