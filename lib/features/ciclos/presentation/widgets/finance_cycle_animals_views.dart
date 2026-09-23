@@ -38,55 +38,30 @@ class FinanceCycleAnimalsMembersView extends StatelessWidget {
           subtitle: l10n.financeCycleAnimalsSubtitle,
         ),
         const SizedBox(height: AppSpacing.md),
-        FinanceCycleSurfaceCard(
+        FinanceCycleAnimalsSummaryCard(
           key: const ValueKey(AppWidgetKeys.financeCycleAnimalsSummary),
-          child: FinanceCycleMetricGroup(
-            metrics: [
-              FinanceCycleMetricTile(
-                label: l10n.financeCycleAnimalsActiveMetric,
-                value: activeCount.formatInteger(l10n),
-                icon: Icons.pets_outlined,
-              ),
-              FinanceCycleMetricTile(
-                label: l10n.financeCycleAnimalsExitedMetric,
-                value: exitedCount.formatInteger(l10n),
-                icon: Icons.logout_rounded,
-              ),
-            ],
-          ),
+          activeCount: activeCount,
+          exitedCount: exitedCount,
         ),
         const SizedBox(height: AppSpacing.sm),
-        FinanceCycleContentSection(
-          key: const ValueKey(AppWidgetKeys.financeCycleAnimalsAssigned),
-          title: l10n.financeCycleAnimalsAssignedTitle,
-          subtitle: l10n.financeCycleAnimalsAssignedCount(members.length),
-          children: [
-            if (members.isEmpty)
-              FinanceCyclePanel(
-                message: l10n.financeCycleAnimalsAssignedEmpty,
-                variant: FinanceCyclePanelVariant.info,
+        if (members.isEmpty)
+          FinanceCycleAnimalsEmptyCard(
+            key: const ValueKey(AppWidgetKeys.financeCycleAnimalsEmpty),
+            message: l10n.financeCycleAnimalsAssignedEmpty,
+          )
+        else
+          for (final (index, member) in members.indexed) ...[
+            FinanceCycleAnimalMemberCard(
+              key: ValueKey(
+                AppWidgetKeys.financeCycleAnimalMember(member.animalId),
               ),
-            for (final member in members)
-              FinanceCycleRecordTile(
-                icon: Icons.pets_outlined,
-                title: member.label,
-                details: [
-                  l10n.financeCycleMemberSince(
-                    member.joinedOn.formatShortDate(l10n),
-                  ),
-                  ?member.groupNameSnapshot,
-                ],
-                badge: FinanceCycleStatusPill(
-                  label: member.isActive
-                      ? l10n.financeCycleAssignmentActive
-                      : l10n.financeCycleAssignmentFinished,
-                  isActive: member.isActive,
-                ),
-              ),
+              member: member,
+            ),
+            if (index < members.length - 1)
+              const SizedBox(height: AppSpacing.sm),
           ],
-        ),
         if (canAssign) ...[
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
           if (!canStartAssignment) ...[
             FinanceCyclePanel(
               message: l10n.financeCycleAnimalsFutureStart,
@@ -107,6 +82,237 @@ class FinanceCycleAnimalsMembersView extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class FinanceCycleAnimalsSummaryCard extends StatelessWidget {
+  const FinanceCycleAnimalsSummaryCard({
+    required this.activeCount,
+    required this.exitedCount,
+    super.key,
+  });
+
+  final int activeCount;
+  final int exitedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final finance = FinanceTheme.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final activeSummary = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          activeCount.formatInteger(l10n),
+          style: textTheme.displaySmall?.copyWith(
+            color: finance.cycleOnSurface,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          l10n.financeCycleAnimalsActiveMetric,
+          style: textTheme.bodySmall?.copyWith(
+            color: finance.cycleOnSurfaceMuted,
+          ),
+        ),
+      ],
+    );
+    final exitedPill = FinanceCycleAnimalsExitedPill(count: exitedCount);
+
+    return FinanceCycleSurfaceCard(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final usesInlineLayout =
+              constraints.maxWidth / textScale >=
+              AppSizes.financeHeaderBreakpoint;
+          if (!usesInlineLayout) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                activeSummary,
+                const SizedBox(height: AppSpacing.sm),
+                exitedPill,
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: activeSummary),
+              const SizedBox(width: AppSpacing.sm),
+              exitedPill,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class FinanceCycleAnimalsExitedPill extends StatelessWidget {
+  const FinanceCycleAnimalsExitedPill({required this.count, super.key});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final finance = FinanceTheme.of(context);
+    return DecoratedBox(
+      key: const ValueKey(AppWidgetKeys.financeCycleAnimalsExitedPill),
+      decoration: BoxDecoration(
+        color: finance.cycleSurfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadii.full),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: Text(
+          context.l10n.financeCycleAnimalsExitedPill(count),
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: finance.cycleOnSurfaceMuted,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FinanceCycleAnimalMemberCard extends StatelessWidget {
+  const FinanceCycleAnimalMemberCard({required this.member, super.key});
+
+  final EconomicsV2CycleMember member;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final finance = FinanceTheme.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final memberDetails = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          member.label,
+          style: textTheme.titleMedium?.copyWith(
+            color: finance.cycleOnSurface,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          l10n.financeCycleMemberJoinedOn(
+            member.joinedOn.formatShortDate(l10n),
+          ),
+          style: textTheme.bodySmall?.copyWith(
+            color: finance.cycleOnSurfaceMuted,
+          ),
+        ),
+      ],
+    );
+    final status = FinanceCycleAnimalStatusPill(
+      animalId: member.animalId,
+      label: member.isActive
+          ? l10n.financeCycleAssignmentActive
+          : l10n.financeCycleAssignmentFinished,
+      isActive: member.isActive,
+    );
+
+    return FinanceCycleSurfaceCard(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final usesInlineLayout =
+              constraints.maxWidth / textScale >=
+              AppSizes.financeHeaderBreakpoint;
+          if (!usesInlineLayout) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                memberDetails,
+                const SizedBox(height: AppSpacing.sm),
+                status,
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: memberDetails),
+              const SizedBox(width: AppSpacing.sm),
+              status,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class FinanceCycleAnimalStatusPill extends StatelessWidget {
+  const FinanceCycleAnimalStatusPill({
+    required this.animalId,
+    required this.label,
+    required this.isActive,
+    super.key,
+  });
+
+  final String animalId;
+  final String label;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final finance = FinanceTheme.of(context);
+    return DecoratedBox(
+      key: ValueKey(AppWidgetKeys.financeCycleAnimalMemberStatus(animalId)),
+      decoration: BoxDecoration(
+        color: isActive
+            ? finance.cyclePositiveAction
+            : finance.cycleSurfaceElevated,
+        borderRadius: BorderRadius.circular(AppRadii.full),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: isActive
+                ? finance.cycleOnPositiveAction
+                : finance.cycleOnSurfaceMuted,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FinanceCycleAnimalsEmptyCard extends StatelessWidget {
+  const FinanceCycleAnimalsEmptyCard({required this.message, super.key});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final finance = FinanceTheme.of(context);
+    return FinanceCycleSurfaceCard(
+      child: Text(
+        message,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: finance.cycleOnSurfaceMuted),
+      ),
     );
   }
 }

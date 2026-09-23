@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rancho/core/testing/app_widget_keys.dart';
+import 'package:rancho/core/theme/app_layout.dart';
 import 'package:rancho/core/theme/app_theme.dart';
 import 'package:rancho/core/theme/finance_theme.dart';
 import 'package:rancho/features/animales/animales_provider.dart';
@@ -21,6 +22,196 @@ import 'package:rancho/features/model/catalogoItem/catalogo_item.dart';
 import 'package:rancho/l10n/app_localizations.dart';
 
 void main() {
+  testWidgets('renders the flat mono cycle animal members contract', (
+    tester,
+  ) async {
+    await _pumpMembersView(
+      tester,
+      members: _memberCardFixtures,
+      activeCount: 32,
+      exitedCount: 3,
+    );
+
+    final summary = _key(AppWidgetKeys.financeCycleAnimalsSummary);
+    final activeMember = _key(
+      AppWidgetKeys.financeCycleAnimalMember('animal-active'),
+    );
+    final finishedMember = _key(
+      AppWidgetKeys.financeCycleAnimalMember('animal-finished'),
+    );
+    final addAction = _key(AppWidgetKeys.financeCycleAnimalsAdd);
+    final theme = FinanceTheme.of(tester.element(summary));
+
+    expect(find.text('Animales del ciclo'), findsOneWidget);
+    expect(find.text('cycle_animals · miembros y permanencia'), findsOneWidget);
+    expect(find.text('32'), findsOneWidget);
+    expect(find.text('activos en el ciclo'), findsOneWidget);
+    expect(find.text('3 salieron'), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleAnimalsExitedPill), findsOneWidget);
+    expect(
+      find.descendant(of: summary, matching: find.byType(Icon)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: summary,
+        matching: find.byType(FinanceCycleMetricTile),
+      ),
+      findsNothing,
+    );
+    expect(find.byType(FinanceCycleMetricGroup), findsNothing);
+
+    expect(find.text('Asignados al ciclo'), findsNothing);
+    expect(find.byType(FinanceCycleContentSection), findsNothing);
+    expect(activeMember, findsOneWidget);
+    expect(finishedMember, findsOneWidget);
+    expect(find.text('Ave #101'), findsOneWidget);
+    expect(find.text('Ave #099'), findsOneWidget);
+    expect(find.text('Ingresó 20 ago 2026'), findsOneWidget);
+    expect(find.text('Ingresó 18 ago 2026'), findsOneWidget);
+    expect(find.text('Activo'), findsOneWidget);
+    expect(find.text('Finalizado'), findsOneWidget);
+    expect(
+      _boxDecoration(
+        tester,
+        _key(AppWidgetKeys.financeCycleAnimalMemberStatus('animal-active')),
+      ).color,
+      theme.cyclePositiveAction,
+    );
+    expect(
+      _boxDecoration(
+        tester,
+        _key(AppWidgetKeys.financeCycleAnimalMemberStatus('animal-finished')),
+      ).color,
+      theme.cycleSurfaceElevated,
+    );
+    expect(
+      _boxDecoration(
+        tester,
+        _key(AppWidgetKeys.financeCycleAnimalsExitedPill),
+      ).color,
+      theme.cycleSurfaceElevated,
+    );
+    expect(find.text('Gallinero norte'), findsNothing);
+    expect(find.text('Gallinero histórico'), findsNothing);
+    expect(find.byIcon(Icons.pets_outlined), findsNothing);
+    expect(find.byIcon(Icons.logout_rounded), findsNothing);
+    expect(find.byType(FinanceCycleRecordTile), findsNothing);
+
+    for (final card in [summary, activeMember, finishedMember]) {
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byType(FinanceCycleSurfaceCard),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        _surfaceMaterialFromFinder(tester, card).color,
+        theme.cycleSurface,
+      );
+      expect(
+        find.ancestor(of: card, matching: find.byType(FinanceCycleSurfaceCard)),
+        findsNothing,
+      );
+    }
+
+    expect(
+      find.descendant(of: addAction, matching: find.byIcon(Icons.add_rounded)),
+      findsOneWidget,
+    );
+    expect(
+      _actionButton(
+        tester,
+        AppWidgetKeys.financeCycleAnimalsAdd,
+      ).style?.backgroundColor?.resolve(const {}),
+      theme.cyclePositiveAction,
+    );
+    expect(
+      tester.getSize(addAction).width,
+      tester.getSize(find.byType(FinanceCycleAnimalsMembersView)).width,
+    );
+    expect(tester.getSize(addAction).height, greaterThanOrEqualTo(48));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps flat animal cards overflow-free at 320dp and 2x text', (
+    tester,
+  ) async {
+    await _pumpMembersView(
+      tester,
+      members: _memberCardFixtures,
+      activeCount: 32,
+      exitedCount: 3,
+      size: const Size(320, 720),
+      textScaler: const TextScaler.linear(2),
+    );
+
+    for (final key in [
+      AppWidgetKeys.financeCycleAnimalsSummary,
+      AppWidgetKeys.financeCycleAnimalMember('animal-active'),
+      AppWidgetKeys.financeCycleAnimalMember('animal-finished'),
+      AppWidgetKeys.financeCycleAnimalsAdd,
+    ]) {
+      expect(tester.getSize(_key(key)).width, lessThanOrEqualTo(320));
+    }
+    expect(
+      tester.getSize(_key(AppWidgetKeys.financeCycleAnimalsAdd)).height,
+      greaterThanOrEqualTo(48),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps the empty members state and assignment action available', (
+    tester,
+  ) async {
+    await _pumpMembersView(
+      tester,
+      members: const [],
+      activeCount: 0,
+      exitedCount: 0,
+    );
+
+    expect(_key(AppWidgetKeys.financeCycleAnimalsEmpty), findsOneWidget);
+    expect(
+      find.text('Aún no hay animales asignados a este ciclo.'),
+      findsOneWidget,
+    );
+    expect(_key(AppWidgetKeys.financeCycleAnimalsAdd), findsOneWidget);
+    expect(find.byType(FinanceCycleContentSection), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps the cycle animal canvas centered at expanded width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _EconomicsRepository()..summaries = [_summary];
+    await _pumpSection(
+      tester,
+      repository: repository,
+      role: CycleRole.editor,
+      now: () => DateTime(2026, 8, 20),
+    );
+    await _flush(tester);
+    await _openCycle(tester);
+    await _tapVisible(tester, AppWidgetKeys.financeCycleAnimalsTab);
+    await _flush(tester);
+
+    final workspaceRect = tester.getRect(
+      _key(AppWidgetKeys.financeCycleWorkspace),
+    );
+    expect(
+      workspaceRect.width,
+      lessThanOrEqualTo(AppSizes.financeCycleContentMaxWidth),
+    );
+    expect(workspaceRect.center.dx, tester.view.physicalSize.width / 2);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('completes the three-screen atomic animal assignment flow', (
     tester,
   ) async {
@@ -50,8 +241,8 @@ void main() {
     await _flush(tester);
 
     expect(find.text('Animales del ciclo'), findsOneWidget);
-    expect(find.text('Activos'), findsOneWidget);
-    expect(find.text('Salieron'), findsOneWidget);
+    expect(find.text('activos en el ciclo'), findsOneWidget);
+    expect(find.text('1 salió'), findsOneWidget);
     expect(_key(AppWidgetKeys.financeCycleAnimalsAdd), findsOneWidget);
     final financeTheme = FinanceTheme.of(
       tester.element(_key(AppWidgetKeys.financeCycleAnimalsAdd)),
@@ -731,11 +922,11 @@ void main() {
       );
       for (final key in [
         AppWidgetKeys.financeCycleAnimalsSummary,
-        AppWidgetKeys.financeCycleAnimalsAssigned,
+        AppWidgetKeys.financeCycleAnimalMember('animal-1'),
       ]) {
         expect(_surfaceMaterial(tester, key).color, animalsTheme.cycleSurface);
       }
-      expect(find.text('Asignados al ciclo'), findsOneWidget);
+      expect(find.text('Asignados al ciclo'), findsNothing);
       expect(find.text('Animales del ciclo'), findsOneWidget);
       expect(
         tester.getSize(_key(AppWidgetKeys.financeCycleAnimalsAdd)).width,
@@ -1362,6 +1553,14 @@ Material _surfaceMaterial(WidgetTester tester, String key) =>
       find.descendant(of: _key(key), matching: find.byType(Material)).first,
     );
 
+Material _surfaceMaterialFromFinder(WidgetTester tester, Finder finder) =>
+    tester.widget<Material>(
+      find.descendant(of: finder, matching: find.byType(Material)).first,
+    );
+
+BoxDecoration _boxDecoration(WidgetTester tester, Finder finder) =>
+    tester.widget<DecoratedBox>(finder).decoration as BoxDecoration;
+
 FilledButton _actionButton(WidgetTester tester, String key) =>
     tester.widget<FilledButton>(
       find.descendant(of: _key(key), matching: find.byType(FilledButton)),
@@ -1423,6 +1622,44 @@ Future<void> _tapForward(WidgetTester tester, String key) async {
   );
   await tester.pump();
   await tester.tap(_key(key));
+}
+
+Future<void> _pumpMembersView(
+  WidgetTester tester, {
+  required List<EconomicsV2CycleMember> members,
+  required int activeCount,
+  required int exitedCount,
+  Size size = const Size(418, 900),
+  TextScaler textScaler = TextScaler.noScaling,
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  await tester.pumpWidget(
+    MaterialApp(
+      locale: const Locale('es'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: AppTheme.light,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+        child: child!,
+      ),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: FinanceCycleAnimalsMembersView(
+            members: members,
+            activeCount: activeCount,
+            exitedCount: exitedCount,
+            canAssign: true,
+            canStartAssignment: true,
+            onAdd: () {},
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 Future<void> _pumpSection(
@@ -1765,6 +2002,23 @@ final class _EconomicsRepository extends Fake implements EconomicsV2Repository {
 }
 
 final _startsOn = DateTime(2026, 8, 20);
+
+final _memberCardFixtures = [
+  EconomicsV2CycleMember(
+    animalId: 'animal-active',
+    label: 'Ave #101',
+    groupNameSnapshot: 'Gallinero norte',
+    joinedOn: DateTime(2026, 8, 20),
+    isActive: true,
+  ),
+  EconomicsV2CycleMember(
+    animalId: 'animal-finished',
+    label: 'Ave #099',
+    groupNameSnapshot: 'Gallinero histórico',
+    joinedOn: DateTime(2026, 8, 18),
+    isActive: false,
+  ),
+];
 
 final _detail = EconomicsV2CycleDetail(
   cycleId: 'cycle-1',

@@ -673,13 +673,13 @@ abstract class AppLocalizations {
   /// Descripción de la vista de integrantes del ciclo
   ///
   /// In es, this message translates to:
-  /// **'Consulta los animales activos y el historial de salidas.'**
+  /// **'cycle_animals · miembros y permanencia'**
   String get financeCycleAnimalsSubtitle;
 
-  /// Métrica de integrantes activos del ciclo
+  /// Etiqueta del total de integrantes activos del ciclo
   ///
   /// In es, this message translates to:
-  /// **'Activos'**
+  /// **'activos en el ciclo'**
   String get financeCycleAnimalsActiveMetric;
 
   /// Métrica de integrantes que salieron del ciclo
@@ -687,6 +687,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Salieron'**
   String get financeCycleAnimalsExitedMetric;
+
+  /// Cantidad compacta de integrantes que salieron del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 salió} other{{count} salieron}}'**
+  String financeCycleAnimalsExitedPill(int count);
+
+  /// Fecha localizada de ingreso de un integrante al ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresó {date}'**
+  String financeCycleMemberJoinedOn(String date);
 
   /// Acción para iniciar la selección de animales
   ///

@@ -65,6 +65,10 @@ abstract final class AppWidgetKeys {
       'finances.cycles.workspace.animals.unavailable';
   static const financeCycleAnimalsSummary =
       'finances.cycles.workspace.animals.summary';
+  static const financeCycleAnimalsExitedPill =
+      'finances.cycles.workspace.animals.summary.exited';
+  static const financeCycleAnimalsEmpty =
+      'finances.cycles.workspace.animals.empty';
   static const financeCycleAnimalsAssigned =
       'finances.cycles.workspace.animals.assigned';
   static const financeCycleAnimalsAvailable =
@@ -195,6 +199,14 @@ abstract final class AppWidgetKeys {
 
   static String financeCycleAnimalCandidate(String animalId) {
     return 'finances.cycles.workspace.animals.candidate.$animalId';
+  }
+
+  static String financeCycleAnimalMember(String animalId) {
+    return 'finances.cycles.workspace.animals.member.$animalId';
+  }
+
+  static String financeCycleAnimalMemberStatus(String animalId) {
+    return 'finances.cycles.workspace.animals.member.$animalId.status';
   }
 
   static String financeCycleLinkFeed(String mixtureId) {

@@ -398,13 +398,29 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get financeCycleAnimalsSubtitle =>
-      'Consulta los animales activos y el historial de salidas.';
+      'cycle_animals · miembros y permanencia';
 
   @override
-  String get financeCycleAnimalsActiveMetric => 'Activos';
+  String get financeCycleAnimalsActiveMetric => 'activos en el ciclo';
 
   @override
   String get financeCycleAnimalsExitedMetric => 'Salieron';
+
+  @override
+  String financeCycleAnimalsExitedPill(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count salieron',
+      one: '1 salió',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String financeCycleMemberJoinedOn(String date) {
+    return 'Ingresó $date';
+  }
 
   @override
   String get financeCycleAnimalsAdd => 'Agregar animales';
