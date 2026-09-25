@@ -369,34 +369,32 @@ class MeatBreakEvenCostsPanel extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: AlignmentDirectional.centerStart,
-                        child: Text(
-                          data.totalCostValue,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                color: finance.cycleOnSurface,
-                                fontWeight: FontWeight.w900,
-                                fontSize: AppSizes.financeMetricValueFont,
-                              ),
-                        ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        data.totalCostValue,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: finance.cycleOnSurface,
+                              fontWeight: FontWeight.w900,
+                              fontSize: AppSizes.financeMetricValueFont,
+                            ),
                       ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        data.totalCostsLabel,
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: finance.cycleOnSurfaceMuted,
-                          fontSize: AppSizes.financeMetricLabelFont,
-                        ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      data.totalCostsLabel,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: finance.cycleOnSurfaceMuted,
+                        fontSize: AppSizes.financeMetricLabelFont,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                 VerticalDivider(
                   width: AppSpacing.lg,
@@ -404,14 +402,14 @@ class MeatBreakEvenCostsPanel extends StatelessWidget {
                 ),
                 Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       MeatBreakEvenCostLine(
                         color: finance.cyclePositiveAction,
                         label: data.feedLabel,
                         value: data.feedValue,
                       ),
-                      const SizedBox(height: AppSpacing.xs),
+                      //const SizedBox(height: AppSpacing.xs),
                       MeatBreakEvenCostLine(
                         color: finance.cyclePrimaryAction,
                         label: data.extrasLabel,
@@ -463,7 +461,6 @@ class MeatBreakEvenCostLine extends StatelessWidget {
       ),
     );
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(top: AppSpacing.xxs),
@@ -486,7 +483,6 @@ class MeatBreakEvenCostLine extends StatelessWidget {
                   ],
                 )
               : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(child: label),
                     const SizedBox(width: AppSpacing.xs),
