@@ -316,6 +316,85 @@ abstract class AppLocalizations {
   /// **'Gastos'**
   String get financeCycleSummaryExpensesLabel;
 
+  /// Título de la tarjeta destacada de equilibrio para un ciclo de carne
+  ///
+  /// In es, this message translates to:
+  /// **'Engorda · {group}'**
+  String financeMeatBreakEvenTitle(String group);
+
+  /// Subtítulo de la tarjeta destacada de equilibrio para carne
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado económico acumulado del ciclo'**
+  String get financeMeatBreakEvenSubtitle;
+
+  /// Etiqueta destacada de la tarjeta de equilibrio para carne
+  ///
+  /// In es, this message translates to:
+  /// **'Punto de equilibrio'**
+  String get financeMeatBreakEvenLabel;
+
+  /// Unidad del resultado económico por animal
+  ///
+  /// In es, this message translates to:
+  /// **'\$/animal'**
+  String get financeMeatBreakEvenPerAnimal;
+
+  /// Valor mostrado cuando no se puede calcular el resultado por animal
+  ///
+  /// In es, this message translates to:
+  /// **'No disponible'**
+  String get financeMeatBreakEvenUnavailable;
+
+  /// Etiqueta del costo total acumulado del ciclo de carne
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos totales'**
+  String get financeMeatBreakEvenTotalCosts;
+
+  /// Etiqueta del costo de las mezclas distintas vinculadas al ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Alimento'**
+  String get financeMeatBreakEvenFeed;
+
+  /// Etiqueta de gastos directos más costos de adquisición
+  ///
+  /// In es, this message translates to:
+  /// **'Extras'**
+  String get financeMeatBreakEvenExtras;
+
+  /// Etiqueta de los ingresos acumulados por ventas de animales
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresos ventas'**
+  String get financeMeatBreakEvenRevenue;
+
+  /// Resumen en línea de animales, ventas y alimento del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'{animals, plural, =1{1 animal} other{{animals} animales}} • {sales, plural, =1{1 venta} other{{sales} ventas}} • {feedKg} kg de alimento'**
+  String financeMeatBreakEvenMetrics(int animals, int sales, String feedKg);
+
+  /// Periodo y duración inclusiva mostrados al pie de la tarjeta de carne
+  ///
+  /// In es, this message translates to:
+  /// **'{start} → {end} · {days, plural, =1{1 día} other{{days} días}}'**
+  String financeMeatBreakEvenPeriod(String start, String end, int days);
+
+  /// Resumen accesible de la tarjeta destacada de equilibrio para carne
+  ///
+  /// In es, this message translates to:
+  /// **'{title}. Resultado por animal: {result}. Gastos totales: {costs}. Ingresos por ventas: {revenue}. {metrics}. {period}.'**
+  String financeMeatBreakEvenSemantics(
+    String title,
+    String result,
+    String costs,
+    String revenue,
+    String metrics,
+    String period,
+  );
+
   /// Acción para abrir el detalle de un ciclo
   ///
   /// In es, this message translates to:
@@ -387,6 +466,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Abrir ciclo {name}'**
   String financeCycleOpenSemantics(String name);
+
+  /// Indicación accesible de la acción de toque en la tarjeta del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir el detalle del ciclo'**
+  String get financeCycleCardOpenHint;
+
+  /// Indicación accesible de la acción de pulsación prolongada en la tarjeta del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Mantén presionado para eliminar el ciclo'**
+  String get financeCycleCardDeleteHint;
+
+  /// Título de la confirmación para eliminar un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar ciclo permanentemente'**
+  String get financeCycleDeleteTitle;
+
+  /// Advertencia irreversible mostrada antes de eliminar un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar permanentemente el ciclo de {name}? Se eliminarán sus vínculos, gastos, alimentos, proyecciones y resultado final. Los registros compartidos se conservarán. Esta acción no se puede deshacer.'**
+  String financeCycleDeleteMessage(String name);
+
+  /// Acción destructiva para confirmar la eliminación de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get financeCycleDeleteAction;
+
+  /// Mensaje mostrado cuando falla la eliminación de un ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos eliminar el ciclo. Inténtalo de nuevo.'**
+  String get financeCycleDeleteError;
 
   /// Acción para volver a la lista de ciclos
   ///
@@ -838,6 +953,66 @@ abstract class AppLocalizations {
   /// **'Asignando animales'**
   String get financeCycleAnimalsConfirmPending;
 
+  /// Acción para iniciar una venta de animales del ciclo de carne
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar venta'**
+  String get financeCycleAnimalsSell;
+
+  /// Título de la selección de animales para venta
+  ///
+  /// In es, this message translates to:
+  /// **'Vender animales'**
+  String get financeCycleAnimalsSaleTitle;
+
+  /// Descripción del flujo de venta parcial o total
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona algunos o todos los animales activos del ciclo.'**
+  String get financeCycleAnimalsSaleSubtitle;
+
+  /// Acción para seleccionar todos los animales activos
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar todos'**
+  String get financeCycleAnimalsSaleSelectAll;
+
+  /// Acción para vender los animales seleccionados
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{Selecciona animales} =1{Vender 1 animal} other{Vender {count} animales}}'**
+  String financeCycleAnimalsSaleSelected(int count);
+
+  /// Acción de venta total que cerrará la producción
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{Vender el animal y cerrar producción} other{Vender los {count} animales y cerrar producción}}'**
+  String financeCycleAnimalsSaleAll(int count);
+
+  /// Título del formulario de venta de animales
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{Venta de 1 animal} other{Venta de {count} animales}}'**
+  String financeCycleAnimalsSaleDialogTitle(int count);
+
+  /// Importe total de la venta seleccionada
+  ///
+  /// In es, this message translates to:
+  /// **'Importe total'**
+  String get financeCycleAnimalsSaleAmountLabel;
+
+  /// Peso total en kilogramos de la venta seleccionada
+  ///
+  /// In es, this message translates to:
+  /// **'Peso total (kg)'**
+  String get financeCycleAnimalsSaleWeightLabel;
+
+  /// Acción para confirmar la venta del ciclo
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar venta'**
+  String get financeCycleAnimalsSaleConfirm;
+
   /// Estado de una asignación activa de animal
   ///
   /// In es, this message translates to:
@@ -1006,6 +1181,24 @@ abstract class AppLocalizations {
   /// **'Saldo proyectado'**
   String get financeCycleProjectedBalanceMetric;
 
+  /// Tasa de consumo diario de alimento por ave
+  ///
+  /// In es, this message translates to:
+  /// **'Kg por ave por día'**
+  String get financeCycleProjectionFeedRateKgLabel;
+
+  /// Fecha final exclusiva calculada para el alimento disponible
+  ///
+  /// In es, this message translates to:
+  /// **'Fin esperado del alimento'**
+  String get financeCycleProjectionExpectedEndLabel;
+
+  /// Aviso mostrado al intentar abrir proyecciones en un ciclo que no es de postura
+  ///
+  /// In es, this message translates to:
+  /// **'Las proyecciones están disponibles únicamente para ciclos de postura.'**
+  String get financeCycleMeatProjectionsUnavailable;
+
   /// Título de los supuestos usados en una proyección
   ///
   /// In es, this message translates to:
@@ -1089,6 +1282,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Resultado final'**
   String get financeCycleFinalResultTitle;
+
+  /// Título del resultado económico actual de un ciclo de carne no liquidado
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado provisional'**
+  String get financeCycleProvisionalResultTitle;
+
+  /// Título explícito del resultado inmutable de un ciclo liquidado
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado final liquidado'**
+  String get financeCycleSettledResultTitle;
 
   /// Fecha de liquidación definitiva del ciclo
   ///
@@ -1261,13 +1466,13 @@ abstract class AppLocalizations {
   /// No description provided for @financeBalanceHeading.
   ///
   /// In es, this message translates to:
-  /// **'Punto de equilibrio por mezcla'**
+  /// **'Punto de equilibrio'**
   String get financeBalanceHeading;
 
   /// No description provided for @financeBalanceSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Precio mínimo por huevo necesario para cubrir el costo de alimento de cada mezcla.'**
+  /// **'Consulta el equilibrio de producción y el resultado económico acumulado.'**
   String get financeBalanceSubtitle;
 
   /// No description provided for @financeErrorTitle.

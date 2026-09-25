@@ -5,6 +5,8 @@ import '../../l10n/app_localizations.dart';
 const _dotDecimalLocale = 'en_US';
 
 extension DateTimeFormatting on DateTime {
+  static DateTime nowLocal() => DateTime.now();
+
   String formatShortDate(AppLocalizations l10n) {
     return DateFormat.yMMMd(l10n.localeName).format(this);
   }
@@ -17,6 +19,17 @@ extension NumFormatting on num {
       symbol: r'$',
       decimalDigits: 2,
     ).format(this);
+  }
+
+  String formatCompactCurrency(AppLocalizations _) {
+    return (NumberFormat.currency(
+            locale: _dotDecimalLocale,
+            symbol: r'$',
+            decimalDigits: 2,
+          )
+          ..minimumFractionDigits = 0
+          ..maximumFractionDigits = 2)
+        .format(this);
   }
 
   String formatInteger(AppLocalizations _) {

@@ -54,8 +54,14 @@ class FinanceCycleWorkspaceSection extends ConsumerWidget {
       AsyncData(:final value) => FinanceCycleWorkspaceView(
         detail: value,
         selectedView: view,
-        onBack: () =>
-            ref.read(financeCyclesWorkflowProvider(farmId).notifier).showList(),
+        onBack: () {
+          final workflow = ref.read(
+            financeCyclesWorkflowProvider(farmId).notifier,
+          );
+          view == FinanceCyclesView.overview
+              ? workflow.showList()
+              : workflow.showCycleView(FinanceCyclesView.overview);
+        },
         mutationFailed: mutation.hasError,
         isCompatibilityMode: value.isCompatibilityMode,
         body: FinanceCycleWorkspaceBody(
@@ -137,7 +143,9 @@ class FinanceCycleWorkspaceBody extends ConsumerWidget {
             )
             .linkFeed(
               mixtureId: mixtureId,
-              startsOn: _actionDate(detail.startsOn),
+              startsOn: detail.purpose == EconomicsV2Purpose.postura
+                  ? DateUtils.dateOnly(detail.startsOn)
+                  : _actionDate(detail.startsOn),
             ),
       ),
     ),
@@ -152,38 +160,69 @@ class FinanceCycleWorkspaceBody extends ConsumerWidget {
         onAdd: () => _recordExpense(context, ref, detail.startsOn),
       ),
     ),
-    FinanceCyclesView.projections => FinanceCycleWorkspaceAsyncBody(
-      viewKey: AppWidgetKeys.financeCycleProjections,
-      value: ref.watch(economicsV2CycleProjectionsProvider(farmId, cycleId)),
-      onRetry: () =>
-          ref.invalidate(economicsV2CycleProjectionsProvider(farmId, cycleId)),
-      builder: (projections) => FinanceCycleProjectionsView(
-        projections: projections,
-        isPending: isPending,
-        onAdd: () => _saveProjection(context, ref),
-      ),
-    ),
-    FinanceCyclesView.close => FinanceCycleWorkspaceAsyncBody(
-      viewKey: AppWidgetKeys.financeCycleClose,
-      value: ref.watch(economicsV2CycleReadinessProvider(farmId, cycleId)),
-      onRetry: () =>
-          ref.invalidate(economicsV2CycleReadinessProvider(farmId, cycleId)),
-      builder: (readiness) => FinanceCycleCloseView(
-        detail: detail,
-        readiness: readiness,
-        isPending: isPending,
-        onCloseProduction: () => ref
-            .read(
-              financeCycleWorkspaceMutationsProvider(farmId, cycleId).notifier,
+    FinanceCyclesView.projections =>
+      detail.purpose != EconomicsV2Purpose.postura
+          ? const FinanceCycleProjectionsUnavailableView()
+          : FinanceCycleWorkspaceAsyncBody(
+              viewKey: AppWidgetKeys.financeCycleProjections,
+              value: ref.watch(
+                economicsV2CycleProjectionsProvider(farmId, cycleId),
+              ),
+              onRetry: () => ref.invalidate(
+                economicsV2CycleProjectionsProvider(farmId, cycleId),
+              ),
+              builder: (projections) => FinanceCycleProjectionsView(
+                projections: projections,
+                isPending: isPending,
+                onAdd: () => _saveProjection(context, ref),
+              ),
+            ),
+    FinanceCyclesView.close =>
+      detail.status == EconomicsV2CycleStatus.settled
+          ? FinanceCycleWorkspaceAsyncBody(
+              viewKey: AppWidgetKeys.financeCycleClose,
+              value: ref.watch(economicsV2FinalResultProvider(farmId, cycleId)),
+              onRetry: () => ref.invalidate(
+                economicsV2FinalResultProvider(farmId, cycleId),
+              ),
+              builder: (finalResult) => FinanceCycleCloseView(
+                detail: detail,
+                finalResult: finalResult,
+                isPending: isPending,
+                onCloseProduction: () {},
+                onFinalize: () {},
+              ),
             )
-            .closeProduction(_actionDate(detail.startsOn)),
-        onFinalize: () => ref
-            .read(
-              financeCycleWorkspaceMutationsProvider(farmId, cycleId).notifier,
-            )
-            .finalize(),
-      ),
-    ),
+          : FinanceCycleWorkspaceAsyncBody(
+              viewKey: AppWidgetKeys.financeCycleClose,
+              value: ref.watch(
+                economicsV2CycleReadinessProvider(farmId, cycleId),
+              ),
+              onRetry: () => ref.invalidate(
+                economicsV2CycleReadinessProvider(farmId, cycleId),
+              ),
+              builder: (readiness) => FinanceCycleCloseView(
+                detail: detail,
+                readiness: readiness,
+                isPending: isPending,
+                onCloseProduction: () => ref
+                    .read(
+                      financeCycleWorkspaceMutationsProvider(
+                        farmId,
+                        cycleId,
+                      ).notifier,
+                    )
+                    .closeProduction(_actionDate(detail.startsOn)),
+                onFinalize: () => ref
+                    .read(
+                      financeCycleWorkspaceMutationsProvider(
+                        farmId,
+                        cycleId,
+                      ).notifier,
+                    )
+                    .finalize(),
+              ),
+            ),
     FinanceCyclesView.list || FinanceCyclesView.create => throw StateError(
       'A workspace requires a cycle destination.',
     ),
@@ -262,14 +301,29 @@ class FinanceCycleWorkspaceView extends StatelessWidget {
       detail.startsOn.formatShortDate(l10n),
       endLabel,
     );
+    final backLabel = selectedView == FinanceCyclesView.overview
+        ? l10n.financeCycleWorkspaceAllCycles
+        : title;
+    final detailLabel = switch (selectedView) {
+      FinanceCyclesView.overview => l10n.financeCycleWorkspaceDetail,
+      FinanceCyclesView.animals => l10n.financeCycleWorkspaceAnimals,
+      FinanceCyclesView.feeds => l10n.financeCycleWorkspaceFeeds,
+      FinanceCyclesView.expenses => l10n.financeCycleExpensesNavigationTitle,
+      FinanceCyclesView.projections =>
+        l10n.financeCycleProjectionNavigationTitle,
+      FinanceCyclesView.close => l10n.financeCycleResultNavigationTitle,
+      FinanceCyclesView.list || FinanceCyclesView.create => throw StateError(
+        'A workspace requires a cycle destination.',
+      ),
+    };
     return FinanceCycleCanvas(
       child: ListView(
         key: const ValueKey(AppWidgetKeys.financeCycleWorkspace),
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           FinanceCycleContextSelector(
-            allCyclesLabel: l10n.financeCycleWorkspaceAllCycles,
-            detailLabel: l10n.financeCycleWorkspaceDetail,
+            backLabel: backLabel,
+            detailLabel: detailLabel,
             onBack: onBack,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -418,21 +472,27 @@ class FinanceCycleOverviewView extends StatelessWidget {
               : () => destination(FinanceCyclesView.expenses),
         ),
         const SizedBox(height: AppSpacing.sm),
-        FinanceCycleNavigationRow(
-          keyValue: AppWidgetKeys.financeCycleProjectionsTab,
-          icon: Icons.trending_up_rounded,
-          title: l10n.financeCycleProjectionNavigationTitle,
-          subtitle: l10n.financeCycleProjectionsNavigationSubtitle,
-          value: detail.profit.formatCurrency(l10n),
-          onPressed: destination == null
-              ? null
-              : () => destination(FinanceCyclesView.projections),
-        ),
-        const SizedBox(height: AppSpacing.sm),
+        if (detail.purpose == EconomicsV2Purpose.postura) ...[
+          FinanceCycleNavigationRow(
+            keyValue: AppWidgetKeys.financeCycleProjectionsTab,
+            icon: Icons.trending_up_rounded,
+            title: l10n.financeCycleProjectionNavigationTitle,
+            subtitle: l10n.financeCycleProjectionsNavigationSubtitle,
+            value: detail.profit.formatCurrency(l10n),
+            onPressed: destination == null
+                ? null
+                : () => destination(FinanceCyclesView.projections),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
         FinanceCycleNavigationRow(
           keyValue: AppWidgetKeys.financeCycleCloseTab,
           icon: Icons.task_alt_rounded,
-          title: l10n.financeCycleResultNavigationTitle,
+          title:
+              detail.purpose == EconomicsV2Purpose.carne &&
+                  detail.status != EconomicsV2CycleStatus.settled
+              ? l10n.financeCycleProvisionalResultTitle
+              : l10n.financeCycleResultNavigationTitle,
           subtitle: l10n.financeCycleResultNavigationSubtitle,
           value: detail.profit.formatCurrency(l10n),
           onPressed: destination == null
@@ -772,19 +832,28 @@ class FinanceCycleProjectionsView extends StatelessWidget {
                       icon: Icons.inventory_2_outlined,
                     ),
                     FinanceCycleMetricTile(
-                      label: l10n.financeCycleProjectionFeedPerDayLabel,
-                      value:
-                          projection.input.feedPerDay?.formatCurrency(l10n) ??
-                          l10n.notAvailableLabel,
+                      label: l10n.financeCycleProjectionFeedRateKgLabel,
+                      value: switch (projection.input.feedRateKgPerBirdDay) {
+                        final rate? => rate.formatDecimal(l10n),
+                        null => l10n.notAvailableLabel,
+                      },
                       icon: Icons.grass_outlined,
                     ),
                     FinanceCycleMetricTile(
                       label: l10n.financeCycleProjectionHorizonLabel,
-                      value: switch (projection.input.horizonDays) {
+                      value: switch (projection.result.projectedHorizonDays) {
                         final days? => l10n.financeCycleProjectionDays(days),
                         null => l10n.notAvailableLabel,
                       },
                       icon: Icons.calendar_today_outlined,
+                    ),
+                    FinanceCycleMetricTile(
+                      label: l10n.financeCycleProjectionExpectedEndLabel,
+                      value:
+                          projection.result.expectedEndExclusive
+                              ?.formatShortDate(l10n) ??
+                          l10n.notAvailableLabel,
+                      icon: Icons.event_available_outlined,
                     ),
                   ],
                 ),
@@ -798,18 +867,31 @@ class FinanceCycleProjectionsView extends StatelessWidget {
   }
 }
 
+class FinanceCycleProjectionsUnavailableView extends StatelessWidget {
+  const FinanceCycleProjectionsUnavailableView({super.key});
+
+  @override
+  Widget build(BuildContext context) => FinanceCyclePanel(
+    key: const ValueKey(AppWidgetKeys.financeCycleProjections),
+    message: context.l10n.financeCycleMeatProjectionsUnavailable,
+    variant: FinanceCyclePanelVariant.info,
+  );
+}
+
 class FinanceCycleCloseView extends StatelessWidget {
   const FinanceCycleCloseView({
     required this.detail,
-    required this.readiness,
     required this.isPending,
     required this.onCloseProduction,
     required this.onFinalize,
+    this.readiness,
+    this.finalResult,
     super.key,
   });
 
   final EconomicsV2CycleDetail detail;
-  final EconomicsV2CycleReadiness readiness;
+  final EconomicsV2CycleReadiness? readiness;
+  final EconomicsV2FinalResult? finalResult;
   final bool isPending;
   final VoidCallback onCloseProduction;
   final VoidCallback onFinalize;
@@ -820,13 +902,19 @@ class FinanceCycleCloseView extends StatelessWidget {
     final finance = FinanceTheme.of(context);
     final textTheme = Theme.of(context).textTheme;
     if (detail.status == EconomicsV2CycleStatus.settled) {
+      final snapshot = finalResult;
+      if (snapshot == null) {
+        throw StateError(
+          'A settled cycle requires its immutable final result.',
+        );
+      }
       return FinanceCycleSurfaceCard(
         key: const ValueKey(AppWidgetKeys.financeCycleFinalResult),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              l10n.financeCycleFinalResultTitle,
+              l10n.financeCycleSettledResultTitle,
               style: textTheme.titleLarge?.copyWith(
                 color: finance.cycleOnSurface,
                 fontWeight: FontWeight.w800,
@@ -845,17 +933,17 @@ class FinanceCycleCloseView extends StatelessWidget {
               metrics: [
                 FinanceCycleMetricTile(
                   label: l10n.financeCycleFinalRevenueMetric,
-                  value: detail.revenue.formatCurrency(l10n),
+                  value: snapshot.result.revenue.formatCurrency(l10n),
                   icon: Icons.arrow_upward_rounded,
                 ),
                 FinanceCycleMetricTile(
                   label: l10n.financeCycleFinalCostMetric,
-                  value: detail.totalCost.formatCurrency(l10n),
+                  value: snapshot.result.totalCost.formatCurrency(l10n),
                   icon: Icons.arrow_downward_rounded,
                 ),
                 FinanceCycleMetricTile(
                   label: l10n.financeCycleFinalProfitMetric,
-                  value: detail.profit.formatCurrency(l10n),
+                  value: snapshot.result.margin.formatCurrency(l10n),
                   icon: Icons.insights_rounded,
                 ),
               ],
@@ -863,6 +951,10 @@ class FinanceCycleCloseView extends StatelessWidget {
           ],
         ),
       );
+    }
+    final liveReadiness = readiness;
+    if (liveReadiness == null) {
+      throw StateError('An unsettled cycle requires current readiness.');
     }
     return FinanceCycleSurfaceCard(
       key: const ValueKey(AppWidgetKeys.financeCycleCloseReadiness),
@@ -878,87 +970,87 @@ class FinanceCycleCloseView extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           FinanceCyclePanel(
-            message: readiness.canCloseProduction
+            message: liveReadiness.canCloseProduction
                 ? l10n.financeCycleReadyToClose
-                : readiness.canSettle
+                : liveReadiness.canSettle
                 ? l10n.financeCycleReadyToSettle
                 : l10n.financeCycleNotReadyToClose,
-            variant: readiness.canCloseProduction || readiness.canSettle
+            variant: liveReadiness.canCloseProduction || liveReadiness.canSettle
                 ? FinanceCyclePanelVariant.info
                 : FinanceCyclePanelVariant.warning,
           ),
           const SizedBox(height: AppSpacing.sm),
           FinanceCycleRecordTile(
-            icon: readiness.hasMembers
+            icon: liveReadiness.hasMembers
                 ? Icons.check_circle_outline_rounded
                 : Icons.pending_outlined,
             title: l10n.financeCycleCloseMembersCriterion,
             badge: FinanceCycleStatusPill(
-              label: readiness.hasMembers
+              label: liveReadiness.hasMembers
                   ? l10n.financeCycleCriterionComplete
                   : l10n.financeCycleCriterionPending,
-              isActive: readiness.hasMembers,
+              isActive: liveReadiness.hasMembers,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           FinanceCycleRecordTile(
-            icon: readiness.hasFeed
+            icon: liveReadiness.hasFeed
                 ? Icons.check_circle_outline_rounded
                 : Icons.pending_outlined,
             title: l10n.financeCycleCloseFeedCriterion,
             badge: FinanceCycleStatusPill(
-              label: readiness.hasFeed
+              label: liveReadiness.hasFeed
                   ? l10n.financeCycleCriterionComplete
                   : l10n.financeCycleCriterionPending,
-              isActive: readiness.hasFeed,
+              isActive: liveReadiness.hasFeed,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           FinanceCycleRecordTile(
-            icon: readiness.hasSaleableOutput
+            icon: liveReadiness.hasSaleableOutput
                 ? Icons.check_circle_outline_rounded
                 : Icons.pending_outlined,
             title: l10n.financeCycleCloseOutputCriterion,
             badge: FinanceCycleStatusPill(
-              label: readiness.hasSaleableOutput
+              label: liveReadiness.hasSaleableOutput
                   ? l10n.financeCycleCriterionComplete
                   : l10n.financeCycleCriterionPending,
-              isActive: readiness.hasSaleableOutput,
+              isActive: liveReadiness.hasSaleableOutput,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           FinanceCycleRecordTile(
-            icon: readiness.salesWithinOutput
+            icon: liveReadiness.salesWithinOutput
                 ? Icons.check_circle_outline_rounded
                 : Icons.pending_outlined,
             title: l10n.financeCycleCloseSalesCriterion,
             badge: FinanceCycleStatusPill(
-              label: readiness.salesWithinOutput
+              label: liveReadiness.salesWithinOutput
                   ? l10n.financeCycleCriterionComplete
                   : l10n.financeCycleCriterionPending,
-              isActive: readiness.salesWithinOutput,
+              isActive: liveReadiness.salesWithinOutput,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           FinanceCycleRecordTile(
-            icon: readiness.openFeedCount == 0
+            icon: liveReadiness.openFeedCount == 0
                 ? Icons.check_circle_outline_rounded
                 : Icons.pending_outlined,
             title: l10n.financeCycleCloseOpenFeedsCriterion(
-              readiness.openFeedCount,
+              liveReadiness.openFeedCount,
             ),
             badge: FinanceCycleStatusPill(
-              label: readiness.openFeedCount == 0
+              label: liveReadiness.openFeedCount == 0
                   ? l10n.financeCycleCriterionComplete
                   : l10n.financeCycleCriterionPending,
-              isActive: readiness.openFeedCount == 0,
+              isActive: liveReadiness.openFeedCount == 0,
             ),
           ),
-          for (final reason in readiness.reasons) ...[
+          for (final reason in liveReadiness.reasons) ...[
             const SizedBox(height: AppSpacing.xs),
             FinanceCycleReadinessReasonLabel(reason: reason),
           ],
-          if (readiness.canCloseProduction) ...[
+          if (liveReadiness.canCloseProduction) ...[
             const SizedBox(height: AppSpacing.sm),
             FinanceCycleActionButton(
               keyValue: AppWidgetKeys.financeCycleCloseProduction,
@@ -968,7 +1060,7 @@ class FinanceCycleCloseView extends StatelessWidget {
               icon: Icons.task_alt_rounded,
             ),
           ],
-          if (readiness.canSettle) ...[
+          if (liveReadiness.canSettle) ...[
             const SizedBox(height: AppSpacing.sm),
             FinanceCycleActionButton(
               keyValue: AppWidgetKeys.financeCycleFinalize,
@@ -1084,6 +1176,7 @@ Future<FinanceCycleExpenseDraft?> showFinanceCycleExpenseDialog(
   BuildContext context,
 ) => showDialog<FinanceCycleExpenseDraft>(
   context: context,
+  routeSettings: const RouteSettings(name: 'cycle-expense'),
   builder: (_) => const FinanceCycleExpenseDialog(),
 );
 
@@ -1091,6 +1184,7 @@ Future<FinanceCycleProjectionDraft?> showFinanceCycleProjectionDialog(
   BuildContext context,
 ) => showDialog<FinanceCycleProjectionDraft>(
   context: context,
+  routeSettings: const RouteSettings(name: 'cycle-posture-projection'),
   builder: (_) => const FinanceCycleProjectionDialog(),
 );
 
@@ -1199,9 +1293,8 @@ class _FinanceCycleProjectionDialogState
     extends State<FinanceCycleProjectionDialog> {
   final _unitPrice = TextEditingController();
   final _productionPerDay = TextEditingController();
-  final _feedPerDay = TextEditingController();
+  final _feedRateKg = TextEditingController();
   final _otherCosts = TextEditingController();
-  final _horizonDays = TextEditingController();
   final _note = TextEditingController();
   var _showValidation = false;
 
@@ -1209,9 +1302,8 @@ class _FinanceCycleProjectionDialogState
   void dispose() {
     _unitPrice.dispose();
     _productionPerDay.dispose();
-    _feedPerDay.dispose();
+    _feedRateKg.dispose();
     _otherCosts.dispose();
-    _horizonDays.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -1236,25 +1328,14 @@ class _FinanceCycleProjectionDialogState
             label: l10n.financeCycleProjectionProductionPerDayLabel,
           ),
           FinanceCycleNumberField(
-            keyValue: AppWidgetKeys.financeCycleProjectionFeedPerDay,
-            controller: _feedPerDay,
-            label: l10n.financeCycleProjectionFeedPerDayLabel,
+            keyValue: AppWidgetKeys.financeCycleProjectionFeedRateKg,
+            controller: _feedRateKg,
+            label: l10n.financeCycleProjectionFeedRateKgLabel,
           ),
           FinanceCycleNumberField(
             keyValue: AppWidgetKeys.financeCycleProjectionOtherCosts,
             controller: _otherCosts,
             label: l10n.financeCycleProjectionOtherCostsLabel,
-          ),
-          TextField(
-            key: const ValueKey(
-              AppWidgetKeys.financeCycleProjectionHorizonDays,
-            ),
-            controller: _horizonDays,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: l10n.financeCycleProjectionHorizonLabel,
-            ),
           ),
           TextField(
             key: const ValueKey(AppWidgetKeys.financeCycleProjectionNote),
@@ -1288,17 +1369,14 @@ class _FinanceCycleProjectionDialogState
   void _submit() {
     final unitPrice = _positiveDouble(_unitPrice.text);
     final productionPerDay = _positiveDouble(_productionPerDay.text);
-    final feedPerDay = _positiveDouble(_feedPerDay.text);
+    final feedRateKg = _positiveDouble(_feedRateKg.text);
     final otherCosts = double.tryParse(_otherCosts.text.trim());
-    final horizonDays = int.tryParse(_horizonDays.text.trim());
     if (unitPrice == null ||
         productionPerDay == null ||
-        feedPerDay == null ||
+        feedRateKg == null ||
         otherCosts == null ||
         !otherCosts.isFinite ||
-        otherCosts < 0 ||
-        horizonDays == null ||
-        horizonDays <= 0) {
+        otherCosts < 0) {
       setState(() => _showValidation = true);
       return;
     }
@@ -1307,9 +1385,8 @@ class _FinanceCycleProjectionDialogState
         input: EconomicsV2ProjectionInput(
           expectedUnitPrice: unitPrice,
           productionPerDay: productionPerDay,
-          feedPerDay: feedPerDay,
+          feedRateKgPerBirdDay: feedRateKg,
           otherCosts: otherCosts,
-          horizonDays: horizonDays,
         ),
         note: _optionalText(_note.text),
       ),

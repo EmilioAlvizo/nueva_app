@@ -41,22 +41,33 @@ class FinanceCycleAnimalsSection extends ConsumerWidget {
     final candidatesById = {
       for (final candidate in members.candidates) candidate.animalId: candidate,
     };
+    final activeMembers = [
+      for (final member in members.members)
+        if (member.isActive) member,
+    ];
+    final selectableIds =
+        workflow.animalsStep == FinanceCycleAnimalsStep.saleSelection
+        ? {for (final member in activeMembers) member.animalId}
+        : candidatesById.keys.toSet();
     final selectedIds = Set<String>.unmodifiable(
-      workflow.selectedAnimalIds.where(candidatesById.containsKey),
+      workflow.selectedAnimalIds.where(selectableIds.contains),
     );
     final selectedCandidates = [
-      for (final animalId in selectedIds) candidatesById[animalId]!,
+      for (final animalId in selectedIds) ?candidatesById[animalId],
     ];
 
     ref.listen(economicsV2CycleMembersProvider(farmId, cycleId), (_, next) {
       final latest = next.value;
       if (latest == null) return;
-      final availableIds = {
-        for (final candidate in latest.candidates) candidate.animalId,
-      };
-      final selection = ref
-          .read(financeCyclesWorkflowProvider(farmId))
-          .selectedAnimalIds;
+      final latestWorkflow = ref.read(financeCyclesWorkflowProvider(farmId));
+      final availableIds =
+          latestWorkflow.animalsStep == FinanceCycleAnimalsStep.saleSelection
+          ? {
+              for (final member in latest.members)
+                if (member.isActive) member.animalId,
+            }
+          : {for (final candidate in latest.candidates) candidate.animalId};
+      final selection = latestWorkflow.selectedAnimalIds;
       if (selection.any((animalId) => !availableIds.contains(animalId))) {
         ref
             .read(financeCyclesWorkflowProvider(farmId).notifier)
@@ -72,6 +83,11 @@ class FinanceCycleAnimalsSection extends ConsumerWidget {
         canAssign: canAssign,
         canStartAssignment: canStartAssignment,
         onAdd: notifier.startAnimalSelection,
+        canSell:
+            canAssign &&
+            detail.purpose == EconomicsV2Purpose.carne &&
+            activeMembers.isNotEmpty,
+        onSell: notifier.startSaleSelection,
       ),
       (FinanceCycleAnimalsStep.selection, _) => FinanceCycleAnimalSelectionView(
         candidates: [
@@ -129,6 +145,30 @@ class FinanceCycleAnimalsSection extends ConsumerWidget {
           canAssign: canAssign,
           canStartAssignment: canStartAssignment,
           onAdd: notifier.startAnimalSelection,
+          canSell:
+              canAssign &&
+              detail.purpose == EconomicsV2Purpose.carne &&
+              activeMembers.isNotEmpty,
+          onSell: notifier.startSaleSelection,
+        ),
+      (FinanceCycleAnimalsStep.saleSelection, _) =>
+        FinanceCycleMeatSaleSelectionView(
+          members: activeMembers,
+          selectedAnimalIds: selectedIds,
+          onToggleAnimal: notifier.toggleAnimal,
+          onSelectAll: () => notifier.selectAllAnimals(
+            activeMembers.map((member) => member.animalId),
+          ),
+          onClear: notifier.clearSelectedAnimals,
+          onCancel: notifier.resetAnimalAssignment,
+          onContinue: () => unawaited(
+            _recordSale(
+              context,
+              ref,
+              selectedAnimalIds: selectedIds.toList(growable: false),
+              soldOn: today,
+            ),
+          ),
         ),
     };
   }
@@ -172,5 +212,27 @@ class FinanceCycleAnimalsSection extends ConsumerWidget {
     ref
         .read(financeCyclesWorkflowProvider(farmId).notifier)
         .setAnimalJoinedOn(selected);
+  }
+
+  Future<void> _recordSale(
+    BuildContext context,
+    WidgetRef ref, {
+    required List<String> selectedAnimalIds,
+    required DateTime soldOn,
+  }) async {
+    final draft = await showFinanceCycleSaleDialog(
+      context,
+      selectedCount: selectedAnimalIds.length,
+    );
+    if (draft == null || !context.mounted) return;
+    await ref
+        .read(financeCycleWorkspaceMutationsProvider(farmId, cycleId).notifier)
+        .recordCycleAnimalSale(
+          animalIds: selectedAnimalIds,
+          soldOn: soldOn,
+          totalAmount: draft.totalAmount,
+          totalWeightKg: draft.totalWeightKg,
+          note: draft.note,
+        );
   }
 }

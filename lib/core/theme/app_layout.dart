@@ -27,6 +27,11 @@ abstract final class AppSizes {
   static const financePriceRing = 94.0;
   static const financePriceRingStroke = 8.0;
   static const financeDecorationLarge = 200.0;
+  static const financeMeatCardBreakpoint = 340.0;
+  static const financeMeatRingMinExtent = 136.0;
+  static const financeMeatRingMaxExtent = 184.0;
+  static const financeMeatRingStroke = 8.0;
+  static const financeMeatPanelMinHeight = 156.0;
   static const financePeriodMinHeight = 30.0;
   static const financeRingValueFont = 24.0;
   static const financeRingLabelFont = 10.0;

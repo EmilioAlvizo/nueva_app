@@ -186,6 +186,52 @@ void main() {
       expect(container.read(provider), const AsyncData<void>(null));
     },
   );
+
+  test(
+    'records one cycle-scoped sale and reconciles authoritative reads',
+    () async {
+      final lifecycle = _SaleLifecycleRepository();
+      final economics = _EconomicsRepository();
+      final container = ProviderContainer.test(
+        overrides: [
+          economicsV2LifecycleRepositoryProvider.overrideWithValue(lifecycle),
+          economicsV2RepositoryProvider.overrideWithValue(economics),
+        ],
+      );
+      addTearDown(container.dispose);
+      final provider = financeCycleWorkspaceMutationsProvider(
+        'farm-1',
+        'cycle-1',
+      );
+      await container.read(provider.future);
+
+      final recorded = await container
+          .read(provider.notifier)
+          .recordCycleAnimalSale(
+            animalIds: const ['animal-1', 'animal-2'],
+            soldOn: DateTime(2026, 9, 23),
+            totalAmount: 100,
+            totalWeightKg: 20,
+            note: 'Sell all',
+          );
+
+      expect(recorded, isTrue);
+      expect(
+        lifecycle.requests.single,
+        isA<EconomicsV2CycleSaleRequest>()
+            .having((request) => request.farmId, 'farm id', 'farm-1')
+            .having((request) => request.cycleId, 'cycle id', 'cycle-1')
+            .having((request) => request.animalIds, 'animal ids', [
+              'animal-1',
+              'animal-2',
+            ])
+            .having((request) => request.totalAmount, 'amount', 100)
+            .having((request) => request.totalWeightKg, 'weight', 20),
+      );
+      expect(economics.memberCalls, 1);
+      expect(container.read(provider), const AsyncData<void>(null));
+    },
+  );
 }
 
 final class _PendingLifecycleRepository extends Fake
@@ -233,6 +279,24 @@ final class _EconomicsRepository extends Fake implements EconomicsV2Repository {
   Future<List<EconomicsV2CycleSummary>> getCycleSummaries(
     String farmId,
   ) async => const [];
+}
+
+final class _SaleLifecycleRepository extends Fake
+    implements EconomicsV2LifecycleRepository {
+  final requests = <EconomicsV2CycleSaleRequest>[];
+
+  @override
+  Future<EconomicsV2CycleSaleRecorded> recordCycleAnimalSale(
+    EconomicsV2CycleSaleRequest request,
+  ) async {
+    requests.add(request);
+    return const EconomicsV2CycleSaleRecorded(
+      saleId: 'sale-1',
+      cycleId: 'cycle-1',
+      soldCount: 2,
+      status: EconomicsV2CycleStatus.productionClosed,
+    );
+  }
 }
 
 final class _ReconciliationEconomicsRepository extends Fake

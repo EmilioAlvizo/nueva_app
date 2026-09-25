@@ -167,6 +167,76 @@ class AppLocalizationsEs extends AppLocalizations {
   String get financeCycleSummaryExpensesLabel => 'Gastos';
 
   @override
+  String financeMeatBreakEvenTitle(String group) {
+    return 'Engorda · $group';
+  }
+
+  @override
+  String get financeMeatBreakEvenSubtitle =>
+      'Resultado económico acumulado del ciclo';
+
+  @override
+  String get financeMeatBreakEvenLabel => 'Punto de equilibrio';
+
+  @override
+  String get financeMeatBreakEvenPerAnimal => '\$/animal';
+
+  @override
+  String get financeMeatBreakEvenUnavailable => 'No disponible';
+
+  @override
+  String get financeMeatBreakEvenTotalCosts => 'Gastos totales';
+
+  @override
+  String get financeMeatBreakEvenFeed => 'Alimento';
+
+  @override
+  String get financeMeatBreakEvenExtras => 'Extras';
+
+  @override
+  String get financeMeatBreakEvenRevenue => 'Ingresos ventas';
+
+  @override
+  String financeMeatBreakEvenMetrics(int animals, int sales, String feedKg) {
+    String _temp0 = intl.Intl.pluralLogic(
+      animals,
+      locale: localeName,
+      other: '$animals animales',
+      one: '1 animal',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      sales,
+      locale: localeName,
+      other: '$sales ventas',
+      one: '1 venta',
+    );
+    return '$_temp0 • $_temp1 • $feedKg kg de alimento';
+  }
+
+  @override
+  String financeMeatBreakEvenPeriod(String start, String end, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days días',
+      one: '1 día',
+    );
+    return '$start → $end · $_temp0';
+  }
+
+  @override
+  String financeMeatBreakEvenSemantics(
+    String title,
+    String result,
+    String costs,
+    String revenue,
+    String metrics,
+    String period,
+  ) {
+    return '$title. Resultado por animal: $result. Gastos totales: $costs. Ingresos por ventas: $revenue. $metrics. $period.';
+  }
+
+  @override
   String get financeCycleViewDetail => 'Ver detalle';
 
   @override
@@ -207,6 +277,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String financeCycleOpenSemantics(String name) {
     return 'Abrir ciclo $name';
   }
+
+  @override
+  String get financeCycleCardOpenHint => 'Abrir el detalle del ciclo';
+
+  @override
+  String get financeCycleCardDeleteHint =>
+      'Mantén presionado para eliminar el ciclo';
+
+  @override
+  String get financeCycleDeleteTitle => 'Eliminar ciclo permanentemente';
+
+  @override
+  String financeCycleDeleteMessage(String name) {
+    return '¿Eliminar permanentemente el ciclo de $name? Se eliminarán sus vínculos, gastos, alimentos, proyecciones y resultado final. Los registros compartidos se conservarán. Esta acción no se puede deshacer.';
+  }
+
+  @override
+  String get financeCycleDeleteAction => 'Eliminar';
+
+  @override
+  String get financeCycleDeleteError =>
+      'No pudimos eliminar el ciclo. Inténtalo de nuevo.';
 
   @override
   String get financeCycleWorkspaceBack => 'Volver a ciclos';
@@ -532,6 +624,62 @@ class AppLocalizationsEs extends AppLocalizations {
   String get financeCycleAnimalsConfirmPending => 'Asignando animales';
 
   @override
+  String get financeCycleAnimalsSell => 'Registrar venta';
+
+  @override
+  String get financeCycleAnimalsSaleTitle => 'Vender animales';
+
+  @override
+  String get financeCycleAnimalsSaleSubtitle =>
+      'Selecciona algunos o todos los animales activos del ciclo.';
+
+  @override
+  String get financeCycleAnimalsSaleSelectAll => 'Seleccionar todos';
+
+  @override
+  String financeCycleAnimalsSaleSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vender $count animales',
+      one: 'Vender 1 animal',
+      zero: 'Selecciona animales',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String financeCycleAnimalsSaleAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vender los $count animales y cerrar producción',
+      one: 'Vender el animal y cerrar producción',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String financeCycleAnimalsSaleDialogTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Venta de $count animales',
+      one: 'Venta de 1 animal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeCycleAnimalsSaleAmountLabel => 'Importe total';
+
+  @override
+  String get financeCycleAnimalsSaleWeightLabel => 'Peso total (kg)';
+
+  @override
+  String get financeCycleAnimalsSaleConfirm => 'Registrar venta';
+
+  @override
   String get financeCycleAssignmentActive => 'Activo';
 
   @override
@@ -656,6 +804,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get financeCycleProjectedBalanceMetric => 'Saldo proyectado';
 
   @override
+  String get financeCycleProjectionFeedRateKgLabel => 'Kg por ave por día';
+
+  @override
+  String get financeCycleProjectionExpectedEndLabel =>
+      'Fin esperado del alimento';
+
+  @override
+  String get financeCycleMeatProjectionsUnavailable =>
+      'Las proyecciones están disponibles únicamente para ciclos de postura.';
+
+  @override
   String get financeCycleProjectionAssumptionsTitle => 'Supuestos';
 
   @override
@@ -718,6 +877,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get financeCycleFinalResultTitle => 'Resultado final';
+
+  @override
+  String get financeCycleProvisionalResultTitle => 'Resultado provisional';
+
+  @override
+  String get financeCycleSettledResultTitle => 'Resultado final liquidado';
 
   @override
   String financeCycleSettledOn(String date) {
@@ -820,11 +985,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'No pudimos completar la operación. Inténtalo de nuevo.';
 
   @override
-  String get financeBalanceHeading => 'Punto de equilibrio por mezcla';
+  String get financeBalanceHeading => 'Punto de equilibrio';
 
   @override
   String get financeBalanceSubtitle =>
-      'Precio mínimo por huevo necesario para cubrir el costo de alimento de cada mezcla.';
+      'Consulta el equilibrio de producción y el resultado económico acumulado.';
 
   @override
   String get financeErrorTitle => 'No pudimos cargar los datos de equilibrio';

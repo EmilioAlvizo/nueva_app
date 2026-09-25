@@ -17,6 +17,8 @@ class FinanceCycleAnimalsMembersView extends StatelessWidget {
     required this.canAssign,
     required this.canStartAssignment,
     required this.onAdd,
+    this.canSell = false,
+    this.onSell,
     super.key,
   });
 
@@ -26,6 +28,8 @@ class FinanceCycleAnimalsMembersView extends StatelessWidget {
   final bool canAssign;
   final bool canStartAssignment;
   final VoidCallback onAdd;
+  final bool canSell;
+  final VoidCallback? onSell;
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +82,108 @@ class FinanceCycleAnimalsMembersView extends StatelessWidget {
                 onPressed: canStartAssignment ? onAdd : null,
                 icon: Icons.add_rounded,
               ),
+              if (canSell) ...[
+                const SizedBox(height: AppSpacing.xs),
+                FinanceCycleActionButton(
+                  keyValue: AppWidgetKeys.financeCycleAnimalsSell,
+                  label: l10n.financeCycleAnimalsSell,
+                  variant: FinanceCycleActionVariant.primary,
+                  onPressed: onSell,
+                  icon: Icons.sell_outlined,
+                ),
+              ],
             ],
           ),
         ],
+      ],
+    );
+  }
+}
+
+class FinanceCycleMeatSaleSelectionView extends StatelessWidget {
+  const FinanceCycleMeatSaleSelectionView({
+    required this.members,
+    required this.selectedAnimalIds,
+    required this.onToggleAnimal,
+    required this.onSelectAll,
+    required this.onClear,
+    required this.onCancel,
+    required this.onContinue,
+    super.key,
+  });
+
+  final List<EconomicsV2CycleMember> members;
+  final Set<String> selectedAnimalIds;
+  final ValueChanged<String> onToggleAnimal;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClear;
+  final VoidCallback onCancel;
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final selectedAll =
+        members.isNotEmpty && selectedAnimalIds.length == members.length;
+    return Column(
+      key: const ValueKey(AppWidgetKeys.financeCycleAnimalsSaleSelection),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FinanceCycleSectionHeader(
+          title: l10n.financeCycleAnimalsSaleTitle,
+          subtitle: l10n.financeCycleAnimalsSaleSubtitle,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        for (final member in members) ...[
+          Semantics(
+            container: true,
+            button: true,
+            selected: selectedAnimalIds.contains(member.animalId),
+            label: l10n.financeCycleAnimalsSelectAnimal(member.label),
+            child: CheckboxListTile(
+              value: selectedAnimalIds.contains(member.animalId),
+              title: Text(member.label),
+              subtitle: Text(
+                l10n.financeCycleMemberJoinedOn(
+                  member.joinedOn.formatShortDate(l10n),
+                ),
+              ),
+              onChanged: (_) => onToggleAnimal(member.animalId),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+        ],
+        FinanceCycleAnimalFooter(
+          children: [
+            FinanceCycleActionButton(
+              keyValue: AppWidgetKeys.financeCycleAnimalsSaleSelectAll,
+              label: selectedAll
+                  ? l10n.financeCycleAnimalsClear
+                  : l10n.financeCycleAnimalsSaleSelectAll,
+              variant: FinanceCycleActionVariant.secondary,
+              onPressed: selectedAll ? onClear : onSelectAll,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            FinanceCycleActionButton(
+              keyValue: AppWidgetKeys.financeCycleAnimalsSaleContinue,
+              label: selectedAll
+                  ? l10n.financeCycleAnimalsSaleAll(members.length)
+                  : l10n.financeCycleAnimalsSaleSelected(
+                      selectedAnimalIds.length,
+                    ),
+              variant: FinanceCycleActionVariant.primary,
+              onPressed: selectedAnimalIds.isEmpty ? null : onContinue,
+              icon: Icons.sell_outlined,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            FinanceCycleActionButton(
+              keyValue: AppWidgetKeys.financeCycleAnimalsCancel,
+              label: l10n.financeCycleCancel,
+              variant: FinanceCycleActionVariant.secondary,
+              onPressed: onCancel,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -694,4 +797,129 @@ class FinanceCycleAnimalFooter extends StatelessWidget {
       children: children,
     ),
   );
+}
+
+final class FinanceCycleSaleDraft {
+  const FinanceCycleSaleDraft({
+    required this.totalAmount,
+    required this.totalWeightKg,
+    this.note,
+  });
+
+  final double totalAmount;
+  final double totalWeightKg;
+  final String? note;
+}
+
+Future<FinanceCycleSaleDraft?> showFinanceCycleSaleDialog(
+  BuildContext context, {
+  required int selectedCount,
+}) => showDialog<FinanceCycleSaleDraft>(
+  context: context,
+  routeSettings: const RouteSettings(name: 'cycle-meat-sale'),
+  builder: (_) => FinanceCycleSaleDialog(selectedCount: selectedCount),
+);
+
+class FinanceCycleSaleDialog extends StatefulWidget {
+  const FinanceCycleSaleDialog({required this.selectedCount, super.key});
+
+  final int selectedCount;
+
+  @override
+  State<FinanceCycleSaleDialog> createState() => _FinanceCycleSaleDialogState();
+}
+
+class _FinanceCycleSaleDialogState extends State<FinanceCycleSaleDialog> {
+  final _amount = TextEditingController();
+  final _weight = TextEditingController();
+  final _note = TextEditingController();
+  var _showValidation = false;
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _weight.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AlertDialog(
+      scrollable: true,
+      title: Text(
+        l10n.financeCycleAnimalsSaleDialogTitle(widget.selectedCount),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            key: const ValueKey(AppWidgetKeys.financeCycleAnimalsSaleAmount),
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.financeCycleAnimalsSaleAmountLabel,
+            ),
+          ),
+          TextField(
+            key: const ValueKey(AppWidgetKeys.financeCycleAnimalsSaleWeight),
+            controller: _weight,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.financeCycleAnimalsSaleWeightLabel,
+            ),
+          ),
+          TextField(
+            key: const ValueKey(AppWidgetKeys.financeCycleAnimalsSaleNote),
+            controller: _note,
+            decoration: InputDecoration(labelText: l10n.financeCycleNoteLabel),
+          ),
+          if (_showValidation)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child: Text(
+                l10n.financeCycleInvalidForm,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.financeCycleCancel),
+        ),
+        FilledButton(
+          key: const ValueKey(AppWidgetKeys.financeCycleAnimalsSaleConfirm),
+          onPressed: _submit,
+          child: Text(l10n.financeCycleAnimalsSaleConfirm),
+        ),
+      ],
+    );
+  }
+
+  void _submit() {
+    final amount = double.tryParse(_amount.text.trim());
+    final weight = double.tryParse(_weight.text.trim());
+    if (amount == null ||
+        !amount.isFinite ||
+        amount < 0 ||
+        weight == null ||
+        !weight.isFinite ||
+        weight <= 0) {
+      setState(() => _showValidation = true);
+      return;
+    }
+    final note = _note.text.trim();
+    Navigator.of(context).pop(
+      FinanceCycleSaleDraft(
+        totalAmount: amount,
+        totalWeightKg: weight,
+        note: note.isEmpty ? null : note,
+      ),
+    );
+  }
 }

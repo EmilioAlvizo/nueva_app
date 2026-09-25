@@ -229,6 +229,12 @@ final class _EconomicsV2Repository implements EconomicsV2Repository {
   ) async => const [];
 
   @override
+  Future<String> deleteCycle({
+    required String farmId,
+    required String cycleId,
+  }) => throw UnimplementedError();
+
+  @override
   Future<EconomicsV2Calculation> calculate({
     required String farmId,
     required String cycleId,
@@ -296,6 +302,12 @@ final class _EconomicsV2Repository implements EconomicsV2Repository {
 
   @override
   Future<EconomicsV2CycleReadiness> getCycleReadiness({
+    required String farmId,
+    required String cycleId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<EconomicsV2FinalResult> getFinalResult({
     required String farmId,
     required String cycleId,
   }) => throw UnimplementedError();

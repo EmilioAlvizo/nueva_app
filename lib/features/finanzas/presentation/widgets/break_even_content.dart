@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_layout.dart';
 import 'break_even_card.dart';
+import 'meat_break_even_card.dart';
 
 class BreakEvenContent extends StatelessWidget {
   const BreakEvenContent({
     required this.title,
     required this.subtitle,
+    required this.meatCards,
     required this.cards,
     required this.onRefresh,
     super.key,
@@ -16,6 +18,7 @@ class BreakEvenContent extends StatelessWidget {
 
   final String title;
   final String subtitle;
+  final List<MeatBreakEvenCardViewData> meatCards;
   final List<BreakEvenCardViewData> cards;
   final Future<void> Function() onRefresh;
 
@@ -62,6 +65,10 @@ class BreakEvenContent extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
+                    for (final card in meatCards) ...[
+                      MeatBreakEvenCard(data: card),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
                     Wrap(
                       spacing: AppSpacing.md,
                       runSpacing: AppSpacing.md,

@@ -897,6 +897,89 @@ final class EconomicsV2CycleReadinessFamily extends $Family
   String toString() => r'economicsV2CycleReadinessProvider';
 }
 
+@ProviderFor(economicsV2FinalResult)
+final economicsV2FinalResultProvider = EconomicsV2FinalResultFamily._();
+
+final class EconomicsV2FinalResultProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EconomicsV2FinalResult>,
+          EconomicsV2FinalResult,
+          FutureOr<EconomicsV2FinalResult>
+        >
+    with
+        $FutureModifier<EconomicsV2FinalResult>,
+        $FutureProvider<EconomicsV2FinalResult> {
+  EconomicsV2FinalResultProvider._({
+    required EconomicsV2FinalResultFamily super.from,
+    required (String, String) super.argument,
+  }) : super(
+         retry: doNotRetryProvider,
+         name: r'economicsV2FinalResultProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$economicsV2FinalResultHash();
+
+  @override
+  String toString() {
+    return r'economicsV2FinalResultProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<EconomicsV2FinalResult> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<EconomicsV2FinalResult> create(Ref ref) {
+    final argument = this.argument as (String, String);
+    return economicsV2FinalResult(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EconomicsV2FinalResultProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$economicsV2FinalResultHash() =>
+    r'472b79abb47dab97588f06a6ee2020def65cee00';
+
+final class EconomicsV2FinalResultFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<EconomicsV2FinalResult>,
+          (String, String)
+        > {
+  EconomicsV2FinalResultFamily._()
+    : super(
+        retry: doNotRetryProvider,
+        name: r'economicsV2FinalResultProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EconomicsV2FinalResultProvider call(String farmId, String cycleId) =>
+      EconomicsV2FinalResultProvider._(argument: (farmId, cycleId), from: this);
+
+  @override
+  String toString() => r'economicsV2FinalResultProvider';
+}
+
 @ProviderFor(cycleCatalogs)
 final cycleCatalogsProvider = CycleCatalogsProvider._();
 
@@ -1587,7 +1670,7 @@ final class EconomicsV2LifecycleMutationsProvider
 }
 
 String _$economicsV2LifecycleMutationsHash() =>
-    r'e6bcafa5424c3464dad0a5c4df43a77f93242d5a';
+    r'2a4194089c12813d07e16e9e0c14b9464216d863';
 
 abstract class _$EconomicsV2LifecycleMutations extends $AsyncNotifier<Object?> {
   FutureOr<Object?> build();
@@ -1658,7 +1741,7 @@ final class FinanceCyclesWorkflowProvider
 }
 
 String _$financeCyclesWorkflowHash() =>
-    r'27ba837df4ac8b9238fd36fab15769418c58fea8';
+    r'f3a0822927e19cb43a05a1fe47d98dd5d8d066ef';
 
 final class FinanceCyclesWorkflowFamily extends $Family
     with
@@ -1756,7 +1839,7 @@ final class FinanceCycleWorkspaceMutationsProvider
 }
 
 String _$financeCycleWorkspaceMutationsHash() =>
-    r'2ffdb37f52a8db5846629c46c7853cb0e921518b';
+    r'45b6e4e154e2d1062da9d102081e04a3a45cf7aa';
 
 final class FinanceCycleWorkspaceMutationsFamily extends $Family
     with
@@ -1901,6 +1984,96 @@ abstract class _$FinanceCycleCreation
                 EconomicsV2CycleCreated?
               >,
               AsyncValue<EconomicsV2CycleCreated?>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args));
+  }
+}
+
+@ProviderFor(FinanceCycleDeletion)
+final financeCycleDeletionProvider = FinanceCycleDeletionFamily._();
+
+final class FinanceCycleDeletionProvider
+    extends $AsyncNotifierProvider<FinanceCycleDeletion, String?> {
+  FinanceCycleDeletionProvider._({
+    required FinanceCycleDeletionFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'financeCycleDeletionProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$financeCycleDeletionHash();
+
+  @override
+  String toString() {
+    return r'financeCycleDeletionProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  FinanceCycleDeletion create() => FinanceCycleDeletion();
+
+  @override
+  bool operator ==(Object other) {
+    return other is FinanceCycleDeletionProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$financeCycleDeletionHash() =>
+    r'61ff21ff8e017add3a9614119158c87cf2abca17';
+
+final class FinanceCycleDeletionFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          FinanceCycleDeletion,
+          AsyncValue<String?>,
+          String?,
+          FutureOr<String?>,
+          String
+        > {
+  FinanceCycleDeletionFamily._()
+    : super(
+        retry: null,
+        name: r'financeCycleDeletionProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FinanceCycleDeletionProvider call(String farmId) =>
+      FinanceCycleDeletionProvider._(argument: farmId, from: this);
+
+  @override
+  String toString() => r'financeCycleDeletionProvider';
+}
+
+abstract class _$FinanceCycleDeletion extends $AsyncNotifier<String?> {
+  late final _$args = ref.$arg as String;
+  String get farmId => _$args;
+
+  FutureOr<String?> build(String farmId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<String?>, String?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<String?>, String?>,
+              AsyncValue<String?>,
               Object?,
               Object?
             >;

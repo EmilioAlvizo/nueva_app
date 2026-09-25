@@ -16,6 +16,7 @@ import 'package:rancho/features/finanzas/domain/repositories/finances_repository
 import 'package:rancho/features/finanzas/presentation/providers/finances_providers.dart';
 import 'package:rancho/features/finanzas/presentation/screens/finances_screen.dart';
 import 'package:rancho/features/finanzas/presentation/widgets/finance_tab_bar.dart';
+import 'package:rancho/features/finanzas/presentation/widgets/meat_break_even_card.dart';
 import 'package:rancho/l10n/app_localizations.dart';
 
 void main() {
@@ -284,6 +285,158 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('renders meat-only balance from one bulk summary request', (
+    tester,
+  ) async {
+    final economics = _ControlledEconomicsRepository(
+      summaries: [_meatSummary, _summary, _meatSummaryWithoutMetrics],
+    );
+    await _pumpScreen(
+      tester,
+      repository: _ValueRepository(const []),
+      economicsRepository: economics,
+    );
+    await _flushAsync(tester);
+
+    expect(
+      _key(AppWidgetKeys.financeMeatBreakEvenCard(_meatSummary.cycleId)),
+      findsOneWidget,
+    );
+    expect(find.byType(MeatBreakEvenCard), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeEmpty), findsNothing);
+    expect(find.text('Engorda · Corral sur'), findsOneWidget);
+    expect(
+      find.text('Resultado económico acumulado del ciclo'),
+      findsOneWidget,
+    );
+    expect(find.text('Punto de equilibrio'), findsWidgets);
+    expect(find.text(r'-$18.75'), findsOneWidget);
+    expect(find.text(r'$325'), findsOneWidget);
+    expect(find.text(r'$200'), findsOneWidget);
+    expect(find.text(r'$125'), findsOneWidget);
+    expect(find.text(r'$250'), findsOneWidget);
+    expect(
+      find.text('4 animales • 2 ventas • 10 kg de alimento'),
+      findsOneWidget,
+    );
+    expect(find.text('20 ago 2026 → 20 sept 2026 · 32 días'), findsOneWidget);
+    expect(economics.accessCalls, 1);
+    expect(economics.summaryCalls, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('renders meat before the unchanged egg grid', (tester) async {
+    final economics = _ControlledEconomicsRepository(summaries: [_meatSummary]);
+    await _pumpScreen(
+      tester,
+      repository: _ValueRepository([_point]),
+      economicsRepository: economics,
+    );
+    await _flushAsync(tester);
+
+    final meat = _key(
+      AppWidgetKeys.financeMeatBreakEvenCard(_meatSummary.cycleId),
+    );
+    final egg = _key(AppWidgetKeys.financeBreakEvenCard(_point.mixtureId));
+    expect(meat, findsOneWidget);
+    expect(egg, findsOneWidget);
+    expect(tester.getTopLeft(meat).dy, lessThan(tester.getTopLeft(egg).dy));
+  });
+
+  testWidgets('keeps valid egg cards when the V2 summary request fails', (
+    tester,
+  ) async {
+    final economics = _ControlledEconomicsRepository(
+      summaryError: Exception('offline'),
+    );
+    await _pumpScreen(
+      tester,
+      repository: _ValueRepository([_point]),
+      economicsRepository: economics,
+    );
+    await _flushAsync(tester);
+
+    expect(
+      _key(AppWidgetKeys.financeBreakEvenCard(_point.mixtureId)),
+      findsOneWidget,
+    );
+    expect(find.byType(MeatBreakEvenCard), findsNothing);
+    expect(_key(AppWidgetKeys.financeError), findsNothing);
+    expect(economics.summaryCalls, 1);
+  });
+
+  testWidgets('keeps valid egg cards when the V2 access request fails', (
+    tester,
+  ) async {
+    final economics = _ControlledEconomicsRepository(
+      accessError: Exception('access unavailable'),
+      summaries: [_meatSummary],
+    );
+    await _pumpScreen(
+      tester,
+      repository: _ValueRepository([_point]),
+      economicsRepository: economics,
+    );
+    await _flushAsync(tester);
+
+    expect(
+      _key(AppWidgetKeys.financeBreakEvenCard(_point.mixtureId)),
+      findsOneWidget,
+    );
+    expect(find.byType(MeatBreakEvenCard), findsNothing);
+    expect(_key(AppWidgetKeys.financeError), findsNothing);
+    expect(economics.accessCalls, 1);
+    expect(economics.summaryCalls, 0);
+  });
+
+  testWidgets('does not request summaries for a viewer', (tester) async {
+    final economics = _ControlledEconomicsRepository(
+      access: const EconomicsV2FarmAccess(
+        farmId: 'farm-1',
+        enabled: true,
+        role: 'viewer',
+        canEdit: false,
+      ),
+      summaries: [_meatSummary],
+    );
+    await _pumpScreen(
+      tester,
+      repository: _ValueRepository([_point]),
+      economicsRepository: economics,
+    );
+    await _flushAsync(tester);
+
+    expect(economics.accessCalls, 1);
+    expect(economics.summaryCalls, 0);
+    expect(find.byType(MeatBreakEvenCard), findsNothing);
+  });
+
+  testWidgets('refreshes and awaits egg and eligible meat sources', (
+    tester,
+  ) async {
+    final finances = _CountingValueRepository([_point]);
+    final economics = _ControlledEconomicsRepository(summaries: [_meatSummary]);
+    await _pumpScreen(
+      tester,
+      repository: finances,
+      economicsRepository: economics,
+    );
+    await _flushAsync(tester);
+
+    final indicator = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator),
+    );
+    await indicator.onRefresh();
+    await _flushAsync(tester);
+
+    expect(finances.calls, 2);
+    expect(economics.summaryCalls, 2);
+    expect(
+      _key(AppWidgetKeys.financeMeatBreakEvenCard(_meatSummary.cycleId)),
+      findsOneWidget,
+    );
+  });
 }
 
 Finder _key(String value) => find.byKey(ValueKey(value));
@@ -302,6 +455,7 @@ void _expectFinanceTabSelected(WidgetTester tester, String keyValue) {
 Future<ProviderContainer> _pumpScreen(
   WidgetTester tester, {
   required FinancesRepository repository,
+  EconomicsV2Repository? economicsRepository,
   Brightness brightness = Brightness.light,
   double textScale = 1,
 }) async {
@@ -312,7 +466,7 @@ Future<ProviderContainer> _pumpScreen(
         'farm-1',
       ).overrideWithValue(const AsyncData(CycleAccess(CycleRole.viewer))),
       economicsV2RepositoryProvider.overrideWithValue(
-        _ViewerEconomicsRepository(),
+        economicsRepository ?? _ViewerEconomicsRepository(),
       ),
     ],
   );
@@ -340,6 +494,8 @@ Future<ProviderContainer> _pumpScreen(
 Future<void> _flushAsync(WidgetTester tester) async {
   await tester.pump();
   await tester.pump();
+  await tester.pump();
+  await tester.pump();
 }
 
 final class _ViewerEconomicsRepository extends Fake
@@ -357,6 +513,42 @@ final class _ViewerEconomicsRepository extends Fake
   Future<List<EconomicsV2CycleSummary>> getCycleSummaries(
     String farmId,
   ) async => const [];
+}
+
+final class _ControlledEconomicsRepository extends Fake
+    implements EconomicsV2Repository {
+  _ControlledEconomicsRepository({
+    this.access = const EconomicsV2FarmAccess(
+      farmId: 'farm-1',
+      enabled: true,
+      role: 'owner',
+      canEdit: true,
+    ),
+    this.summaries = const [],
+    this.accessError,
+    this.summaryError,
+  });
+
+  final EconomicsV2FarmAccess access;
+  final List<EconomicsV2CycleSummary> summaries;
+  final Object? accessError;
+  final Object? summaryError;
+  var accessCalls = 0;
+  var summaryCalls = 0;
+
+  @override
+  Future<EconomicsV2FarmAccess> getAccess(String farmId) async {
+    accessCalls++;
+    if (accessError case final error?) throw error;
+    return access;
+  }
+
+  @override
+  Future<List<EconomicsV2CycleSummary>> getCycleSummaries(String farmId) async {
+    summaryCalls++;
+    if (summaryError case final error?) throw error;
+    return summaries;
+  }
 }
 
 final _point = BreakEvenPoint(
@@ -382,6 +574,64 @@ final _point = BreakEvenPoint(
   marginPercentage: 50.82,
 );
 
+final _summary = EconomicsV2CycleSummary(
+  cycleId: 'cycle-egg',
+  farmId: 'farm-1',
+  status: 'open',
+  startsOn: DateTime(2026, 8, 20),
+  purposeId: 'purpose-egg',
+  purposeName: 'Postura',
+  purpose: EconomicsV2Purpose.postura,
+  activeAnimalCount: 4,
+  exitedAnimalCount: 0,
+  directExpenseTotal: 25,
+  linkedMixtureCount: 1,
+  latestLinkedGroupName: 'Gallinero',
+);
+
+final _meatSummaryWithoutMetrics = EconomicsV2CycleSummary(
+  cycleId: 'cycle-meat-incomplete',
+  farmId: 'farm-1',
+  status: 'open',
+  startsOn: DateTime(2026, 8, 20),
+  purposeId: 'purpose-meat',
+  purposeName: 'Carne',
+  purpose: EconomicsV2Purpose.carne,
+  activeAnimalCount: 4,
+  exitedAnimalCount: 0,
+  directExpenseTotal: 25,
+  linkedMixtureCount: 1,
+);
+
+final _meatSummary = EconomicsV2CycleSummary(
+  cycleId: 'cycle-meat',
+  farmId: 'farm-1',
+  status: 'production_closed',
+  startsOn: DateTime(2026, 8, 20),
+  endsOn: DateTime(2026, 9, 21),
+  productionClosedOn: DateTime(2026, 9, 20),
+  purposeId: 'purpose-meat',
+  purposeName: 'Carne',
+  purpose: EconomicsV2Purpose.carne,
+  activeAnimalCount: 2,
+  exitedAnimalCount: 2,
+  directExpenseTotal: 25,
+  linkedMixtureCount: 2,
+  latestLinkedGroupName: 'Corral sur',
+  meatMetrics: const EconomicsV2MeatCycleMetrics(
+    animalCount: 4,
+    feedCost: 200,
+    feedKgTotal: 10,
+    acquisitionCost: 100,
+    totalCost: 325,
+    animalSaleRevenue: 250,
+    saleCount: 2,
+    soldAnimalCount: 4,
+    profit: -75,
+    balancePerAnimal: -18.75,
+  ),
+);
+
 final class _ValueRepository implements FinancesRepository {
   const _ValueRepository(this.value);
 
@@ -389,6 +639,19 @@ final class _ValueRepository implements FinancesRepository {
 
   @override
   Future<List<BreakEvenPoint>> getBreakEvenPoints(String farmId) async => value;
+}
+
+final class _CountingValueRepository implements FinancesRepository {
+  _CountingValueRepository(this.value);
+
+  final List<BreakEvenPoint> value;
+  var calls = 0;
+
+  @override
+  Future<List<BreakEvenPoint>> getBreakEvenPoints(String farmId) async {
+    calls++;
+    return value;
+  }
 }
 
 final class _NullablePerBirdMetricsRepository implements FinancesRepository {

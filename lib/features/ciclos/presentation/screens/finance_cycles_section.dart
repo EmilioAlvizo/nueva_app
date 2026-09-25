@@ -5,6 +5,7 @@ import '../../../../core/config/feature_flags.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/testing/app_widget_keys.dart';
 import '../../../finanzas/presentation/widgets/finance_states.dart';
+import '../../domain/economics_v2_models.dart';
 import '../providers/cycle_providers.dart';
 import '../widgets/finance_cycles_dashboard.dart';
 import '../widgets/finance_cycles_states.dart';
@@ -96,6 +97,7 @@ class FinanceCyclesContentSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     ref.watch(financeCycleCreationProvider(farmId));
+    final deletion = ref.watch(financeCycleDeletionProvider(farmId));
     final dashboard = ref.watch(economicsV2CycleSummariesProvider(farmId));
     final workflow = ref.watch(financeCyclesWorkflowProvider(farmId));
     if (workflow.view == FinanceCyclesView.create && canEdit) {
@@ -142,11 +144,39 @@ class FinanceCyclesContentSection extends ConsumerWidget {
         onOpen: (cycleId) => ref
             .read(financeCyclesWorkflowProvider(farmId).notifier)
             .openCycle(cycleId),
+        onDelete: canEdit && !deletion.isLoading
+            ? (cycle) => _requestCycleDeletion(context, ref, cycle)
+            : null,
         onRefresh: () async {
           ref.invalidate(economicsV2CycleSummariesProvider(farmId));
           await ref.read(economicsV2CycleSummariesProvider(farmId).future);
         },
       ),
     };
+  }
+
+  Future<void> _requestCycleDeletion(
+    BuildContext context,
+    WidgetRef ref,
+    EconomicsV2CycleSummary cycle,
+  ) async {
+    final snapshot = FinanceCycleDeleteSnapshot(
+      cycleId: cycle.cycleId,
+      purposeName: cycle.purposeName,
+    );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      routeSettings: const RouteSettings(name: 'finance-cycle-delete'),
+      builder: (_) => FinanceCycleDeleteDialog(snapshot: snapshot),
+    );
+    if (!context.mounted || confirmed != true) return;
+    final deleted = await ref
+        .read(financeCycleDeletionProvider(farmId).notifier)
+        .delete(snapshot.cycleId);
+    if (!context.mounted || deleted) return;
+    final l10n = context.l10n;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l10n.financeCycleDeleteError)));
   }
 }

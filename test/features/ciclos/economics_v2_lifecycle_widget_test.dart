@@ -258,6 +258,10 @@ final class _LifecycleRepository implements EconomicsV2LifecycleRepository {
   @override
   Future<EconomicsV2FeedLinked> linkFeed(EconomicsV2LinkFeedRequest request) =>
       _record(request, feedRequests, feed);
+  @override
+  Future<EconomicsV2CycleSaleRecorded> recordCycleAnimalSale(
+    EconomicsV2CycleSaleRequest request,
+  ) => throw UnimplementedError();
 }
 
 final class _RecordingLegacyCycleRepository extends Mock

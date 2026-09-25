@@ -99,6 +99,15 @@ Future<EconomicsV2CycleReadiness> economicsV2CycleReadiness(
     .watch(economicsV2RepositoryProvider)
     .getCycleReadiness(farmId: farmId, cycleId: cycleId);
 
+@Riverpod(retry: doNotRetryProvider)
+Future<EconomicsV2FinalResult> economicsV2FinalResult(
+  Ref ref,
+  String farmId,
+  String cycleId,
+) => ref
+    .watch(economicsV2RepositoryProvider)
+    .getFinalResult(farmId: farmId, cycleId: cycleId);
+
 @riverpod
 Future<CycleCatalogs> cycleCatalogs(Ref ref) =>
     ref.watch(cycleRepositoryProvider).getCatalogs();
@@ -314,7 +323,7 @@ enum FinanceCyclesView {
   close,
 }
 
-enum FinanceCycleAnimalsStep { members, selection, confirmation }
+enum FinanceCycleAnimalsStep { members, selection, confirmation, saleSelection }
 
 enum FinanceCycleAnimalFilter { all, grouped, ungrouped }
 
@@ -395,6 +404,14 @@ class FinanceCyclesWorkflow extends _$FinanceCyclesWorkflow {
     );
   }
 
+  void startSaleSelection() {
+    if (state.view != FinanceCyclesView.animals) return;
+    state = state.copyWith(
+      animalsStep: FinanceCycleAnimalsStep.saleSelection,
+      selectedAnimalIds: const [],
+    );
+  }
+
   void setAnimalSearchQuery(String query) {
     if (state.animalsStep != FinanceCycleAnimalsStep.selection) return;
     state = state.copyWith(animalSearchQuery: query);
@@ -406,7 +423,10 @@ class FinanceCyclesWorkflow extends _$FinanceCyclesWorkflow {
   }
 
   void toggleAnimal(String animalId) {
-    if (state.animalsStep != FinanceCycleAnimalsStep.selection) return;
+    if (state.animalsStep != FinanceCycleAnimalsStep.selection &&
+        state.animalsStep != FinanceCycleAnimalsStep.saleSelection) {
+      return;
+    }
     final selected = [...state.selectedAnimalIds];
     selected.contains(animalId)
         ? selected.remove(animalId)
@@ -415,8 +435,18 @@ class FinanceCyclesWorkflow extends _$FinanceCyclesWorkflow {
   }
 
   void clearSelectedAnimals() {
-    if (state.animalsStep != FinanceCycleAnimalsStep.selection) return;
+    if (state.animalsStep != FinanceCycleAnimalsStep.selection &&
+        state.animalsStep != FinanceCycleAnimalsStep.saleSelection) {
+      return;
+    }
     state = state.copyWith(selectedAnimalIds: const []);
+  }
+
+  void selectAllAnimals(Iterable<String> animalIds) {
+    if (state.animalsStep != FinanceCycleAnimalsStep.saleSelection) return;
+    state = state.copyWith(
+      selectedAnimalIds: animalIds.toList(growable: false),
+    );
   }
 
   void continueAnimalSelection(DateTime joinedOn) {
@@ -442,6 +472,7 @@ class FinanceCyclesWorkflow extends _$FinanceCyclesWorkflow {
         clearJoinedOn: true,
       ),
       FinanceCycleAnimalsStep.selection => _resetAnimalAssignmentState(),
+      FinanceCycleAnimalsStep.saleSelection => _resetAnimalAssignmentState(),
       FinanceCycleAnimalsStep.members => state,
     };
   }
@@ -553,6 +584,35 @@ class FinanceCycleWorkspaceMutations extends _$FinanceCycleWorkspaceMutations {
     refresh: _refreshFeeds,
   );
 
+  Future<bool> recordCycleAnimalSale({
+    required List<String> animalIds,
+    required DateTime soldOn,
+    required double totalAmount,
+    required double totalWeightKg,
+    String? note,
+  }) {
+    if (animalIds.isEmpty) return Future.value(false);
+    return _run(
+      () => ref
+          .read(economicsV2LifecycleRepositoryProvider)
+          .recordCycleAnimalSale(
+            EconomicsV2CycleSaleRequest(
+              farmId: farmId,
+              cycleId: cycleId,
+              animalIds: animalIds,
+              soldOn: soldOn,
+              totalAmount: totalAmount,
+              totalWeightKg: totalWeightKg,
+              note: note,
+            ),
+          ),
+      refresh: _refreshMembers,
+      onSuccess: () => ref
+          .read(financeCyclesWorkflowProvider(farmId).notifier)
+          .resetAnimalAssignment(),
+    );
+  }
+
   Future<bool> recordExpense({
     required DateTime occurredOn,
     required double amount,
@@ -612,6 +672,7 @@ class FinanceCycleWorkspaceMutations extends _$FinanceCycleWorkspaceMutations {
   Future<bool> _run(
     Future<Object> Function() operation, {
     required Future<void> Function() refresh,
+    void Function()? onSuccess,
   }) async {
     if (state.isLoading) return false;
     state = const AsyncLoading();
@@ -620,6 +681,7 @@ class FinanceCycleWorkspaceMutations extends _$FinanceCycleWorkspaceMutations {
       if (!ref.mounted) return false;
       await refresh();
       if (!ref.mounted) return false;
+      onSuccess?.call();
       state = const AsyncData(null);
       return true;
     } catch (error, stackTrace) {
@@ -631,6 +693,8 @@ class FinanceCycleWorkspaceMutations extends _$FinanceCycleWorkspaceMutations {
   Future<void> _refreshMembers() async {
     _invalidateCommon();
     ref.invalidate(economicsV2CycleMembersProvider(farmId, cycleId));
+    ref.invalidate(economicsV2CycleProjectionsProvider(farmId, cycleId));
+    ref.invalidate(economicsV2CycleReadinessProvider(farmId, cycleId));
     await Future.wait([
       ref.read(economicsV2CycleMembersProvider(farmId, cycleId).future),
       ref.read(economicsV2CycleDetailProvider(farmId, cycleId).future),
@@ -642,6 +706,7 @@ class FinanceCycleWorkspaceMutations extends _$FinanceCycleWorkspaceMutations {
   Future<void> _refreshFeeds() async {
     _invalidateCommon();
     ref.invalidate(economicsV2CycleFeedsProvider(farmId, cycleId));
+    ref.invalidate(economicsV2CycleProjectionsProvider(farmId, cycleId));
     await ref.read(economicsV2CycleFeedsProvider(farmId, cycleId).future);
   }
 
@@ -703,5 +768,31 @@ class FinanceCycleCreation extends _$FinanceCycleCreation {
       state = AsyncError(error, stackTrace);
       return false;
     }
+  }
+}
+
+@riverpod
+class FinanceCycleDeletion extends _$FinanceCycleDeletion {
+  @override
+  Future<String?> build(String farmId) async => null;
+
+  Future<bool> delete(String cycleId) async {
+    if (state.isLoading) return false;
+    state = const AsyncLoading();
+    final result = await AsyncValue.guard(() async {
+      final deletedCycleId = await ref
+          .read(economicsV2RepositoryProvider)
+          .deleteCycle(farmId: farmId, cycleId: cycleId);
+      if (!ref.mounted) return deletedCycleId;
+      ref.invalidate(economicsV2CycleSummariesProvider(farmId));
+      await ref.read(economicsV2CycleSummariesProvider(farmId).future);
+      return deletedCycleId;
+    });
+    if (!ref.mounted) return false;
+    state = result;
+    return switch (result) {
+      AsyncData() => true,
+      AsyncError() || AsyncLoading() => false,
+    };
   }
 }

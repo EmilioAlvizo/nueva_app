@@ -196,4 +196,9 @@ final class _LifecycleRepository implements EconomicsV2LifecycleRepository {
     linkFeedRequests.add(request);
     return Future.value(linked);
   }
+
+  @override
+  Future<EconomicsV2CycleSaleRecorded> recordCycleAnimalSale(
+    EconomicsV2CycleSaleRequest request,
+  ) => throw UnimplementedError();
 }

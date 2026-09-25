@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/config/feature_flags.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/extensions/primitive_formatting_extensions.dart';
 import '../../../../core/testing/app_widget_keys.dart';
 import '../../../../core/theme/app_layout.dart';
 import '../../../../core/theme/finance_theme.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../ciclos/domain/economics_v2_models.dart';
+import '../../../ciclos/presentation/providers/cycle_providers.dart';
 import '../../../ciclos/presentation/screens/finance_cycles_section.dart';
 import '../../domain/entities/break_even_point.dart';
 import '../providers/finances_providers.dart';
@@ -16,6 +19,7 @@ import '../widgets/break_even_card.dart';
 import '../widgets/break_even_content.dart';
 import '../widgets/finance_states.dart';
 import '../widgets/finance_tab_bar.dart';
+import '../widgets/meat_break_even_card.dart';
 
 class FinancesScreen extends ConsumerStatefulWidget {
   const FinancesScreen({
@@ -193,12 +197,50 @@ class FinanceBalanceSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final points = ref.watch(breakEvenPointsProvider(farmId));
-    final content = switch (points) {
-      AsyncLoading() => const Center(
+    final access = economicsV2Enabled
+        ? ref.watch(economicsV2AccessProvider(farmId))
+        : null;
+    final canLoadMeatSummaries = switch (access) {
+      AsyncData(:final value) =>
+        value.enabled &&
+            value.canEdit &&
+            (value.role == 'owner' || value.role == 'editor'),
+      _ => false,
+    };
+    final meatSummaries = canLoadMeatSummaries
+        ? ref.watch(economicsV2CycleSummariesProvider(farmId))
+        : null;
+    final today = DateTimeFormatting.nowLocal();
+    final meatCards = switch (meatSummaries) {
+      AsyncData(:final value) => [
+        for (final summary in value.summaries)
+          if (summary case EconomicsV2CycleSummary(
+            purpose: EconomicsV2Purpose.carne,
+            meatMetrics: final metrics?,
+          ))
+            MeatBreakEvenCardDataMapper.map(
+              summary: summary,
+              metrics: metrics,
+              today: today,
+              l10n: l10n,
+            ),
+      ],
+      _ => const <MeatBreakEvenCardViewData>[],
+    };
+    final meatIsPending = switch ((access, meatSummaries)) {
+      (AsyncLoading(), _) => true,
+      (_, AsyncLoading()) => true,
+      _ => false,
+    };
+
+    if (points case AsyncLoading()) {
+      return const Center(
         key: ValueKey(AppWidgetKeys.financeLoading),
         child: CircularProgressIndicator(),
-      ),
-      AsyncError() => FinanceMessageState(
+      );
+    }
+    if (points case AsyncError()) {
+      return FinanceMessageState(
         key: const ValueKey(AppWidgetKeys.financeError),
         title: l10n.financeErrorTitle,
         message: l10n.financeErrorMessage,
@@ -206,26 +248,48 @@ class FinanceBalanceSection extends ConsumerWidget {
         actionKey: AppWidgetKeys.financeRetry,
         actionLabel: l10n.financeRetry,
         onAction: () => ref.invalidate(breakEvenPointsProvider(farmId)),
-      ),
-      AsyncData(:final value) when value.isEmpty => FinanceMessageState(
+      );
+    }
+
+    final eggPoints = points.requireValue;
+    if (eggPoints.isEmpty && meatCards.isEmpty && meatIsPending) {
+      return const Center(
+        key: ValueKey(AppWidgetKeys.financeLoading),
+        child: CircularProgressIndicator(),
+      );
+    }
+    if (eggPoints.isEmpty && meatCards.isEmpty) {
+      return FinanceMessageState(
         key: const ValueKey(AppWidgetKeys.financeEmpty),
         title: l10n.financeBalanceEmptyTitle,
         message: l10n.financeBalanceEmptyMessage,
         asset: 'assets/goal.png',
-      ),
-      AsyncData(:final value) => BreakEvenContent(
-        title: l10n.financeBalanceHeading,
-        subtitle: l10n.financeBalanceSubtitle,
-        cards: [
-          for (final point in value) BreakEvenCardDataMapper.map(point, l10n),
-        ],
-        onRefresh: () async {
-          ref.invalidate(breakEvenPointsProvider(farmId));
-          await ref.read(breakEvenPointsProvider(farmId).future);
-        },
-      ),
-    };
-    return content;
+      );
+    }
+
+    return BreakEvenContent(
+      title: l10n.financeBalanceHeading,
+      subtitle: l10n.financeBalanceSubtitle,
+      meatCards: meatCards,
+      cards: [
+        for (final point in eggPoints) BreakEvenCardDataMapper.map(point, l10n),
+      ],
+      onRefresh: () async {
+        ref.invalidate(breakEvenPointsProvider(farmId));
+        if (canLoadMeatSummaries) {
+          ref.invalidate(economicsV2CycleSummariesProvider(farmId));
+        }
+        try {
+          await Future.wait<Object?>([
+            ref.read(breakEvenPointsProvider(farmId).future),
+            if (canLoadMeatSummaries)
+              ref.read(economicsV2CycleSummariesProvider(farmId).future),
+          ]);
+        } on Object {
+          // Each provider exposes its own refreshed error state to the UI.
+        }
+      },
+    );
   }
 }
 

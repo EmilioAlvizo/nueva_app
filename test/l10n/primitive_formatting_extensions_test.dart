@@ -16,6 +16,9 @@ void main() {
     expect((-12.5).formatSignedDecimal(l10n), '-12.5');
     expect(12.5.formatCurrency(l10n), r'$12.50');
     expect((-12.5).formatCurrency(l10n), r'-$12.50');
+    expect(12.5.formatCompactCurrency(l10n), r'$12.5');
+    expect(12.formatCompactCurrency(l10n), r'$12');
+    expect((-12.5).formatCompactCurrency(l10n), r'-$12.5');
   });
 
   test('dates remain naturally Spanish', () {

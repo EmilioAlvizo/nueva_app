@@ -137,6 +137,50 @@ void main() {
   });
 
   group('EconomicsV2SupabaseRepository Finance cycles reads', () {
+    test('uses today as the display end for an open meat cycle', () {
+      final today = DateTime(2026, 9, 24);
+      final summary = EconomicsV2CycleSummary(
+        cycleId: 'cycle-open-meat',
+        farmId: 'farm-1',
+        status: 'open',
+        startsOn: DateTime(2026, 9, 1),
+        endsOn: DateTime(2026, 10, 1),
+        purposeId: 'purpose-meat',
+        purposeName: 'Carne',
+        purpose: EconomicsV2Purpose.carne,
+        activeAnimalCount: 0,
+        exitedAnimalCount: 0,
+        directExpenseTotal: 0,
+        linkedMixtureCount: 0,
+      );
+
+      expect(summary.meatDisplayEndOn(today), today);
+      expect(summary.meatDisplayDayCount(today), 24);
+    });
+
+    test('treats a fallback endsOn date as an exclusive boundary', () {
+      final summary = EconomicsV2CycleSummary(
+        cycleId: 'cycle-closed-meat',
+        farmId: 'farm-1',
+        status: 'production_closed',
+        startsOn: DateTime(2026, 9, 1),
+        endsOn: DateTime(2026, 9, 21),
+        purposeId: 'purpose-meat',
+        purposeName: 'Carne',
+        purpose: EconomicsV2Purpose.carne,
+        activeAnimalCount: 0,
+        exitedAnimalCount: 4,
+        directExpenseTotal: 0,
+        linkedMixtureCount: 1,
+      );
+
+      expect(
+        summary.meatDisplayEndOn(DateTime(2026, 9, 24)),
+        DateTime(2026, 9, 20),
+      );
+      expect(summary.meatDisplayDayCount(DateTime(2026, 9, 24)), 20);
+    });
+
     test('maps access and ordered summary RPC payloads', () async {
       final client = _RecordingHttpClient([
         (
@@ -157,8 +201,10 @@ void main() {
               'status': 'open',
               'starts_on': '2026-08-01',
               'ends_on': null,
+              'production_closed_on': null,
               'purpose_id': 'purpose-1',
               'purpose_name': 'Postura',
+              'purpose_code': 'postura',
               'active_animal_count': 4,
               'exited_animal_count': 1,
               'direct_expense_total': 42.5,
@@ -185,6 +231,8 @@ void main() {
       expect(summaries.single.cycleId, 'cycle-1');
       expect(summaries.single.startsOn, DateTime(2026, 8, 1));
       expect(summaries.single.endsOn, isNull);
+      expect(summaries.single.productionClosedOn, isNull);
+      expect(summaries.single.purpose, EconomicsV2Purpose.postura);
       expect(summaries.single.activeAnimalCount, 4);
       expect(summaries.single.exitedAnimalCount, 1);
       expect(summaries.single.directExpenseTotal, 42.5);
@@ -194,6 +242,65 @@ void main() {
         'obtener_acceso_ciclos_v2:{"p_granja_id":"farm-1"}',
         'listar_resumen_ciclos_v2:{"p_granja_id":"farm-1"}',
       ]);
+    });
+
+    test('maps every meat summary metric and nullable balance', () async {
+      final client = _RecordingHttpClient([
+        (
+          200,
+          [
+            {
+              'cycle_id': 'cycle-meat',
+              'granja_id': 'farm-1',
+              'status': 'production_closed',
+              'starts_on': '2026-09-01',
+              'ends_on': '2026-09-21',
+              'production_closed_on': '2026-09-20',
+              'purpose_id': 'purpose-meat',
+              'purpose_name': 'Carne',
+              'purpose_code': 'carne',
+              'active_animal_count': 0,
+              'exited_animal_count': 0,
+              'animal_count': 0,
+              'direct_expense_total': 25,
+              'linked_mixture_count': 2,
+              'latest_linked_group_name': 'Engorde norte',
+              'feed_cost': 200,
+              'feed_kg_total': 50,
+              'acquisition_cost': 100,
+              'total_cost': 325,
+              'animal_sale_revenue': 250,
+              'sale_count': 2,
+              'sold_animal_count': 0,
+              'profit': -75,
+              'balance_per_animal': null,
+            },
+          ],
+        ),
+      ]);
+
+      final summary = (await _repository(
+        client,
+      ).getCycleSummaries('farm-1')).single;
+      final metrics = summary.meatMetrics;
+
+      expect(summary.purpose, EconomicsV2Purpose.carne);
+      expect(summary.productionClosedOn, DateTime(2026, 9, 20));
+      expect(
+        summary.meatDisplayEndOn(DateTime(2026, 9, 24)),
+        DateTime(2026, 9, 20),
+      );
+      expect(metrics, isNotNull);
+      expect(metrics!.animalCount, 0);
+      expect(metrics.feedCost, 200);
+      expect(metrics.feedKgTotal, 50);
+      expect(metrics.acquisitionCost, 100);
+      expect(metrics.totalCost, 325);
+      expect(metrics.animalSaleRevenue, 250);
+      expect(metrics.saleCount, 2);
+      expect(metrics.soldAnimalCount, 0);
+      expect(metrics.profit, -75);
+      expect(metrics.balancePerAnimal, isNull);
     });
 
     test('keeps optional create end date null in the date-aware RPC', () async {

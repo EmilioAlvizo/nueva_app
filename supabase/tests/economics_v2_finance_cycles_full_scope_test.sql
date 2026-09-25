@@ -151,12 +151,10 @@ declare
   food_one uuid := '00000000-0000-0000-0000-000000008601';
   food_two uuid := '00000000-0000-0000-0000-000000008602';
   mixture_one uuid := '00000000-0000-0000-0000-000000008701';
-  mixture_two uuid := '00000000-0000-0000-0000-000000008702';
   purpose_id uuid;
   cycle_id uuid;
   other_cycle_id uuid;
   first_feed_id uuid;
-  second_feed_id uuid;
   expense_id uuid;
   detail jsonb;
   members jsonb;
@@ -226,13 +224,9 @@ begin
     (food_one, farm_id, food_one, 20, 1),
     (food_two, farm_id, food_two, 30, 1);
   insert into public.mezcla (id, granja_id, grupo_id, fecha_inicio, created_by)
-  values
-    (mixture_one, farm_id, group_id, current_date - 6, editor_id),
-    (mixture_two, farm_id, group_id, current_date - 3, editor_id);
+  values (mixture_one, farm_id, group_id, current_date - 7, editor_id);
   insert into public.mezcla_comida (granja_id, mezcla_id, comida_id, cantidad)
-  values
-    (farm_id, mixture_one, food_one, 1),
-    (farm_id, mixture_two, food_two, 1);
+  values (farm_id, mixture_one, food_one, 1);
 
   perform set_config('request.jwt.claim.sub', editor_id::text, true);
   set local role authenticated;
@@ -251,11 +245,8 @@ begin
     current_date - 6
   );
   select public.reemplazar_alimento_ciclo_v2(
-    farm_id, cycle_id, mixture_one, current_date - 6, null
+    farm_id, cycle_id, mixture_one, current_date - 7, null
   ) into first_feed_id;
-  select public.reemplazar_alimento_ciclo_v2(
-    farm_id, cycle_id, mixture_two, current_date - 3, null
-  ) into second_feed_id;
   reset role;
 
   insert into economics_v2.cycle_animals (cycle_id, animal_id, joined_on, left_on)
@@ -264,15 +255,13 @@ begin
   values (other_cycle_id, animal_active_elsewhere, current_date - 6);
 
   perform pg_temp.assert_true(
-    (select starts_on = current_date - 6 and ends_on = current_date - 3
+    (select starts_on = current_date - 7 and ends_on is null
      from economics_v2.cycle_feeds where id = first_feed_id)
-    and (select starts_on = current_date - 3 and ends_on is null
-         from economics_v2.cycle_feeds where id = second_feed_id)
     and (select count(*) = 2
          from economics_v2.cycle_animals membership
          where membership.cycle_id = other_cycle_id
            and membership.animal_id in (animal_batch_one, animal_batch_two)),
-    'feed replacement and successful batch assignment must persist their complete results'
+    'posture feed attribution and successful batch assignment must persist their complete results'
   );
 
   set local role authenticated;
@@ -374,9 +363,8 @@ begin
     jsonb_build_object(
       'expected_unit_price', 3,
       'production_per_day', 10,
-      'feed_per_day', 2,
-      'other_costs', 5,
-      'horizon_days', 30
+      'feed_rate_kg_per_bird_day', 0.05,
+      'other_costs', 5
     ),
     'Conservative scenario'
   ) into projection;
@@ -385,7 +373,7 @@ begin
   perform pg_temp.assert_true(
     expense_id is not null
     and projection ->> 'projection_id' is not null
-    and (projection -> 'result' ->> 'projected_revenue')::numeric = 900
+    and (projection -> 'result' ->> 'projected_revenue')::numeric = 210
     and (select count(*) = 1 from economics_v2.projections projection where projection.cycle_id = full_scope.cycle_id)
     and (select count(*) = 0 from economics_v2.final_results result where result.cycle_id = full_scope.cycle_id),
     'projection persistence must remain hypothetical and separate from actual and final data'
@@ -458,9 +446,8 @@ begin
       jsonb_build_object(
         'expected_unit_price', 3,
         'production_per_day', 10,
-        'feed_per_day', 2,
-        'other_costs', 5,
-        'horizon_days', 30
+        'feed_rate_kg_per_bird_day', 0.05,
+        'other_costs', 5
       ),
       'Late projection'
     );

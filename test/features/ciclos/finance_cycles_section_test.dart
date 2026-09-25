@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:ui' show Tristate;
+import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rancho/core/testing/app_widget_keys.dart';
@@ -593,6 +594,193 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('renders meat with the ordinary cycle summary card', (
+    tester,
+  ) async {
+    final repository = _EconomicsRepository()
+      ..summaries = [_summary, _meatSummary];
+    await _pumpSection(
+      tester,
+      repository: repository,
+      role: CycleRole.editor,
+      now: () => DateTime(2026, 9, 24),
+    );
+    await _flush(tester);
+    await tester.scrollUntilVisible(
+      _key(AppWidgetKeys.financeCycleSummary('cycle-2')),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+
+    expect(find.text('Carne'), findsOneWidget);
+    expect(find.text('Cerrado'), findsOneWidget);
+    expect(find.textContaining('Corral sur'), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleOpen('cycle-1')), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleOpen('cycle-2')), findsOneWidget);
+    expect(find.text('Resultado económico acumulado del ciclo'), findsNothing);
+    expect(find.text(r'$325.00'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('opens meat cycle details by tapping the whole summary card', (
+    tester,
+  ) async {
+    final repository = _EconomicsRepository()..summaries = [_meatSummary];
+    await _pumpSection(tester, repository: repository, role: CycleRole.editor);
+    await _flush(tester);
+
+    await tester.tap(_key(AppWidgetKeys.financeCycleSummary('cycle-2')));
+    await _flush(tester);
+
+    expect(_key(AppWidgetKeys.financeCycleOverview), findsOneWidget);
+  });
+
+  testWidgets('opens cycle details when tapping the summary card', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final repository = _EconomicsRepository()..summaries = [_summary];
+    await _pumpSection(tester, repository: repository, role: CycleRole.editor);
+    await _flush(tester);
+
+    final semanticsData = tester
+        .getSemantics(_key(AppWidgetKeys.financeCycleSummary('cycle-1')))
+        .getSemanticsData();
+    final actionHints = semanticsData.customSemanticsActionIds!.map(
+      CustomSemanticsAction.getAction,
+    );
+    expect(semanticsData.label, startsWith('Abrir ciclo Postura'));
+    expect(
+      actionHints,
+      contains(
+        const CustomSemanticsAction.overridingAction(
+          hint: 'Abrir el detalle del ciclo',
+          action: SemanticsAction.tap,
+        ),
+      ),
+    );
+    expect(
+      actionHints,
+      contains(
+        const CustomSemanticsAction.overridingAction(
+          hint: 'Mantén presionado para eliminar el ciclo',
+          action: SemanticsAction.longPress,
+        ),
+      ),
+    );
+    await tester.tap(_key(AppWidgetKeys.financeCycleSummary('cycle-1')));
+    await _flush(tester);
+
+    expect(_key(AppWidgetKeys.financeCycleOverview), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('long press opens confirmation and cancel preserves the cycle', (
+    tester,
+  ) async {
+    final repository = _EconomicsRepository()..summaries = [_meatSummary];
+    await _pumpSection(tester, repository: repository, role: CycleRole.editor);
+    await _flush(tester);
+
+    await tester.longPress(_key(AppWidgetKeys.financeCycleSummary('cycle-2')));
+    await tester.pump();
+
+    expect(_key(AppWidgetKeys.financeCycleDeleteDialog), findsOneWidget);
+    expect(find.text('Eliminar ciclo permanentemente'), findsOneWidget);
+    await tester.tap(_key(AppWidgetKeys.financeCycleDeleteCancel));
+    await tester.pump();
+
+    expect(_key(AppWidgetKeys.financeCycleDeleteDialog), findsNothing);
+    expect(_key(AppWidgetKeys.financeCycleSummary('cycle-2')), findsOneWidget);
+    expect(repository.deleteCalls, isEmpty);
+  });
+
+  testWidgets('confirm deletes and refreshes the summaries source of truth', (
+    tester,
+  ) async {
+    final repository = _EconomicsRepository()..summaries = [_summary];
+    await _pumpSection(tester, repository: repository, role: CycleRole.owner);
+    await _flush(tester);
+
+    await tester.longPress(_key(AppWidgetKeys.financeCycleSummary('cycle-1')));
+    await tester.pump();
+    await tester.tap(_key(AppWidgetKeys.financeCycleDeleteConfirm));
+    await _flush(tester);
+
+    expect(repository.deleteCalls, [('farm-1', 'cycle-1')]);
+    expect(repository.summaryCalls, 2);
+    expect(_key(AppWidgetKeys.financeCycleSummary('cycle-1')), findsNothing);
+    expect(_key(AppWidgetKeys.financeCyclesEmpty), findsOneWidget);
+  });
+
+  testWidgets('viewer card has no long-press delete semantic action', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final repository = _EconomicsRepository()
+      ..access = const EconomicsV2FarmAccess(
+        farmId: 'farm-1',
+        enabled: true,
+        role: 'viewer',
+        canEdit: false,
+      )
+      ..summaries = [_meatSummary];
+    await _pumpSection(tester, repository: repository, role: CycleRole.viewer);
+    await _flush(tester);
+
+    final node = tester.getSemantics(
+      _key(AppWidgetKeys.financeCycleSummary('cycle-2')),
+    );
+    final semanticsData = node.getSemanticsData();
+    final actionHints = semanticsData.customSemanticsActionIds!.map(
+      CustomSemanticsAction.getAction,
+    );
+    expect(semanticsData.label, startsWith('Abrir ciclo Carne'));
+    expect(
+      actionHints,
+      contains(
+        const CustomSemanticsAction.overridingAction(
+          hint: 'Abrir el detalle del ciclo',
+          action: SemanticsAction.tap,
+        ),
+      ),
+    );
+    expect(
+      actionHints.where(
+        (action) => action?.action == SemanticsAction.longPress,
+      ),
+      isEmpty,
+    );
+    expect(semanticsData.hasAction(SemanticsAction.tap), isTrue);
+    expect(semanticsData.hasAction(SemanticsAction.longPress), isFalse);
+    await tester.longPress(_key(AppWidgetKeys.financeCycleSummary('cycle-2')));
+    await tester.pump();
+
+    expect(_key(AppWidgetKeys.financeCycleDeleteDialog), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('failed deletion keeps the card and shows localized feedback', (
+    tester,
+  ) async {
+    final repository = _EconomicsRepository()
+      ..summaries = [_summary]
+      ..deleteError = Exception('delete failed');
+    await _pumpSection(tester, repository: repository, role: CycleRole.editor);
+    await _flush(tester);
+
+    await tester.longPress(_key(AppWidgetKeys.financeCycleSummary('cycle-1')));
+    await tester.pump();
+    await tester.tap(_key(AppWidgetKeys.financeCycleDeleteConfirm));
+    await _flush(tester);
+
+    expect(_key(AppWidgetKeys.financeCycleSummary('cycle-1')), findsOneWidget);
+    expect(
+      find.text('No pudimos eliminar el ciclo. Inténtalo de nuevo.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('uses semantic cycle surfaces, metrics, actions, and status', (
     tester,
   ) async {
@@ -646,7 +834,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final repository = _EconomicsRepository()..summaries = [_summary];
+    final repository = _EconomicsRepository()..summaries = [_meatSummary];
 
     await _pumpSection(
       tester,
@@ -660,7 +848,7 @@ void main() {
       tester.getSize(_key(AppWidgetKeys.financeCyclesAdd)).height,
       greaterThanOrEqualTo(48),
     );
-    final summary = _key(AppWidgetKeys.financeCycleSummary('cycle-1'));
+    final summary = _key(AppWidgetKeys.financeCycleSummary('cycle-2'));
     await tester.scrollUntilVisible(
       summary,
       300,
@@ -672,6 +860,7 @@ void main() {
     );
     expect(canvas.color, theme.cycleCanvas);
     expect(summary, findsOneWidget);
+    expect(_key(AppWidgetKeys.financeCycleOpen('cycle-2')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -895,6 +1084,17 @@ void main() {
       expect(_key(AppWidgetKeys.financeCycleAnimals), findsOneWidget);
       _expectSubviewChromeAbsent(destinationKeys);
       expect(_key(AppWidgetKeys.financeCycleWorkspaceBack), findsOneWidget);
+      expect(find.text('Todos los ciclos'), findsNothing);
+      expect(find.text('Postura · Gallinero norte'), findsOneWidget);
+
+      await _tapWorkspaceDestination(
+        tester,
+        AppWidgetKeys.financeCycleWorkspaceBack,
+      );
+      await tester.pump();
+
+      expect(_key(AppWidgetKeys.financeCycleOverview), findsOneWidget);
+      expect(_key(AppWidgetKeys.financeCyclesAdd), findsNothing);
     },
   );
 
@@ -1136,7 +1336,7 @@ void main() {
     await _flush(tester);
 
     expect(_key(AppWidgetKeys.financeCycleFinalResult), findsOneWidget);
-    expect(find.text('Resultado final'), findsOneWidget);
+    expect(find.text('Resultado final liquidado'), findsOneWidget);
     expect(find.text('Ingresos'), findsOneWidget);
     expect(find.text('Costo total'), findsOneWidget);
     expect(find.textContaining(r'$37.50'), findsWidgets);
@@ -1379,6 +1579,7 @@ void main() {
     await _flush(tester);
     await _flush(tester);
     expect(lifecycle.feedRequests.single.mixtureId, 'mixture-2');
+    expect(lifecycle.feedRequests.single.startsOn, _detail.startsOn);
     expect(repository.feedCalls, 2);
 
     await _reopenCycleOverview(tester);
@@ -1419,9 +1620,8 @@ void main() {
     final projectionFields = <String, String>{
       AppWidgetKeys.financeCycleProjectionUnitPrice: '3.5',
       AppWidgetKeys.financeCycleProjectionProductionPerDay: '20',
-      AppWidgetKeys.financeCycleProjectionFeedPerDay: '4',
+      AppWidgetKeys.financeCycleProjectionFeedRateKg: '0.1',
       AppWidgetKeys.financeCycleProjectionOtherCosts: '10',
-      AppWidgetKeys.financeCycleProjectionHorizonDays: '30',
       AppWidgetKeys.financeCycleProjectionNote: 'Escenario conservador',
     };
     for (final MapEntry(:key, :value) in projectionFields.entries) {
@@ -1431,7 +1631,8 @@ void main() {
     await _flush(tester);
     await _flush(tester);
     expect(repository.savedProjectionInputs.single.expectedUnitPrice, 3.5);
-    expect(repository.savedProjectionInputs.single.horizonDays, 30);
+    expect(repository.savedProjectionInputs.single.feedRateKgPerBirdDay, 0.1);
+    expect(repository.savedProjectionInputs.single.horizonDays, isNull);
     expect(repository.projectionCalls, 2);
   });
 
@@ -1590,6 +1791,10 @@ Future<void> _tapVisible(WidgetTester tester, String key) async {
 Future<void> _tapWorkspaceDestination(WidgetTester tester, String key) async {
   final target = _key(key);
   final scrollable = find.byType(Scrollable).first;
+  if (key == AppWidgetKeys.financeCycleWorkspaceBack) {
+    await tester.drag(scrollable, const Offset(0, 600));
+    await tester.pump();
+  }
   final dragOffset = key == AppWidgetKeys.financeCycleWorkspaceBack
       ? const Offset(0, 300)
       : const Offset(0, -300);
@@ -1611,7 +1816,6 @@ Future<void> _reopenCycleOverview(WidgetTester tester) async {
     AppWidgetKeys.financeCycleWorkspaceBack,
   );
   await tester.pump();
-  await _openCycle(tester);
 }
 
 Future<void> _tapForward(WidgetTester tester, String key) async {
@@ -1723,11 +1927,41 @@ final _summary = EconomicsV2CycleSummary(
   startsOn: DateTime(2026, 8, 20),
   purposeId: 'purpose-1',
   purposeName: 'Postura',
+  purpose: EconomicsV2Purpose.postura,
   activeAnimalCount: 4,
   exitedAnimalCount: 1,
   directExpenseTotal: 42.5,
   linkedMixtureCount: 2,
   latestLinkedGroupName: 'Gallinero norte',
+);
+
+final _meatSummary = EconomicsV2CycleSummary(
+  cycleId: 'cycle-2',
+  farmId: 'farm-1',
+  status: 'production_closed',
+  startsOn: DateTime(2026, 8, 20),
+  endsOn: DateTime(2026, 9, 21),
+  productionClosedOn: DateTime(2026, 9, 20),
+  purposeId: 'purpose-2',
+  purposeName: 'Carne',
+  purpose: EconomicsV2Purpose.carne,
+  activeAnimalCount: 2,
+  exitedAnimalCount: 2,
+  directExpenseTotal: 25,
+  linkedMixtureCount: 2,
+  latestLinkedGroupName: 'Corral sur',
+  meatMetrics: const EconomicsV2MeatCycleMetrics(
+    animalCount: 4,
+    feedCost: 200,
+    feedKgTotal: 10,
+    acquisitionCost: 100,
+    totalCost: 325,
+    animalSaleRevenue: 250,
+    saleCount: 2,
+    soldAnimalCount: 4,
+    profit: -75,
+    balancePerAnimal: -18.75,
+  ),
 );
 
 final class _EconomicsRepository extends Fake implements EconomicsV2Repository {
@@ -1749,6 +1983,8 @@ final class _EconomicsRepository extends Fake implements EconomicsV2Repository {
   var projectionCalls = 0;
   var readinessCalls = 0;
   var finalizeCalls = 0;
+  Object? deleteError;
+  final deleteCalls = <(String, String)>[];
   var productionClosed = false;
   var settled = false;
   DateTime? closedOn;
@@ -1765,6 +2001,20 @@ final class _EconomicsRepository extends Fake implements EconomicsV2Repository {
   Future<List<EconomicsV2CycleSummary>> getCycleSummaries(String farmId) {
     summaryCalls++;
     return summaryCompleter?.future ?? Future.value(summaries);
+  }
+
+  @override
+  Future<String> deleteCycle({
+    required String farmId,
+    required String cycleId,
+  }) async {
+    deleteCalls.add((farmId, cycleId));
+    if (deleteError case final error?) throw error;
+    summaries = [
+      for (final summary in summaries)
+        if (summary.cycleId != cycleId) summary,
+    ];
+    return cycleId;
   }
 
   @override
@@ -1863,9 +2113,8 @@ final class _EconomicsRepository extends Fake implements EconomicsV2Repository {
         input: const EconomicsV2ProjectionInput(
           expectedUnitPrice: 3.5,
           productionPerDay: 20,
-          feedPerDay: 4,
+          feedRateKgPerBirdDay: 0.1,
           otherCosts: 10,
-          horizonDays: 30,
         ),
         result: const EconomicsV2ProjectionResult(
           expectedUnits: 600,
@@ -1966,6 +2215,24 @@ final class _EconomicsRepository extends Fake implements EconomicsV2Repository {
       ),
     );
   }
+
+  @override
+  Future<EconomicsV2FinalResult> getFinalResult({
+    required String farmId,
+    required String cycleId,
+  }) async => EconomicsV2FinalResult(
+    cycleId: cycleId,
+    calculationVersion: 'v2',
+    settledOn: DateTime(2026, 8, 20),
+    result: const EconomicsV2Calculation(
+      cycleId: 'cycle-1',
+      purpose: EconomicsV2Purpose.postura,
+      productionBasis: 'eggs',
+      totalCost: 62.5,
+      revenue: 100,
+      margin: 37.5,
+    ),
+  );
 
   void _updateDetailStatus(
     EconomicsV2CycleStatus status, {

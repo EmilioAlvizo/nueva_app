@@ -224,9 +224,8 @@ void main() {
       input: const EconomicsV2ProjectionInput(
         expectedUnitPrice: 3.5,
         productionPerDay: 20,
-        feedPerDay: 4,
+        feedRateKgPerBirdDay: 0.1,
         otherCosts: 10,
-        horizonDays: 30,
       ),
       note: 'Conservative scenario',
     );
@@ -251,10 +250,23 @@ void main() {
       'asignar_animal_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_animal_id":"animal-2","p_joined_on":"2026-08-20"}',
       'reemplazar_alimento_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_mezcla_id":"mixture-2","p_starts_on":"2026-08-21","p_ends_on":null}',
       'registrar_gasto_ciclo_v2_con_categoria:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_occurred_on":"2026-08-22","p_amount":18.75,"p_category":"Veterinary","p_note":"Routine treatment"}',
-      'guardar_proyeccion_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_assumptions":{"expected_unit_price":3.5,"production_per_day":20.0,"feed_per_day":4.0,"other_costs":10.0,"horizon_days":30},"p_note":"Conservative scenario"}',
+      'guardar_proyeccion_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_assumptions":{"expected_unit_price":3.5,"production_per_day":20.0,"feed_rate_kg_per_bird_day":0.1,"other_costs":10.0},"p_note":"Conservative scenario"}',
       'cerrar_produccion_ciclo_v2:{"p_granja_id":"farm-1","p_cycle_id":"cycle-1","p_closed_on":"2026-08-23"}',
       'finalizar_ciclo_v2:${_scopeBody()}',
     ]);
+  });
+
+  test('deletes one cycle through the exact scoped RPC contract', () async {
+    final client = _RecordingHttpClient([(200, 'cycle-1')]);
+    final repository = _repository(client);
+
+    final deletedCycleId = await repository.deleteCycle(
+      farmId: 'farm-1',
+      cycleId: 'cycle-1',
+    );
+
+    expect(deletedCycleId, 'cycle-1');
+    expect(_identities(client), ['eliminar_ciclo_v2:${_scopeBody()}']);
   });
 }
 
@@ -318,6 +330,7 @@ const _legacySummariesJson = <Map<String, dynamic>>[
     'status': 'closed',
     'starts_on': '2026-08-01',
     'ends_on': '2026-08-23',
+    'production_closed_on': '2026-08-23',
     'purpose_id': 'purpose-1',
     'purpose_name': 'Posture',
     'active_animal_count': 2,
@@ -404,9 +417,8 @@ const _projectionJson = <String, dynamic>{
   'assumptions': {
     'expected_unit_price': 3.5,
     'production_per_day': 20,
-    'feed_per_day': 4,
+    'feed_rate_kg_per_bird_day': 0.1,
     'other_costs': 10,
-    'horizon_days': 30,
   },
   'result': {
     'expected_units': 600,

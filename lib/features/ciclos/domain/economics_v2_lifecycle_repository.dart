@@ -18,4 +18,8 @@ abstract interface class EconomicsV2LifecycleRepository {
   );
 
   Future<EconomicsV2FeedLinked> linkFeed(EconomicsV2LinkFeedRequest request);
+
+  Future<EconomicsV2CycleSaleRecorded> recordCycleAnimalSale(
+    EconomicsV2CycleSaleRequest request,
+  );
 }

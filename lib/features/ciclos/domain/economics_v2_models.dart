@@ -76,6 +76,32 @@ final class EconomicsV2FarmAccess {
   int get hashCode => Object.hash(farmId, enabled, role, canEdit);
 }
 
+final class EconomicsV2MeatCycleMetrics {
+  const EconomicsV2MeatCycleMetrics({
+    required this.animalCount,
+    required this.feedCost,
+    required this.feedKgTotal,
+    required this.acquisitionCost,
+    required this.totalCost,
+    required this.animalSaleRevenue,
+    required this.saleCount,
+    required this.soldAnimalCount,
+    required this.profit,
+    required this.balancePerAnimal,
+  });
+
+  final int animalCount;
+  final double feedCost;
+  final double feedKgTotal;
+  final double acquisitionCost;
+  final double totalCost;
+  final double animalSaleRevenue;
+  final int saleCount;
+  final int soldAnimalCount;
+  final double profit;
+  final double? balancePerAnimal;
+}
+
 final class EconomicsV2CycleSummary {
   const EconomicsV2CycleSummary({
     required this.cycleId,
@@ -88,8 +114,11 @@ final class EconomicsV2CycleSummary {
     required this.exitedAnimalCount,
     required this.directExpenseTotal,
     required this.linkedMixtureCount,
+    this.purpose,
     this.endsOn,
+    this.productionClosedOn,
     this.latestLinkedGroupName,
+    this.meatMetrics,
   });
 
   final String cycleId;
@@ -97,15 +126,35 @@ final class EconomicsV2CycleSummary {
   final String status;
   final DateTime startsOn;
   final DateTime? endsOn;
+  final DateTime? productionClosedOn;
   final String purposeId;
   final String purposeName;
+  final EconomicsV2Purpose? purpose;
   final int activeAnimalCount;
   final int exitedAnimalCount;
   final double directExpenseTotal;
   final int linkedMixtureCount;
   final String? latestLinkedGroupName;
+  final EconomicsV2MeatCycleMetrics? meatMetrics;
 
   bool get isOpen => status == 'open';
+
+  DateTime meatDisplayEndOn(DateTime today) {
+    if (isOpen) return today;
+    if (productionClosedOn case final closedOn?) return closedOn;
+    if (endsOn case final exclusiveEnd?) {
+      return exclusiveEnd.subtract(const Duration(days: 1));
+    }
+    return today;
+  }
+
+  int meatDisplayDayCount(DateTime today) {
+    final end = meatDisplayEndOn(today);
+    final startDay = DateTime.utc(startsOn.year, startsOn.month, startsOn.day);
+    final endDay = DateTime.utc(end.year, end.month, end.day);
+    final inclusiveDays = endDay.difference(startDay).inDays + 1;
+    return inclusiveDays < 0 ? 0 : inclusiveDays;
+  }
 }
 
 final class EconomicsV2CyclesDashboard {
@@ -219,9 +268,8 @@ sealed class EconomicsV2ProjectionInput {
   const factory EconomicsV2ProjectionInput({
     required double expectedUnitPrice,
     required double productionPerDay,
-    required double feedPerDay,
+    required double feedRateKgPerBirdDay,
     required double otherCosts,
-    required int horizonDays,
   }) = _EconomicsV2ScenarioProjectionInput;
 
   const factory EconomicsV2ProjectionInput.legacy({
@@ -231,6 +279,7 @@ sealed class EconomicsV2ProjectionInput {
 
   double? get expectedUnitPrice;
   double? get productionPerDay;
+  double? get feedRateKgPerBirdDay;
   double? get feedPerDay;
   double? get otherCosts;
   int? get horizonDays;
@@ -245,9 +294,8 @@ final class _EconomicsV2ScenarioProjectionInput
   const _EconomicsV2ScenarioProjectionInput({
     required this.expectedUnitPrice,
     required this.productionPerDay,
-    required this.feedPerDay,
+    required this.feedRateKgPerBirdDay,
     required this.otherCosts,
-    required this.horizonDays,
   }) : super._();
 
   @override
@@ -255,11 +303,13 @@ final class _EconomicsV2ScenarioProjectionInput
   @override
   final double productionPerDay;
   @override
-  final double feedPerDay;
+  final double feedRateKgPerBirdDay;
   @override
   final double otherCosts;
   @override
-  final int horizonDays;
+  double? get feedPerDay => null;
+  @override
+  int? get horizonDays => null;
   @override
   double? get expectedUnits => null;
   @override
@@ -269,9 +319,8 @@ final class _EconomicsV2ScenarioProjectionInput
   Map<String, dynamic> toJson() => {
     'expected_unit_price': expectedUnitPrice,
     'production_per_day': productionPerDay,
-    'feed_per_day': feedPerDay,
+    'feed_rate_kg_per_bird_day': feedRateKgPerBirdDay,
     'other_costs': otherCosts,
-    'horizon_days': horizonDays,
   };
 }
 
@@ -286,6 +335,8 @@ final class _EconomicsV2LegacyProjectionInput
   double? get expectedUnitPrice => null;
   @override
   double? get productionPerDay => null;
+  @override
+  double? get feedRateKgPerBirdDay => null;
   @override
   double? get feedPerDay => null;
   @override
@@ -561,12 +612,30 @@ final class EconomicsV2ProjectionResult {
     required this.projectedRevenue,
     required this.projectedTotalCost,
     required this.projectedBalance,
+    this.availableFeedKg,
+    this.historicalBirdDays,
+    this.consumedKg,
+    this.remainingKg,
+    this.currentActiveBirds,
+    this.remainingDays,
+    this.projectedHorizonDays,
+    this.expectedEndExclusive,
+    this.weightedAverageBirds,
   });
 
   final double expectedUnits;
   final double projectedRevenue;
   final double projectedTotalCost;
   final double projectedBalance;
+  final double? availableFeedKg;
+  final double? historicalBirdDays;
+  final double? consumedKg;
+  final double? remainingKg;
+  final int? currentActiveBirds;
+  final int? remainingDays;
+  final int? projectedHorizonDays;
+  final DateTime? expectedEndExclusive;
+  final double? weightedAverageBirds;
 
   factory EconomicsV2ProjectionResult.fromJson(Map<String, dynamic> json) =>
       EconomicsV2ProjectionResult(
@@ -574,6 +643,16 @@ final class EconomicsV2ProjectionResult {
         projectedRevenue: (json['projected_revenue'] as num).toDouble(),
         projectedTotalCost: (json['projected_total_cost'] as num).toDouble(),
         projectedBalance: (json['projected_balance'] as num).toDouble(),
+        availableFeedKg: (json['available_feed_kg'] as num?)?.toDouble(),
+        historicalBirdDays: (json['historical_bird_days'] as num?)?.toDouble(),
+        consumedKg: (json['consumed_kg'] as num?)?.toDouble(),
+        remainingKg: (json['remaining_kg'] as num?)?.toDouble(),
+        currentActiveBirds: (json['current_active_birds'] as num?)?.toInt(),
+        remainingDays: (json['remaining_days'] as num?)?.toInt(),
+        projectedHorizonDays: (json['projected_horizon_days'] as num?)?.toInt(),
+        expectedEndExclusive: _optionalDate(json['expected_end_exclusive']),
+        weightedAverageBirds: (json['weighted_average_birds'] as num?)
+            ?.toDouble(),
       );
 }
 
@@ -679,6 +758,30 @@ final class EconomicsV2Finalization {
       );
 }
 
+final class EconomicsV2FinalResult {
+  const EconomicsV2FinalResult({
+    required this.cycleId,
+    required this.calculationVersion,
+    required this.settledOn,
+    required this.result,
+  });
+
+  final String cycleId;
+  final String calculationVersion;
+  final DateTime settledOn;
+  final EconomicsV2Calculation result;
+
+  factory EconomicsV2FinalResult.fromJson(Map<String, dynamic> json) =>
+      EconomicsV2FinalResult(
+        cycleId: json['cycle_id'] as String,
+        calculationVersion: json['calculation_version'] as String,
+        settledOn: DateTime.parse(json['settled_on'] as String),
+        result: EconomicsV2Calculation.fromJson(
+          Map<String, dynamic>.from(json['result'] as Map),
+        ),
+      );
+}
+
 DateTime? _optionalDate(Object? value) => switch (value) {
   final String date => DateTime.parse(date),
   _ => null,
@@ -694,7 +797,6 @@ EconomicsV2ProjectionInput _projectionInputFromJson(
 ) => EconomicsV2ProjectionInput(
   expectedUnitPrice: (json['expected_unit_price'] as num).toDouble(),
   productionPerDay: (json['production_per_day'] as num).toDouble(),
-  feedPerDay: (json['feed_per_day'] as num).toDouble(),
+  feedRateKgPerBirdDay: (json['feed_rate_kg_per_bird_day'] as num).toDouble(),
   otherCosts: (json['other_costs'] as num).toDouble(),
-  horizonDays: (json['horizon_days'] as num).toInt(),
 );

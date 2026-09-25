@@ -4,6 +4,7 @@ import 'economics_v2_models.dart';
 abstract interface class EconomicsV2Repository {
   Future<EconomicsV2FarmAccess> getAccess(String farmId);
   Future<List<EconomicsV2CycleSummary>> getCycleSummaries(String farmId);
+  Future<String> deleteCycle({required String farmId, required String cycleId});
   Future<List<EconomicsV2Cycle>> getCycles(String farmId);
   Future<EconomicsV2Calculation> calculate({
     required String farmId,
@@ -35,6 +36,10 @@ abstract interface class EconomicsV2Repository {
     required String cycleId,
   });
   Future<EconomicsV2CycleReadiness> getCycleReadiness({
+    required String farmId,
+    required String cycleId,
+  });
+  Future<EconomicsV2FinalResult> getFinalResult({
     required String farmId,
     required String cycleId,
   });

@@ -31,27 +31,15 @@ class EconomicsV2SupabaseRepository
       'listar_resumen_ciclos_v2',
       params: {'p_granja_id': farmId},
     );
-    return [
-      for (final row in _rows(data))
-        EconomicsV2CycleSummary(
-          cycleId: row['cycle_id'] as String,
-          farmId: row['granja_id'] as String,
-          status: row['status'] as String,
-          startsOn: DateTime.parse(row['starts_on'] as String),
-          endsOn: switch (row['ends_on']) {
-            final String value => DateTime.parse(value),
-            _ => null,
-          },
-          purposeId: row['purpose_id'] as String,
-          purposeName: row['purpose_name'] as String,
-          activeAnimalCount: (row['active_animal_count'] as num).toInt(),
-          exitedAnimalCount: (row['exited_animal_count'] as num).toInt(),
-          directExpenseTotal: (row['direct_expense_total'] as num).toDouble(),
-          linkedMixtureCount: (row['linked_mixture_count'] as num).toInt(),
-          latestLinkedGroupName: row['latest_linked_group_name'] as String?,
-        ),
-    ];
+    return [for (final row in _rows(data)) _cycleSummary(row)];
   }
+
+  @override
+  Future<String> deleteCycle({
+    required String farmId,
+    required String cycleId,
+  }) =>
+      _client.rpc<String>('eliminar_ciclo_v2', params: _scope(farmId, cycleId));
 
   @override
   Future<List<EconomicsV2Cycle>> getCycles(String farmId) async {
@@ -166,6 +154,19 @@ class EconomicsV2SupabaseRepository
       cycleId,
     );
     return EconomicsV2CycleReadiness.fromJson(data);
+  }
+
+  @override
+  Future<EconomicsV2FinalResult> getFinalResult({
+    required String farmId,
+    required String cycleId,
+  }) async {
+    final data = await _scopedRpc(
+      'obtener_resultado_final_ciclo_v2',
+      farmId,
+      cycleId,
+    );
+    return EconomicsV2FinalResult.fromJson(data);
   }
 
   @override
@@ -310,10 +311,70 @@ class EconomicsV2SupabaseRepository
     return EconomicsV2FeedLinked(feedId: feedId);
   }
 
+  @override
+  Future<EconomicsV2CycleSaleRecorded> recordCycleAnimalSale(
+    EconomicsV2CycleSaleRequest request,
+  ) async {
+    final data = await _client.rpc<Map<String, dynamic>>(
+      'registrar_venta_animales_ciclo_v2',
+      params: {
+        ..._scope(request.farmId, request.cycleId),
+        'p_animal_ids': request.animalIds,
+        'p_fecha_venta': _date(request.soldOn),
+        'p_total_amount': request.totalAmount,
+        'p_peso': request.totalWeightKg,
+        'p_notas': request.note,
+      },
+    );
+    return EconomicsV2CycleSaleRecorded.fromJson(data);
+  }
+
   static List<Map<String, dynamic>> _rows(Object? value) => [
     for (final row in value as List? ?? const [])
       Map<String, dynamic>.from(row as Map),
   ];
+
+  static EconomicsV2CycleSummary _cycleSummary(Map<String, dynamic> row) {
+    final purpose = switch (row['purpose_code']) {
+      final String value => EconomicsV2Purpose.fromCode(value),
+      _ => null,
+    };
+    return EconomicsV2CycleSummary(
+      cycleId: row['cycle_id'] as String,
+      farmId: row['granja_id'] as String,
+      status: row['status'] as String,
+      startsOn: DateTime.parse(row['starts_on'] as String),
+      endsOn: _optionalDate(row['ends_on']),
+      productionClosedOn: _optionalDate(row['production_closed_on']),
+      purposeId: row['purpose_id'] as String,
+      purposeName: row['purpose_name'] as String,
+      purpose: purpose,
+      activeAnimalCount: (row['active_animal_count'] as num).toInt(),
+      exitedAnimalCount: (row['exited_animal_count'] as num).toInt(),
+      directExpenseTotal: (row['direct_expense_total'] as num).toDouble(),
+      linkedMixtureCount: (row['linked_mixture_count'] as num).toInt(),
+      latestLinkedGroupName: row['latest_linked_group_name'] as String?,
+      meatMetrics: purpose == EconomicsV2Purpose.carne
+          ? EconomicsV2MeatCycleMetrics(
+              animalCount: (row['animal_count'] as num).toInt(),
+              feedCost: (row['feed_cost'] as num).toDouble(),
+              feedKgTotal: (row['feed_kg_total'] as num).toDouble(),
+              acquisitionCost: (row['acquisition_cost'] as num).toDouble(),
+              totalCost: (row['total_cost'] as num).toDouble(),
+              animalSaleRevenue: (row['animal_sale_revenue'] as num).toDouble(),
+              saleCount: (row['sale_count'] as num).toInt(),
+              soldAnimalCount: (row['sold_animal_count'] as num).toInt(),
+              profit: (row['profit'] as num).toDouble(),
+              balancePerAnimal: (row['balance_per_animal'] as num?)?.toDouble(),
+            )
+          : null,
+    );
+  }
+
+  static DateTime? _optionalDate(Object? value) => switch (value) {
+    final String date => DateTime.parse(date),
+    _ => null,
+  };
 
   static String _date(DateTime value) =>
       value.toIso8601String().substring(0, 10);

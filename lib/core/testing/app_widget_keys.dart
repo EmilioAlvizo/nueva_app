@@ -28,6 +28,9 @@ abstract final class AppWidgetKeys {
   static const financeCyclesEmpty = 'finances.cycles.empty';
   static const financeCyclesAdd = 'finances.cycles.add';
   static const financeCyclesAggregate = 'finances.cycles.aggregate';
+  static const financeCycleDeleteDialog = 'finances.cycles.delete.dialog';
+  static const financeCycleDeleteCancel = 'finances.cycles.delete.cancel';
+  static const financeCycleDeleteConfirm = 'finances.cycles.delete.confirm';
   static const financeCycleForm = 'finances.cycles.form';
   static const financeCyclePurpose = 'finances.cycles.form.purpose';
   static const financeCycleStartDate = 'finances.cycles.form.start-date';
@@ -96,6 +99,22 @@ abstract final class AppWidgetKeys {
       'finances.cycles.workspace.animals.confirm';
   static const financeCycleAnimalsPending =
       'finances.cycles.workspace.animals.pending';
+  static const financeCycleAnimalsSell =
+      'finances.cycles.workspace.animals.sell';
+  static const financeCycleAnimalsSaleSelection =
+      'finances.cycles.workspace.animals.sale-selection';
+  static const financeCycleAnimalsSaleSelectAll =
+      'finances.cycles.workspace.animals.sale-select-all';
+  static const financeCycleAnimalsSaleContinue =
+      'finances.cycles.workspace.animals.sale-continue';
+  static const financeCycleAnimalsSaleAmount =
+      'finances.cycles.workspace.animals.sale.amount';
+  static const financeCycleAnimalsSaleWeight =
+      'finances.cycles.workspace.animals.sale.weight';
+  static const financeCycleAnimalsSaleNote =
+      'finances.cycles.workspace.animals.sale.note';
+  static const financeCycleAnimalsSaleConfirm =
+      'finances.cycles.workspace.animals.sale.confirm';
   static const financeCycleFeeds = 'finances.cycles.workspace.feeds';
   static const financeCycleFeedsSummary =
       'finances.cycles.workspace.feeds.summary';
@@ -146,6 +165,8 @@ abstract final class AppWidgetKeys {
       'finances.cycles.workspace.projections.otherCosts';
   static const financeCycleProjectionHorizonDays =
       'finances.cycles.workspace.projections.horizonDays';
+  static const financeCycleProjectionFeedRateKg =
+      'finances.cycles.workspace.projections.feedRateKg';
   static const financeCycleProjectionNote =
       'finances.cycles.workspace.projections.note';
   static const financeCycleProjectionConfirm =
@@ -179,6 +200,38 @@ abstract final class AppWidgetKeys {
 
   static String financeBreakEvenCard(String mixtureId) {
     return 'finances.balance.card.$mixtureId';
+  }
+
+  static String financeMeatBreakEvenCard(String cycleId) {
+    return 'finances.balance.meat.$cycleId';
+  }
+
+  static String financeMeatBreakEvenRing(String cycleId) {
+    return 'finances.balance.meat.$cycleId.ring';
+  }
+
+  static String financeMeatBreakEvenChip(String cycleId) {
+    return 'finances.balance.meat.$cycleId.chip';
+  }
+
+  static String financeMeatBreakEvenDecoration(String cycleId) {
+    return 'finances.balance.meat.$cycleId.decoration';
+  }
+
+  static String financeMeatBreakEvenCosts(String cycleId) {
+    return 'finances.balance.meat.$cycleId.costs';
+  }
+
+  static String financeMeatBreakEvenRevenue(String cycleId) {
+    return 'finances.balance.meat.$cycleId.revenue';
+  }
+
+  static String financeMeatBreakEvenMetrics(String cycleId) {
+    return 'finances.balance.meat.$cycleId.metrics';
+  }
+
+  static String financeMeatBreakEvenFooter(String cycleId) {
+    return 'finances.balance.meat.$cycleId.footer';
   }
 
   static String financeCycleSummary(String cycleId) {

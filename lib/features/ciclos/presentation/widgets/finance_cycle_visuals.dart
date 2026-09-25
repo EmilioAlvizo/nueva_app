@@ -36,13 +36,13 @@ class FinanceCycleCanvas extends StatelessWidget {
 
 class FinanceCycleContextSelector extends StatelessWidget {
   const FinanceCycleContextSelector({
-    required this.allCyclesLabel,
+    required this.backLabel,
     required this.detailLabel,
     required this.onBack,
     super.key,
   });
 
-  final String allCyclesLabel;
+  final String backLabel;
   final String detailLabel;
   final VoidCallback onBack;
 
@@ -54,7 +54,7 @@ class FinanceCycleContextSelector extends StatelessWidget {
     children: [
       FinanceCycleContextPill(
         keyValue: AppWidgetKeys.financeCycleWorkspaceBack,
-        label: allCyclesLabel,
+        label: backLabel,
         icon: Icons.chevron_left_rounded,
         isSelected: true,
         onPressed: onBack,

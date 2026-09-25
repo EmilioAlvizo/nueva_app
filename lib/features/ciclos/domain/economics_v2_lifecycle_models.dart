@@ -1,3 +1,5 @@
+import 'economics_v2_models.dart';
+
 class EconomicsV2CreateCycleRequest {
   const EconomicsV2CreateCycleRequest({
     required this.farmId,
@@ -63,6 +65,24 @@ class EconomicsV2CloseProductionRequest {
   final DateTime closedOn;
 }
 
+class EconomicsV2CycleSaleRequest {
+  const EconomicsV2CycleSaleRequest({
+    required this.farmId,
+    required this.cycleId,
+    required this.animalIds,
+    required this.soldOn,
+    required this.totalAmount,
+    required this.totalWeightKg,
+    this.note,
+  });
+
+  final String farmId, cycleId;
+  final List<String> animalIds;
+  final DateTime soldOn;
+  final double totalAmount, totalWeightKg;
+  final String? note;
+}
+
 class EconomicsV2LinkFeedRequest {
   const EconomicsV2LinkFeedRequest({
     required this.farmId,
@@ -111,4 +131,25 @@ class EconomicsV2FeedLinked {
   const EconomicsV2FeedLinked({required this.feedId});
 
   final String feedId;
+}
+
+class EconomicsV2CycleSaleRecorded {
+  const EconomicsV2CycleSaleRecorded({
+    required this.saleId,
+    required this.cycleId,
+    required this.soldCount,
+    required this.status,
+  });
+
+  factory EconomicsV2CycleSaleRecorded.fromJson(Map<String, dynamic> json) =>
+      EconomicsV2CycleSaleRecorded(
+        saleId: json['sale_id'] as String,
+        cycleId: json['cycle_id'] as String,
+        soldCount: (json['sold_count'] as num).toInt(),
+        status: EconomicsV2CycleStatus.fromCode(json['status'] as String),
+      );
+
+  final String saleId, cycleId;
+  final int soldCount;
+  final EconomicsV2CycleStatus status;
 }
