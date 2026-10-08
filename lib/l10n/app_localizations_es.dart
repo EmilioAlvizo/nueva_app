@@ -1024,6 +1024,106 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esta pestaña está lista para mostrar gastos cuando se defina una fuente de datos verificada.';
 
   @override
+  String get financeExpensesHeading => 'Gastos';
+
+  @override
+  String get financeExpensesSubtitle =>
+      'Registra costos directos en el ciclo o mezcla que los generó.';
+
+  @override
+  String get financeExpensesTotal => 'Total activo';
+
+  @override
+  String get financeExpensesCurrentMonth => 'Mes actual';
+
+  @override
+  String get financeExpensesRecordCount => 'Registros';
+
+  @override
+  String get financeExpensesEmptyTitle => 'Aún no hay gastos registrados';
+
+  @override
+  String get financeExpensesEmptyMessage =>
+      'Los gastos aparecerán aquí cuando registres el primero.';
+
+  @override
+  String get financeExpensesNoTargetsTitle => 'No hay destinos disponibles';
+
+  @override
+  String get financeExpensesNoTargetsMessage =>
+      'Necesitas un ciclo de carne o una mezcla actual para registrar gastos.';
+
+  @override
+  String get financeExpenseAdd => 'Registrar gasto';
+
+  @override
+  String get financeExpenseCreateTitle => 'Nuevo gasto';
+
+  @override
+  String get financeExpenseEditTitle => 'Editar gasto';
+
+  @override
+  String get financeExpenseTargetLabel => 'Destino';
+
+  @override
+  String get financeExpenseDateLabel => 'Fecha';
+
+  @override
+  String get financeExpenseAmountLabel => 'Monto';
+
+  @override
+  String get financeExpenseCategoryLabel => 'Categoría';
+
+  @override
+  String get financeExpenseNoteLabel => 'Nota (opcional)';
+
+  @override
+  String get financeExpenseSave => 'Guardar';
+
+  @override
+  String get financeExpenseCancel => 'Cancelar';
+
+  @override
+  String get financeExpenseInvalidTarget => 'Selecciona un destino.';
+
+  @override
+  String get financeExpenseInvalidAmount => 'Ingresa un monto mayor que cero.';
+
+  @override
+  String get financeExpenseInvalidCategory => 'Ingresa una categoría.';
+
+  @override
+  String get financeExpenseDeleteTitle => 'Eliminar gasto';
+
+  @override
+  String financeExpenseDeleteMessage(String category) {
+    return '¿Deseas eliminar el gasto de $category? Esta acción no se puede deshacer.';
+  }
+
+  @override
+  String get financeExpenseDelete => 'Eliminar';
+
+  @override
+  String get financeExpenseMutationError =>
+      'No pudimos guardar el cambio. Actualiza los datos e inténtalo de nuevo.';
+
+  @override
+  String get financeExpenseCycleTarget => 'Ciclo';
+
+  @override
+  String get financeExpenseLegacyTarget => 'Mezcla';
+
+  @override
+  String financeExpenseCardSemantics(
+    String amount,
+    String category,
+    String target,
+    String date,
+  ) {
+    return 'Gasto de $amount en $category, destino $target, fecha $date.';
+  }
+
+  @override
   String get financeChartsUnavailableTitle =>
       'Los gráficos financieros aún no están disponibles';
 

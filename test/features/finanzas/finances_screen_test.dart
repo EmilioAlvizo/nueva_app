@@ -12,6 +12,7 @@ import 'package:rancho/features/ciclos/domain/economics_v2_repository.dart';
 import 'package:rancho/features/ciclos/presentation/providers/cycle_providers.dart';
 import 'package:rancho/features/finanzas/data/models/break_even_point_model.dart';
 import 'package:rancho/features/finanzas/domain/entities/break_even_point.dart';
+import 'package:rancho/features/finanzas/domain/entities/finance_expense.dart';
 import 'package:rancho/features/finanzas/domain/repositories/finances_repository.dart';
 import 'package:rancho/features/finanzas/presentation/providers/finances_providers.dart';
 import 'package:rancho/features/finanzas/presentation/screens/finances_screen.dart';
@@ -51,7 +52,7 @@ void main() {
     await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
-    expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeExpensesDashboard), findsOneWidget);
 
     await tester.drag(_key(AppWidgetKeys.financePages), const Offset(-250, 0));
     await tester.pumpAndSettle();
@@ -80,7 +81,7 @@ void main() {
     await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
-    expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeExpensesDashboard), findsOneWidget);
 
     await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
     await tester.pumpAndSettle();
@@ -112,7 +113,7 @@ void main() {
     await tester.tap(_key(AppWidgetKeys.financeExpensesTab));
     await tester.pumpAndSettle();
     _expectFinanceTabSelected(tester, AppWidgetKeys.financeExpensesTab);
-    expect(_key(AppWidgetKeys.financeExpensesUnavailable), findsOneWidget);
+    expect(_key(AppWidgetKeys.financeExpensesDashboard), findsOneWidget);
 
     await tester.drag(_key(AppWidgetKeys.financePages), const Offset(250, 0));
     await tester.pumpAndSettle();
@@ -572,6 +573,8 @@ final _point = BreakEvenPoint(
   breakEvenPrice: 3.3152173913043478,
   averageSalePrice: 5,
   marginPercentage: 50.82,
+  directExpenses: 0,
+  totalCost: 610,
 );
 
 final _summary = EconomicsV2CycleSummary(
@@ -632,7 +635,9 @@ final _meatSummary = EconomicsV2CycleSummary(
   ),
 );
 
-final class _ValueRepository implements FinancesRepository {
+final class _ValueRepository
+    with _UnsupportedExpenses
+    implements FinancesRepository {
   const _ValueRepository(this.value);
 
   final List<BreakEvenPoint> value;
@@ -641,7 +646,9 @@ final class _ValueRepository implements FinancesRepository {
   Future<List<BreakEvenPoint>> getBreakEvenPoints(String farmId) async => value;
 }
 
-final class _CountingValueRepository implements FinancesRepository {
+final class _CountingValueRepository
+    with _UnsupportedExpenses
+    implements FinancesRepository {
   _CountingValueRepository(this.value);
 
   final List<BreakEvenPoint> value;
@@ -654,7 +661,9 @@ final class _CountingValueRepository implements FinancesRepository {
   }
 }
 
-final class _NullablePerBirdMetricsRepository implements FinancesRepository {
+final class _NullablePerBirdMetricsRepository
+    with _UnsupportedExpenses
+    implements FinancesRepository {
   const _NullablePerBirdMetricsRepository();
 
   @override
@@ -663,7 +672,9 @@ final class _NullablePerBirdMetricsRepository implements FinancesRepository {
   ];
 }
 
-final class _PendingRepository implements FinancesRepository {
+final class _PendingRepository
+    with _UnsupportedExpenses
+    implements FinancesRepository {
   final _completer = Completer<List<BreakEvenPoint>>();
 
   void complete(List<BreakEvenPoint> value) => _completer.complete(value);
@@ -674,7 +685,9 @@ final class _PendingRepository implements FinancesRepository {
   }
 }
 
-final class _FailOnceRepository implements FinancesRepository {
+final class _FailOnceRepository
+    with _UnsupportedExpenses
+    implements FinancesRepository {
   int calls = 0;
 
   @override
@@ -683,6 +696,29 @@ final class _FailOnceRepository implements FinancesRepository {
     if (calls == 1) throw Exception('offline');
     return const [];
   }
+}
+
+mixin _UnsupportedExpenses {
+  Future<FinanceExpensesSnapshot> getExpenses(String farmId) async =>
+      FinanceExpensesSnapshot(
+        farmId: farmId,
+        role: 'viewer',
+        canEdit: false,
+        targets: const [],
+        expenses: const [],
+      );
+
+  Future<void> createExpense(String farmId, FinanceExpenseDraft draft) =>
+      throw UnimplementedError();
+
+  Future<void> updateExpense(
+    String farmId,
+    FinanceExpense expense,
+    FinanceExpenseDraft draft,
+  ) => throw UnimplementedError();
+
+  Future<void> deleteExpense(String farmId, FinanceExpense expense) =>
+      throw UnimplementedError();
 }
 
 final _nullablePerBirdMetricsJson = <String, Object?>{

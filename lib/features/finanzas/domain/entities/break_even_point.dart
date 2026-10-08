@@ -20,6 +20,8 @@ final class BreakEvenPoint {
     required this.breakEvenPrice,
     required this.averageSalePrice,
     required this.marginPercentage,
+    required this.directExpenses,
+    required this.totalCost,
   });
 
   final String farmId;
@@ -42,4 +44,6 @@ final class BreakEvenPoint {
   final double? breakEvenPrice;
   final double? averageSalePrice;
   final double? marginPercentage;
+  final double directExpenses;
+  final double totalCost;
 }

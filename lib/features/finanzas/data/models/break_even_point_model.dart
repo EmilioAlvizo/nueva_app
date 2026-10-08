@@ -22,6 +22,8 @@ final class BreakEvenPointModel {
     required this.breakEvenPrice,
     required this.averageSalePrice,
     required this.marginPercentage,
+    required this.directExpenses,
+    required this.totalCost,
   });
 
   factory BreakEvenPointModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,10 @@ final class BreakEvenPointModel {
         'precio_venta_promedio',
       ),
       marginPercentage: _nullableFiniteDouble(json, 'margen_porcentaje'),
+      directExpenses: _optionalNonNegativeDouble(json, 'total_gastos_directos'),
+      totalCost: json.containsKey('costo_total')
+          ? _requiredNonNegativeDouble(json, 'costo_total')
+          : _requiredNonNegativeDouble(json, 'total_costo_comidas'),
     );
   }
 
@@ -78,6 +84,8 @@ final class BreakEvenPointModel {
   final double? breakEvenPrice;
   final double? averageSalePrice;
   final double? marginPercentage;
+  final double directExpenses;
+  final double totalCost;
 
   BreakEvenPoint toEntity() => BreakEvenPoint(
     farmId: farmId,
@@ -100,7 +108,14 @@ final class BreakEvenPointModel {
     breakEvenPrice: breakEvenPrice,
     averageSalePrice: averageSalePrice,
     marginPercentage: marginPercentage,
+    directExpenses: directExpenses,
+    totalCost: totalCost,
   );
+
+  static double _optionalNonNegativeDouble(
+    Map<String, dynamic> json,
+    String key,
+  ) => json.containsKey(key) ? _requiredNonNegativeDouble(json, key) : 0;
 
   static final RegExp _uuidPattern = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'

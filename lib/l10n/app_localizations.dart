@@ -1529,6 +1529,185 @@ abstract class AppLocalizations {
   /// **'Esta pestaña está lista para mostrar gastos cuando se defina una fuente de datos verificada.'**
   String get financeExpensesUnavailableMessage;
 
+  /// No description provided for @financeExpensesHeading.
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos'**
+  String get financeExpensesHeading;
+
+  /// No description provided for @financeExpensesSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Registra costos directos en el ciclo o mezcla que los generó.'**
+  String get financeExpensesSubtitle;
+
+  /// No description provided for @financeExpensesTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Total activo'**
+  String get financeExpensesTotal;
+
+  /// No description provided for @financeExpensesCurrentMonth.
+  ///
+  /// In es, this message translates to:
+  /// **'Mes actual'**
+  String get financeExpensesCurrentMonth;
+
+  /// No description provided for @financeExpensesRecordCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Registros'**
+  String get financeExpensesRecordCount;
+
+  /// No description provided for @financeExpensesEmptyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay gastos registrados'**
+  String get financeExpensesEmptyTitle;
+
+  /// No description provided for @financeExpensesEmptyMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Los gastos aparecerán aquí cuando registres el primero.'**
+  String get financeExpensesEmptyMessage;
+
+  /// No description provided for @financeExpensesNoTargetsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay destinos disponibles'**
+  String get financeExpensesNoTargetsTitle;
+
+  /// No description provided for @financeExpensesNoTargetsMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Necesitas un ciclo de carne o una mezcla actual para registrar gastos.'**
+  String get financeExpensesNoTargetsMessage;
+
+  /// No description provided for @financeExpenseAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar gasto'**
+  String get financeExpenseAdd;
+
+  /// No description provided for @financeExpenseCreateTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo gasto'**
+  String get financeExpenseCreateTitle;
+
+  /// No description provided for @financeExpenseEditTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar gasto'**
+  String get financeExpenseEditTitle;
+
+  /// No description provided for @financeExpenseTargetLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Destino'**
+  String get financeExpenseTargetLabel;
+
+  /// No description provided for @financeExpenseDateLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha'**
+  String get financeExpenseDateLabel;
+
+  /// No description provided for @financeExpenseAmountLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto'**
+  String get financeExpenseAmountLabel;
+
+  /// No description provided for @financeExpenseCategoryLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría'**
+  String get financeExpenseCategoryLabel;
+
+  /// No description provided for @financeExpenseNoteLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota (opcional)'**
+  String get financeExpenseNoteLabel;
+
+  /// No description provided for @financeExpenseSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar'**
+  String get financeExpenseSave;
+
+  /// No description provided for @financeExpenseCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get financeExpenseCancel;
+
+  /// No description provided for @financeExpenseInvalidTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona un destino.'**
+  String get financeExpenseInvalidTarget;
+
+  /// No description provided for @financeExpenseInvalidAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un monto mayor que cero.'**
+  String get financeExpenseInvalidAmount;
+
+  /// No description provided for @financeExpenseInvalidCategory.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa una categoría.'**
+  String get financeExpenseInvalidCategory;
+
+  /// No description provided for @financeExpenseDeleteTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar gasto'**
+  String get financeExpenseDeleteTitle;
+
+  /// No description provided for @financeExpenseDeleteMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas eliminar el gasto de {category}? Esta acción no se puede deshacer.'**
+  String financeExpenseDeleteMessage(String category);
+
+  /// No description provided for @financeExpenseDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get financeExpenseDelete;
+
+  /// No description provided for @financeExpenseMutationError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos guardar el cambio. Actualiza los datos e inténtalo de nuevo.'**
+  String get financeExpenseMutationError;
+
+  /// No description provided for @financeExpenseCycleTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Ciclo'**
+  String get financeExpenseCycleTarget;
+
+  /// No description provided for @financeExpenseLegacyTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Mezcla'**
+  String get financeExpenseLegacyTarget;
+
+  /// No description provided for @financeExpenseCardSemantics.
+  ///
+  /// In es, this message translates to:
+  /// **'Gasto de {amount} en {category}, destino {target}, fecha {date}.'**
+  String financeExpenseCardSemantics(
+    String amount,
+    String category,
+    String target,
+    String date,
+  );
+
   /// No description provided for @financeChartsUnavailableTitle.
   ///
   /// In es, this message translates to:

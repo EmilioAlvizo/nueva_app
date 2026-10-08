@@ -18,6 +18,22 @@ abstract final class AppWidgetKeys {
   static const financeEmpty = 'finances.balance.empty';
   static const financeIncomeUnavailable = 'finances.income.unavailable';
   static const financeExpensesUnavailable = 'finances.expenses.unavailable';
+  static const financeExpensesDashboard = 'finances.expenses.dashboard';
+  static const financeExpensesLoading = 'finances.expenses.loading';
+  static const financeExpensesError = 'finances.expenses.error';
+  static const financeExpensesRetry = 'finances.expenses.retry';
+  static const financeExpensesEmpty = 'finances.expenses.empty';
+  static const financeExpensesAdd = 'finances.expenses.add';
+  static const financeExpenseForm = 'finances.expenses.form';
+  static const financeExpenseTarget = 'finances.expenses.form.target';
+  static const financeExpenseDate = 'finances.expenses.form.date';
+  static const financeExpenseAmount = 'finances.expenses.form.amount';
+  static const financeExpenseCategory = 'finances.expenses.form.category';
+  static const financeExpenseNote = 'finances.expenses.form.note';
+  static const financeExpenseSubmit = 'finances.expenses.form.submit';
+  static const financeExpenseDeleteDialog = 'finances.expenses.delete.dialog';
+  static const financeExpenseDeleteCancel = 'finances.expenses.delete.cancel';
+  static const financeExpenseDeleteConfirm = 'finances.expenses.delete.confirm';
   static const financeChartsUnavailable = 'finances.charts.unavailable';
   static const financeEconomicsV2Entry = 'finances.economics-v2.entry';
   static const financeCyclesLoading = 'finances.cycles.loading';
@@ -201,6 +217,9 @@ abstract final class AppWidgetKeys {
   static String financeBreakEvenCard(String mixtureId) {
     return 'finances.balance.card.$mixtureId';
   }
+
+  static String financeExpenseCard(String expenseId) =>
+      'finances.expenses.card.$expenseId';
 
   static String financeMeatBreakEvenCard(String cycleId) {
     return 'finances.balance.meat.$cycleId';

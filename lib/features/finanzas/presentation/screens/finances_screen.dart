@@ -20,6 +20,7 @@ import '../widgets/break_even_content.dart';
 import '../widgets/finance_states.dart';
 import '../widgets/finance_tab_bar.dart';
 import '../widgets/meat_break_even_card.dart';
+import 'finance_expenses_screen_section.dart';
 
 class FinancesScreen extends ConsumerStatefulWidget {
   const FinancesScreen({
@@ -116,13 +117,7 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
         note: l10n.financeNoFabricatedData,
         asset: 'assets/income.png',
       ),
-      FinanceMessageState(
-        key: const ValueKey(AppWidgetKeys.financeExpensesUnavailable),
-        title: l10n.financeExpensesUnavailableTitle,
-        message: l10n.financeExpensesUnavailableMessage,
-        note: l10n.financeNoFabricatedData,
-        asset: 'assets/outcome.png',
-      ),
+      FinanceExpensesScreenSection(farmId: widget.farmId),
       FinanceMessageState(
         key: const ValueKey(AppWidgetKeys.financeChartsUnavailable),
         title: l10n.financeChartsUnavailableTitle,
@@ -183,6 +178,9 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
 
   void _onPageChanged(int index) {
     final tab = FinanceTab.values[index];
+    if (tab == FinanceTab.expenses) {
+      ref.invalidate(financeExpensesProvider(widget.farmId));
+    }
     if (_selectedTab == tab) return;
     setState(() => _selectedTab = tab);
   }
@@ -334,7 +332,7 @@ abstract final class BreakEvenCardDataMapper {
         FinanceMetricViewData(
           role: FinanceMetricRole.cost,
           label: l10n.totalCostLabel,
-          value: point.totalFoodCost.formatCurrency(l10n),
+          value: point.totalCost.formatCurrency(l10n),
           icon: Icons.payments_outlined,
         ),
         FinanceMetricViewData(
